@@ -1,7 +1,6 @@
 Track It!
 =========
 
-
 Track It! is a GPS-enabled application for visualizing and planning
 outdoor sports and activities. It is written in Java (version 1.7).
 
@@ -21,17 +20,14 @@ Dependencies marked with * are not available from the Maven Central Repository.
 In order to satisfy these dependencies, we suggest installing them on the local
 repository with the following maven command:
 
-mvn install:install-file -Dfile=<path-to-file> -DgroupId=<group-id> \
-    -DartifactId=<artifact-id> -Dversion=<version> -Dpackaging=<packaging>
+mvn install:install-file -Dfile=<path-to-file> -DgroupId=<group-id> -DartifactId=<artifact-id> -Dversion=<version> -Dpackaging=<packaging>
 
-For example:
-
-mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/fit.jar -DgroupId=com.garmin \
-    -DartifactId=fit -Dversion=5.0.0 -Dpackaging=jar
-	
+Like this:
 	
 mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/fit.jar -DgroupId=com.garmin -DartifactId=fit -Dversion=5.0.0 -Dpackaging=jar
+
 mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/orange-extensions.1.3.0.jar -DgroupId=com.apple.eawf -DartifactId=orange-extensions -Dversion=1.3.0 -Dpackaging=jar
+
 mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/ch.hsr.geohash-1.0.6.jar -DgroupId=ch.hsr -DartifactId=geohash-java -Dversion=1.0.6 -Dpackaging=jar
     
     
