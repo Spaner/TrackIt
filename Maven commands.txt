@@ -1,0 +1,3 @@
+mvn exec:java -Dexec.mainClass="com.henriquemalheiro.trackit.TrackIt"
+
+mvn package
