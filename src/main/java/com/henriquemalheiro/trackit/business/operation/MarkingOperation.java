@@ -347,4 +347,30 @@ public class MarkingOperation extends OperationBase implements Operation {
 			}
 		});
 	}
+
+	@Override
+	public void undoOperation(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void undoOperation(List<GPSDocument> document)
+			throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void redoOperation(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void redoOperation(List<GPSDocument> document)
+			throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
 }

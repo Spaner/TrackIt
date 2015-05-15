@@ -110,4 +110,32 @@ public class ReverseOperation extends OperationBase implements Operation {
 			trackpoint.setDistance(distance);
 		}
 	}
+
+	@Override
+	public void undoOperation(GPSDocument document) throws TrackItException {
+		Course course = document.getCourses().get(0);
+		reverse(course);
+		
+	}
+
+	@Override
+	public void redoOperation(GPSDocument document) throws TrackItException {
+		Course course = document.getCourses().get(0);
+		reverse(course);
+		
+	}
+
+	@Override
+	public void undoOperation(List<GPSDocument> document)
+			throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void redoOperation(List<GPSDocument> document)
+			throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
 }

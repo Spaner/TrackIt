@@ -70,6 +70,8 @@ import com.henriquemalheiro.trackit.business.operation.ReverseOperation;
 import com.henriquemalheiro.trackit.business.operation.SettingPaceOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSimplificationOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSplittingOperation;
+import com.henriquemalheiro.trackit.business.operation.UndoItem;
+import com.henriquemalheiro.trackit.business.operation.UndoableActionType;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
 import com.henriquemalheiro.trackit.presentation.event.Event;
@@ -562,6 +564,164 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}).execute();
 	}
+	
+	public void undo(final UndoItem item) {
+		Objects.requireNonNull(item);
+		final String operationType = item.getOperationType();
+		final Course course = item.getFirstCourse();
+		final GPSDocument masterDocument = course.getParent();
+		
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.reverse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+
+				UndoableActionType menuAction = UndoableActionType.lookup(operationType);
+				switch (menuAction) {
+					case ADD_TRACKPOINT:
+						break;
+					case REMOVE_TRACKPOINT:
+						break;
+					case JOIN:
+						break;
+					case SPLIT:
+						break;
+					case REVERSE:
+						return undoReverse(course);
+				case ADD_PAUSE:
+						break;
+					case REMOVE_PAUSE:
+						break;
+					case SET_PACE:
+						break;
+					default:
+						// Do nothing
+						}		
+				return undoReverse(course);
+			}
+
+			private Course undoReverse(Course course) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(
+						com.henriquemalheiro.trackit.business.common.Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+
+				ReverseOperation reverseOperation = new ReverseOperation(
+						options);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(
+						options);
+
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+
+				try {
+					reverseOperation.undoOperation(document);
+					consolidationOP.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			public void done(Object result) {
+				Course course = (Course) result;
+				course.setParent(masterDocument);
+				masterDocument.publishUpdateEvent(null);
+				course.setUnsavedTrue();
+				course.publishSelectionEvent(null);
+			}
+		}).execute();
+	}
+	
+	public void redo(final UndoItem item) {
+		Objects.requireNonNull(item);
+		final String operationType = item.getOperationType();
+		final Course course = item.getFirstCourse();
+		final GPSDocument masterDocument = course.getParent();
+		
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.reverse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+
+				UndoableActionType menuAction = UndoableActionType.lookup(operationType);
+				switch (menuAction) {
+					case ADD_TRACKPOINT:
+						break;
+					case REMOVE_TRACKPOINT:
+						break;
+					case JOIN:
+						break;
+					case SPLIT:
+						break;
+					case REVERSE:
+						return redoReverse(course);
+				case ADD_PAUSE:
+						break;
+					case REMOVE_PAUSE:
+						break;
+					case SET_PACE:
+						break;
+					default:
+						// Do nothing
+						}		
+				return redoReverse(course);
+			}
+
+			private Course redoReverse(Course course) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(
+						com.henriquemalheiro.trackit.business.common.Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+
+				ReverseOperation reverseOperation = new ReverseOperation(
+						options);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(
+						options);
+
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+
+				try {
+					reverseOperation.undoOperation(document);
+					consolidationOP.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			public void done(Object result) {
+				Course course = (Course) result;
+				course.setParent(masterDocument);
+				masterDocument.publishUpdateEvent(null);
+				course.setUnsavedTrue();
+				course.publishSelectionEvent(null);
+			}
+		}).execute();
+	}
+	
+	
 
 	public void addLap(final Course course, final Trackpoint trackpoint) {
 		Objects.requireNonNull(course);

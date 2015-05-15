@@ -47,6 +47,7 @@ import com.henriquemalheiro.trackit.business.common.OperatingSystem;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.presentation.task.ActionType;
 import com.henriquemalheiro.trackit.presentation.utilities.Operation;
 import com.pg58406.trackit.business.utility.AboutDialog;
@@ -86,16 +87,15 @@ class ApplicationMenu {
 		return applicationMenu;
 	}
 	
-	void refreshMenu(List<DocumentItem> items) {
+	void refreshMenu(List<DocumentItem> items, UndoManagerCustom undoManager) {
 		boolean singleItem = (items.size() == 1 && !(items.get(0) instanceof Folder));
 		
 		importMenu.setEnabled(singleItem);
 		exportMenu.setEnabled(singleItem && (items.get(0).isActivity() || items.get(0).isCourse()));
 		splitAtSelectedMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
 		reverseMenu.setEnabled(singleItem && items.get(0).isCourse());
-		undoMenu.setEnabled(singleItem);//57421
-		redoMenu.setEnabled(singleItem);//57421
 		
+			
 		boolean joinMenuEnabled = true;
 		joinMenuEnabled &= (items.size() > 1);
 		for (DocumentItem item : items) {
@@ -117,6 +117,9 @@ class ApplicationMenu {
 				menuItem.setEnabled(false);
 			}
 		}
+		logger.debug("\nUNDOMANAGER " + undoManager.canUndo() + "\n");
+		undoMenu.setEnabled(undoManager.canUndo());//57421
+		redoMenu.setEnabled(undoManager.canRedo());//57421
 	}
 	
 	private boolean actionSupported(List<ActionType> supportedActions, ActionType action) {

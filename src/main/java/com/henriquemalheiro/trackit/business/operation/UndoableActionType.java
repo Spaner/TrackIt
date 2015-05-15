@@ -19,22 +19,23 @@
  */
 package com.henriquemalheiro.trackit.business.operation;
 
-import java.util.List;
-
-import com.henriquemalheiro.trackit.business.domain.GPSDocument;
-import com.henriquemalheiro.trackit.business.exception.TrackItException;
-
-public interface Operation {
-	String getName();
-	void process(GPSDocument document) throws TrackItException;
-	void process(List<GPSDocument> document) throws TrackItException;
+//57421
+public enum UndoableActionType {
+	ADD_TRACKPOINT,
+	REMOVE_TRACKPOINT,
+	JOIN,
+	SPLIT,
+	REVERSE,
+	ADD_PAUSE,
+	REMOVE_PAUSE,
+	SET_PACE;
 	
-	void undoOperation(GPSDocument document) throws TrackItException; //57421
-	void undoOperation(List<GPSDocument> document) throws TrackItException; //57421
-	void redoOperation(GPSDocument document) throws TrackItException; //57421
-	void redoOperation(List<GPSDocument> document) throws TrackItException; //57421
-	
-	void start(String message);
-	void finish(String message);
-	void setProgress(int progress, String message);
+	public static UndoableActionType lookup(String menuAction) {
+		for (UndoableActionType menuActionType : values()) {
+			if (menuActionType.name().equalsIgnoreCase(menuAction)) {
+				return menuActionType;
+			}
+		}
+		return null;
+	}
 }

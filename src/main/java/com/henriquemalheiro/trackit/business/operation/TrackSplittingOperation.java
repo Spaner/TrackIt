@@ -203,4 +203,26 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 		newCourse.consolidate(ConsolidationLevel.SUMMARY);
 		newCourse.setAttribute(Constants.PAINTING_ATTRIBUTES.COLOR_SCHEME, ColorScheme.getNextColorScheme());
 	}
+
+	@Override
+	public void undoOperation(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void undoOperation(List<GPSDocument> document) throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void redoOperation(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub	
+	}
+
+	@Override
+	public void redoOperation(List<GPSDocument> document) throws TrackItException {
+		// TODO Auto-generated method stub	
+	}
 }

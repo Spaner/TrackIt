@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
+import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
 import com.henriquemalheiro.trackit.business.operation.event.OperationEvent;
@@ -90,6 +91,18 @@ public abstract class OperationBase implements Operation {
 	
 	@Override
 	public abstract void process(List<GPSDocument> document) throws TrackItException;
+	
+	@Override
+	public abstract void undoOperation(GPSDocument document) throws TrackItException;
+	
+	@Override
+	public abstract void undoOperation(List<GPSDocument> document) throws TrackItException;
+
+	@Override
+	public abstract void redoOperation(GPSDocument document) throws TrackItException;
+	
+	@Override
+	public abstract void redoOperation(List<GPSDocument> document) throws TrackItException;
 	
 	@Override
 	public final void start(String message) {

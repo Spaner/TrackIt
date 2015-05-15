@@ -66,6 +66,8 @@ import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
 import com.henriquemalheiro.trackit.business.operation.AltitudeSmoothing;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
+import com.henriquemalheiro.trackit.business.operation.UndoItem;
+import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 import com.henriquemalheiro.trackit.business.utility.Utilities;
 import com.henriquemalheiro.trackit.business.writer.Writer;
@@ -112,6 +114,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private LogView logView;
 
 	private List<DocumentItem> selectedItems;
+	
+	private UndoManagerCustom undoManager;
 
 	private static Logger logger = Logger.getLogger(ApplicationPanel.class
 			.getName());
@@ -179,6 +183,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		eventManager.register(this);
 
 		selectedItems = new ArrayList<DocumentItem>();
+		
+		undoManager = new UndoManagerCustom();
 	}
 
 	private void layoutComponents() {
@@ -381,6 +387,14 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 				case REMOVE_PAUSES:
 					removePauses();
 					break;
+				// 57421--------------------------------------------------
+				case UNDO:
+					undo();
+					break;
+				case REDO:
+					redo();
+					break;
+				// -------------------------------------------------------
 				default:
 					// Do nothing
 				}
@@ -671,6 +685,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void reverse() {
+		String name = "REVERSE";
+		List<Course> courseList = new ArrayList<Course>();
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
@@ -680,7 +696,29 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		if (option == JOptionPane.YES_OPTION) {
 			DocumentManager documentManager = DocumentManager.getInstance();
 			Course course = (Course) selectedItems.get(0);
+			courseList.add(course);
+			UndoItem item = new UndoItem(name, courseList);
+			undoManager.addItem(item);
 			documentManager.reverse(course);
+			
+		}
+	}
+	
+	private void undo(){
+		if(undoManager.canUndo()){
+			DocumentManager documentManager = DocumentManager.getInstance();
+			UndoItem item = new UndoItem();
+			item = undoManager.undo();
+			documentManager.undo(item);
+		}
+	}
+	
+	private void redo(){
+		if(undoManager.canRedo()){
+			DocumentManager documentManager = DocumentManager.getInstance();
+			UndoItem item = new UndoItem();
+			item = undoManager.redo();
+			documentManager.redo(item);
 		}
 	}
 
@@ -760,7 +798,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void processItemSelected(DocumentItem item) {
-		applicationMenu.refreshMenu(Arrays.asList(item));
+		applicationMenu.refreshMenu(Arrays.asList(item), undoManager);
 	}
 
 	@Override
@@ -772,7 +810,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			selectedItems.add(parent);
 		}
 		applicationMenu.refreshMenu(Utilities
-				.<DocumentItem> convert(selectedItems));
+				.<DocumentItem> convert(selectedItems), undoManager);
 	}
 
 	@Override
