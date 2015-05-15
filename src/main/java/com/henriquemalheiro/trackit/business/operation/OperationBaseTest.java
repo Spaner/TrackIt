@@ -1,4 +1,3 @@
-
 /*
  * This file is part of Track It!.
  * Copyright (C) 2013 Henrique Malheiro
@@ -18,7 +17,7 @@
  * along with Track It!. If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-package com.henriquemalheiro.trackit.business.operation;
+/*package com.henriquemalheiro.trackit.business.operation;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,7 @@ import com.henriquemalheiro.trackit.business.operation.event.OperationEventManag
 import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 
 
-public abstract class OperationBase implements Operation {
+public class OperationBaseTest implements Operation {
 	private long executionTime;
 	protected Map<String, Object> options;
 	protected Logger logger = Logger.getLogger(OperationBase.class.getName());
@@ -45,16 +44,16 @@ public abstract class OperationBase implements Operation {
 	protected boolean processCourses;
 	protected boolean processWaypoints;
 	
-	public OperationBase() {
+	public OperationBaseTest() {
 		setUp();
 	}
 	
-	public OperationBase(Map<String, Object> options) {
+	public OperationBaseTest(Map<String, Object> options) {
 		this();
 		this.options.putAll(options);
 	}
 	
-	private void setUp() {
+	public void setUp() {
 		setDefaultOptions();
 		processFolders = (Boolean) options.get(Constants.Operation.PROCESS_FOLDERS);
 		processActivities = (Boolean) options.get(Constants.Operation.PROCESS_ACTIVITIES);
@@ -62,7 +61,7 @@ public abstract class OperationBase implements Operation {
 		processWaypoints = (Boolean) options.get(Constants.Operation.PROCESS_WAYPOINTS);
 	}
 	
-	private void setDefaultOptions() {
+	public void setDefaultOptions() {
 		options = new HashMap<String, Object>();
 		setDefaultOption(Constants.Operation.PROCESS_FOLDERS, false);
 		setDefaultOption(Constants.Operation.PROCESS_ACTIVITIES, true);
@@ -70,26 +69,30 @@ public abstract class OperationBase implements Operation {
 		setDefaultOption(Constants.Operation.PROCESS_WAYPOINTS, true);
 	}
 	
-	private void setDefaultOption(String optionName, boolean defaultValue) {
+	public void setDefaultOption(String optionName, boolean defaultValue) {
 		options.put(optionName, getStoredOption(optionName, defaultValue));
 	}
 	
-	private boolean getStoredOption(String optionName, boolean defaultValue) {
+	public boolean getStoredOption(String optionName, boolean defaultValue) {
 		TrackItPreferences prefs = TrackIt.getPreferences(); 
 		return prefs.getBooleanPreference(Constants.PrefsCategories.OPERATION, null,
 				optionName, defaultValue);
 	}
 	
-	
-	
-	@Override
-	public abstract String getName();
+	//Operation interface 
 	
 	@Override
-	public abstract void process(GPSDocument document) throws TrackItException;
+	public String getName() {
+		return null;
+	}
 	
 	@Override
-	public abstract void process(List<GPSDocument> document) throws TrackItException;
+	public void process(GPSDocument document) throws TrackItException {
+	}
+	
+	@Override
+	public void process(List<GPSDocument> document) throws TrackItException {
+	}
 	
 	@Override
 	public final void start(String message) {
@@ -106,7 +109,7 @@ public abstract class OperationBase implements Operation {
 		OperationEventManager.getInstance().publishOperationEvent(OperationEvent.OPERATION_PROGRESS, Integer.valueOf(progress), message);
 	}
 	
-
+	//Execution Time
 	
 	void startTimer() {
 		executionTime = System.currentTimeMillis();
@@ -119,5 +122,4 @@ public abstract class OperationBase implements Operation {
 	void logExecutionTime() {
 		logger.info(String.format("Operation %s executed in " + executionTime + " miliseconds."));
 	}
-}
-
+}*/
