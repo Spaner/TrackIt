@@ -7,7 +7,7 @@
 
 	<groupId>com.henriquemalheiro</groupId>
 	<artifactId>TrackIt</artifactId>
-	<version>1.1.00</version>
+	<version>1.2.00</version>
 	<packaging>jar</packaging>
 
 	<name>TrackIt</name>

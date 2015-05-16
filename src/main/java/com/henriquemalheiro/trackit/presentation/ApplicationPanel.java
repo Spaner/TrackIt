@@ -115,7 +115,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private List<DocumentItem> selectedItems;
 	
-	private UndoManagerCustom undoManager;
+	//private UndoManagerCustom undoManager;
 
 	private static Logger logger = Logger.getLogger(ApplicationPanel.class
 			.getName());
@@ -184,7 +184,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 		selectedItems = new ArrayList<DocumentItem>();
 		
-		undoManager = new UndoManagerCustom();
+		//undoManager = new UndoManagerCustom();
 	}
 
 	private void layoutComponents() {
@@ -685,8 +685,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void reverse() {
-		String name = "REVERSE";
-		List<Course> courseList = new ArrayList<Course>();
+		//String name = "REVERSE";
+		//List<Course> courseList = new ArrayList<Course>();
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
@@ -696,30 +696,35 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		if (option == JOptionPane.YES_OPTION) {
 			DocumentManager documentManager = DocumentManager.getInstance();
 			Course course = (Course) selectedItems.get(0);
-			courseList.add(course);
-			UndoItem item = new UndoItem(name, courseList);
-			undoManager.addItem(item);
+			//courseList.add(course);
+			//UndoItem item = new UndoItem(name, courseList, null);
+			//documentManager.addUndoItem(item);
 			documentManager.reverse(course);
 			
 		}
 	}
 	
 	private void undo(){
-		if(undoManager.canUndo()){
+		/*if(undoManager.canUndo()){
 			DocumentManager documentManager = DocumentManager.getInstance();
 			UndoItem item = new UndoItem();
 			item = undoManager.undo();
 			documentManager.undo(item);
-		}
+		}*/
+		DocumentManager documentManager = DocumentManager.getInstance();
+		documentManager.undo();
 	}
 	
 	private void redo(){
-		if(undoManager.canRedo()){
+		/*if(undoManager.canRedo()){
 			DocumentManager documentManager = DocumentManager.getInstance();
 			UndoItem item = new UndoItem();
 			item = undoManager.redo();
 			documentManager.redo(item);
 		}
+		*/
+		DocumentManager documentManager = DocumentManager.getInstance();
+		documentManager.redo();
 	}
 
 	private void setPace() {
@@ -798,7 +803,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void processItemSelected(DocumentItem item) {
-		applicationMenu.refreshMenu(Arrays.asList(item), undoManager);
+		DocumentManager documentManager = DocumentManager.getInstance();
+		applicationMenu.refreshMenu(Arrays.asList(item), documentManager.getUndoManager());
 	}
 
 	@Override
@@ -809,8 +815,9 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		if (selectedItems.isEmpty()) {
 			selectedItems.add(parent);
 		}
+		DocumentManager documentManager = DocumentManager.getInstance();
 		applicationMenu.refreshMenu(Utilities
-				.<DocumentItem> convert(selectedItems), undoManager);
+				.<DocumentItem> convert(selectedItems), documentManager.getUndoManager());
 	}
 
 	@Override

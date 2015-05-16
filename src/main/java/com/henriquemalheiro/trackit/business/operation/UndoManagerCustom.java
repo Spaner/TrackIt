@@ -22,8 +22,15 @@ public class UndoManagerCustom {
 		return false;
 	}
 	
+	private boolean itemAfterCurrentIndex(){
+		if(itemList.listIterator(currentIndex).hasNext()){
+			return true;
+		}
+		return false;
+		}
+	
 	public boolean canRedo(){
-		boolean redoActionPossible = itemList.listIterator(currentIndex).hasNext();
+		boolean redoActionPossible = itemAfterCurrentIndex();
 		if(currentIndex >= 0 && !itemList.isEmpty() &&  redoActionPossible){ 
 			return true; 
 			}
@@ -36,6 +43,9 @@ public class UndoManagerCustom {
 	
 	public void addItem(UndoItem item){
 		if(currentIndex >= 0){
+			if(itemAfterCurrentIndex()){
+				newItemClear();
+			}
 			itemList.add(item);
 			currentIndex++;
 		}

@@ -71,6 +71,7 @@ import com.henriquemalheiro.trackit.business.operation.SettingPaceOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSimplificationOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSplittingOperation;
 import com.henriquemalheiro.trackit.business.operation.UndoItem;
+import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.business.operation.UndoableActionType;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
@@ -96,7 +97,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	private Folder selectedFolder;
 	private Database database;
 	
-	private UndoManager undoManager; //57421
+	private UndoManagerCustom undoManager; //57421
 
 	private enum ReadMode {
 		OPEN, IMPORT
@@ -128,7 +129,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 		database = Database.getInstance();
 		
-		undoManager = new UndoManager(); //57421
+		undoManager = new UndoManagerCustom(); //57421
 	}
 
 	public List<GPSDocument> getDocuments(String folderName) {
@@ -513,8 +514,16 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	public void reverse(final Course course) {
+		
 		Objects.requireNonNull(course);
 		final GPSDocument masterDocument = course.getParent();
+		
+		String name = "REVERSE";
+		List<Course> courseList = new ArrayList<Course>();
+		
+		courseList.add(course);
+		UndoItem item = new UndoItem(name, courseList, null);
+		addUndoItem(item);
 
 		new Task(new Action() {
 
@@ -565,7 +574,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 	
-	public void undo(final UndoItem item) {
+	public void undo() {
+		UndoItem item = new UndoItem();
+		item = undoManager.undo();
 		Objects.requireNonNull(item);
 		final String operationType = item.getOperationType();
 		final Course course = item.getFirstCourse();
@@ -594,7 +605,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 						break;
 					case REVERSE:
 						return undoReverse(course);
-				case ADD_PAUSE:
+					case ADD_PAUSE:
 						break;
 					case REMOVE_PAUSE:
 						break;
@@ -643,7 +654,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 	
-	public void redo(final UndoItem item) {
+	public void redo() {
+		UndoItem item = new UndoItem();
+		item = undoManager.redo();
 		Objects.requireNonNull(item);
 		final String operationType = item.getOperationType();
 		final Course course = item.getFirstCourse();
@@ -719,6 +732,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 				course.publishSelectionEvent(null);
 			}
 		}).execute();
+	}
+	
+	public void addUndoItem(UndoItem item){
+		undoManager.addItem(item);
+	}
+	
+	public UndoManagerCustom getUndoManager(){
+		return undoManager;
 	}
 	
 	
@@ -1020,7 +1041,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	public void addTrackpoint(final Course course, final Trackpoint trackpoint) {
 		addTrackpoint(course, trackpoint, course.getTrackpoints().size());
 	}
-
+	
 	public void addTrackpoint(final Course course, final Trackpoint trackpoint,
 			final int index) {
 		final GPSDocument masterDocument = course.getParent();
@@ -1081,6 +1102,67 @@ public class DocumentManager implements EventPublisher, EventListener {
 		};
 		worker.execute();
 	}
+
+	/*public void addTrackpoint(final Course course, final Trackpoint trackpoint,
+			final int index) {
+		final GPSDocument masterDocument = course.getParent();
+		final String courseName = course.getName();// 58406
+		final String filepath = course.getFilepath();
+
+		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
+			@Override
+			protected Course doInBackground() {
+				trackpoint.setParent(course);
+				course.getTrackpoints().add(index, trackpoint);
+
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				publish(document.getCourses().get(0));
+
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.RECALCULATION);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+			}
+
+			@Override
+			protected void done() {
+				try {
+					Course course = get();
+					if (course != null) {
+						course.setParent(masterDocument);
+						course.publishUpdateEvent(null);
+					}
+				} catch (InterruptedException | ExecutionException ignore) {
+				}
+				course.setName(courseName);
+				course.setFilepath(filepath);
+			}
+		};
+		worker.execute();
+	}*/
 
 	public void removeTrackpoint(final Course course,
 			final Trackpoint trackpoint) {
