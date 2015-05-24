@@ -66,8 +66,6 @@ import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
 import com.henriquemalheiro.trackit.business.operation.AltitudeSmoothing;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
-import com.henriquemalheiro.trackit.business.operation.UndoItem;
-import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 import com.henriquemalheiro.trackit.business.utility.Utilities;
 import com.henriquemalheiro.trackit.business.writer.Writer;
@@ -115,7 +113,6 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private List<DocumentItem> selectedItems;
 	
-	//private UndoManagerCustom undoManager;
 
 	private static Logger logger = Logger.getLogger(ApplicationPanel.class
 			.getName());
@@ -183,8 +180,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		eventManager.register(this);
 
 		selectedItems = new ArrayList<DocumentItem>();
-		
-		//undoManager = new UndoManagerCustom();
+
 	}
 
 	private void layoutComponents() {
@@ -685,44 +681,54 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void reverse() {
-		//String name = "REVERSE";
-		//List<Course> courseList = new ArrayList<Course>();
+		Object[] options = {"Reverse",
+                "Way Back",
+                "Cancel"};
+		
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
 				Messages.getMessage("applicationPanel.title.warning"),
 				JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+		
 
 		if (option == JOptionPane.YES_OPTION) {
-			DocumentManager documentManager = DocumentManager.getInstance();
-			Course course = (Course) selectedItems.get(0);
-			//courseList.add(course);
-			//UndoItem item = new UndoItem(name, courseList, null);
-			//documentManager.addUndoItem(item);
-			documentManager.reverse(course);
+			
+			int wayBackOption = JOptionPane.showOptionDialog(
+					TrackIt.getApplicationFrame(), 
+					Messages.getMessage("applicationPanel.reverse.wayBack"),
+					Messages.getMessage("applicationPanel.title.wayBackTitle"),
+					JOptionPane.YES_NO_CANCEL_OPTION,
+					JOptionPane.QUESTION_MESSAGE,
+					null,
+					options,
+					options[2]);
+			
+			if(wayBackOption == JOptionPane.NO_OPTION){
+				
+				DocumentManager documentManager = DocumentManager.getInstance();
+				Course course = (Course) selectedItems.get(0);
+				documentManager.reverse(course);
+			}
+			
+			if(wayBackOption == JOptionPane.YES_OPTION){
+				
+				DocumentManager documentManager = DocumentManager.getInstance();
+				Course course = (Course) selectedItems.get(0);
+				documentManager.reverse(course);
+			}
+					
+
 			
 		}
 	}
 	
 	private void undo(){
-		/*if(undoManager.canUndo()){
-			DocumentManager documentManager = DocumentManager.getInstance();
-			UndoItem item = new UndoItem();
-			item = undoManager.undo();
-			documentManager.undo(item);
-		}*/
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.undo();
 	}
 	
 	private void redo(){
-		/*if(undoManager.canRedo()){
-			DocumentManager documentManager = DocumentManager.getInstance();
-			UndoItem item = new UndoItem();
-			item = undoManager.redo();
-			documentManager.redo(item);
-		}
-		*/
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.redo();
 	}

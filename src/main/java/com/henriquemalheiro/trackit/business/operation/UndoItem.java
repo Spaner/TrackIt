@@ -2,57 +2,61 @@ package com.henriquemalheiro.trackit.business.operation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
-
-import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 
 public class UndoItem {
 	
 	private String operationType;
-	private List<Course> changedCourses;
+	private List<Long> changedCoursesIds;
+	private long documentId;
 	private Trackpoint trackpoint;
 	
-	public UndoItem() {
-		changedCourses = new ArrayList<Course>();
+	public UndoItem(){
 	}
 	
-	public UndoItem(String operation, List<Course> courseList, Trackpoint trackpoint) {
+	public UndoItem(String operation, long documentId, List<Long> coursesIds, Trackpoint trackpoint) {
 		this.operationType = operation;
-		this.changedCourses = new ArrayList<Course>();
+		this.changedCoursesIds = new ArrayList<Long>();
 		this.trackpoint = trackpoint;
-		addCourses(changedCourses, courseList);
+		this.documentId = documentId;
+		addCourses(changedCoursesIds, coursesIds);
 		
 	}
-	
 	
 	public String getOperationType(){
 		return operationType;
 	}
 	
-	public void addCourses(List<Course> newList, List<Course> courseList){
-		int listIndex = 0;
-		while (listIndex < courseList.size()) {
-			newList.add(courseList.get(listIndex));
-			listIndex++;
-		}
+	public List<Long> getCoursesIds(){
+		return changedCoursesIds;
 	}
 	
-	public List<Course> getCourses(){
-		return changedCourses;
+	public long getDocumentId(){
+		return documentId;
 	}
 	
 	public Trackpoint getTrackpoint(){
 		return trackpoint;
 	}
 	
-	public Course getCourseAt(int index){
-		return changedCourses.get(index);
+	public long getFirstCourseId(){
+		int first = 0;
+		return changedCoursesIds.get(first);
 	}
 	
-	public Course getFirstCourse(){
-		int first = 0;
-		return changedCourses.get(first);
+	public long getCourseIdAt(int index){
+		return changedCoursesIds.get(index);
 	}
+	
+	
+	
+	private void addCourses(List<Long> newList, List<Long> courseIds){
+		int listIndex = 0;
+		while (listIndex < courseIds.size()) {
+			newList.add(courseIds.get(listIndex));
+			listIndex++;
+		}
+	}
+
 		
 }

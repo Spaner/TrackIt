@@ -76,7 +76,7 @@ public class ReverseOperation extends OperationBase implements Operation {
 		
 		while (iter.hasPrevious()) {
 			trackpoint = iter.previous();
-			
+						
 			timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
 			distanceFromPreviousTemp = trackpoint.getDistanceFromPrevious();
 			
@@ -89,10 +89,12 @@ public class ReverseOperation extends OperationBase implements Operation {
 			newTrackpointsList.add(trackpoint);
 		}
 		
+		updateTrackpoints(newTrackpointsList);
+		
 		course.getTrackpoints().clear();
 		course.setTrackpoints(newTrackpointsList);
 		
-		updateTrackpoints(newTrackpointsList);
+		
 	}
 
 	private void updateTrackpoints(List<Trackpoint> newTrackpointsList) {

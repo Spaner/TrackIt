@@ -2,86 +2,65 @@ package com.henriquemalheiro.trackit.business.operation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class UndoManagerCustom {
 
-	private List<UndoItem> itemList;
-	private int currentIndex;
+	private List<UndoItem> undoItemList;
+	private List<UndoItem> redoItemList;
+	private boolean canUndo;
+	private boolean canRedo;
 	
 	public UndoManagerCustom(){
-		itemList = new ArrayList<UndoItem>();
-		currentIndex = 0;
+		undoItemList = new ArrayList<UndoItem>();
+		redoItemList = new ArrayList<UndoItem>();
+		canUndo = false;
+		canRedo = false;
 	}
-	
 	
 	public boolean canUndo(){
-		if(currentIndex > 0 && !itemList.isEmpty()) { 
-			return true; 
-			}
-		return false;
+		return canUndo;
 	}
-	
-	private boolean itemAfterCurrentIndex(){
-		if(itemList.listIterator(currentIndex).hasNext()){
-			return true;
-		}
-		return false;
-		}
 	
 	public boolean canRedo(){
-		boolean redoActionPossible = itemAfterCurrentIndex();
-		if(currentIndex >= 0 && !itemList.isEmpty() &&  redoActionPossible){ 
-			return true; 
-			}
-		return false;
+		return canRedo;
 	}
 	
-	public int getIndex(){
-		return currentIndex;
+	public void pushUndo(UndoItem item){
+		undoItemList.add(item);
+		canUndo = true;
 	}
-	
-	public void addItem(UndoItem item){
-		if(currentIndex >= 0){
-			if(itemAfterCurrentIndex()){
-				newItemClear();
-			}
-			itemList.add(item);
-			currentIndex++;
+
+	public UndoItem popUndo(){
+		int itemIndex = undoItemList.size() - 1;
+		UndoItem popItem = undoItemList.get(itemIndex);
+		undoItemList.remove(itemIndex);
+		pushRedo(popItem);
+		if(undoItemList.isEmpty()){
+			canUndo = false;
 		}
+		return popItem;
 	}
 	
-	public void removeItem(){
-		if(currentIndex > 0){
-			itemList.remove(currentIndex);
-			currentIndex--;
+	
+	public void pushRedo(UndoItem item){
+		redoItemList.add(item);
+		canRedo = true;
+	}
+	
+	public UndoItem popRedo(){
+		int itemIndex = redoItemList.size() - 1;
+		UndoItem popItem = redoItemList.get(itemIndex);
+		redoItemList.remove(itemIndex);
+		pushUndo(popItem);
+		if(redoItemList.isEmpty()){
+			canRedo = false;
 		}
+		return popItem;
 	}
 	
-	public UndoItem getItem(){
-		return itemList.get(currentIndex);
-	}
-	
-	public UndoItem undo(){
-		UndoItem item = new UndoItem();
-		currentIndex--;
-		item = getItem();
-		return item;
-	}
-	
-	public UndoItem redo(){
-		UndoItem item = new UndoItem();
-		item = getItem();
-		currentIndex++;
-		return item;
-	}
-	
-	public void newItemClear(){
-		ListIterator<UndoItem> iterator = itemList.listIterator(currentIndex);
-		while(iterator.hasNext()){
-			itemList.remove(currentIndex);
-		}
-		currentIndex++;
+	public void clearRedo(){
+		redoItemList.clear();
+		canRedo = false;
 	}
 	
 	

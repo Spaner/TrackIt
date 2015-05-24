@@ -30,10 +30,10 @@ public enum UndoableActionType {
 	REMOVE_PAUSE,
 	SET_PACE;
 	
-	public static UndoableActionType lookup(String menuAction) {
-		for (UndoableActionType menuActionType : values()) {
-			if (menuActionType.name().equalsIgnoreCase(menuAction)) {
-				return menuActionType;
+	public static UndoableActionType lookup(String action) {
+		for (UndoableActionType actionType : values()) {
+			if (actionType.name().equalsIgnoreCase(action)) {
+				return actionType;
 			}
 		}
 		return null;
