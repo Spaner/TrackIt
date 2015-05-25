@@ -390,6 +390,9 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 				case REDO:
 					redo();
 					break;
+				case COPY:
+					copy();
+					break;
 				// -------------------------------------------------------
 				default:
 					// Do nothing
@@ -685,6 +688,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
                 "Way Back",
                 "Cancel"};
 		
+		boolean wayback;
+		
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
@@ -706,16 +711,18 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			
 			if(wayBackOption == JOptionPane.NO_OPTION){
 				
+				wayback = true;
 				DocumentManager documentManager = DocumentManager.getInstance();
 				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course);
+				documentManager.reverse(course, wayback);
 			}
 			
 			if(wayBackOption == JOptionPane.YES_OPTION){
 				
+				wayback = false;
 				DocumentManager documentManager = DocumentManager.getInstance();
 				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course);
+				documentManager.reverse(course, wayback);
 			}
 					
 
@@ -731,6 +738,12 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private void redo(){
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.redo();
+	}
+	
+	private void copy(){
+		DocumentManager documentManager = DocumentManager.getInstance();
+		Course course = (Course) selectedItems.get(0);
+		documentManager.copy(course);
 	}
 
 	private void setPace() {

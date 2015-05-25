@@ -59,6 +59,7 @@ import com.henriquemalheiro.trackit.business.operation.ActivityToCourseOperation
 import com.henriquemalheiro.trackit.business.operation.AddLapOperation;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationOperation;
+import com.henriquemalheiro.trackit.business.operation.CopyOperation;
 import com.henriquemalheiro.trackit.business.operation.DetectClimbsDescentsOperation;
 import com.henriquemalheiro.trackit.business.operation.JoiningOperation;
 import com.henriquemalheiro.trackit.business.operation.MarkingOperation;
@@ -515,7 +516,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void reverse(final Course course) {
+	public void reverse(final Course course, final boolean wayback) {
 		
 		Objects.requireNonNull(course);
 		final GPSDocument masterDocument = course.getParent();
@@ -549,7 +550,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				document.add(course);
 
 				try {
-					reverseOperation.process(document);
+					reverseOperation.process(document, wayback);
 					consolidationOP.process(document);
 				} catch (TrackItException e) {
 					logger.error(e.getMessage());
@@ -579,6 +580,74 @@ public class DocumentManager implements EventPublisher, EventListener {
 		UndoItem item = new UndoItem(name, documentId, courseId, null);
 		undoManager.pushUndo(item);
 	}
+	
+	public void copy(final Course course) {
+		
+		Objects.requireNonNull(course);
+		final GPSDocument masterDocument = course.getParent();
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.copy");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return copy(course);
+			}
+
+			private List<Course> copy(Course course) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.CopyOperation.COURSE, course);
+
+				CopyOperation copyOperation = new CopyOperation(
+						options);
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+
+				try {
+					copyOperation.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+			
+			@SuppressWarnings("unchecked")
+			@Override
+			public void done(Object result) {
+				List<Course> courses = (List<Course>) result;
+				for (Course course : courses) {
+					course.setParent(masterDocument);
+					course.setUnsavedTrue();
+				}
+
+				masterDocument.remove(course);
+				masterDocument.addCourses(courses);
+
+				masterDocument.publishUpdateEvent(null);
+				courses.get(0).publishSelectionEvent(null);
+			}
+			
+			
+		}).execute();
+		
+		String name = "REVERSE";
+		List<Long> courseId = new ArrayList<Long>();
+		long documentId = masterDocument.getId();
+		
+		courseId.add(course.getId());
+		UndoItem item = new UndoItem(name, documentId, courseId, null);
+		undoManager.pushUndo(item);
+	}
+	
+	
+	
 	
 	public Course getCourse(GPSDocument document, long courseId){
 		ListIterator<Course> iter = document.getCourses().listIterator();
@@ -612,7 +681,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages.getMessage("documentManager.message.reverse");
+				return Messages.getMessage("documentManager.message.undo");
 			}
 
 			@Override
@@ -698,7 +767,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages.getMessage("documentManager.message.reverse");
+				return Messages.getMessage("documentManager.message.redo");
 			}
 
 			@Override

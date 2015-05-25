@@ -70,6 +70,7 @@ class ApplicationMenu {
 	private JMenuItem pictureMenu;//58406
 	private JMenuItem undoMenu;//57421
 	private JMenuItem redoMenu;//57421
+	private JMenuItem copyMenu;//57421
 	private JMenuItem removePausesMenu;	
 	private static Map<ActionType, JMenuItem> menuActionMap;
 	private static Logger logger = Logger.getLogger(ApplicationMenu.class);
@@ -94,6 +95,7 @@ class ApplicationMenu {
 		exportMenu.setEnabled(singleItem && (items.get(0).isActivity() || items.get(0).isCourse()));
 		splitAtSelectedMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
 		reverseMenu.setEnabled(singleItem && items.get(0).isCourse());
+		copyMenu.setEnabled(singleItem && items.get(0).isCourse());
 		
 			
 		boolean joinMenuEnabled = true;
@@ -117,7 +119,7 @@ class ApplicationMenu {
 				menuItem.setEnabled(false);
 			}
 		}
-		logger.debug("\nUNDOMANAGER " + undoManager.canUndo() + "\n");
+		//logger.debug("\nUNDOMANAGER " + undoManager.canUndo() + "\n");
 		undoMenu.setEnabled(undoManager.canUndo());//57421
 		redoMenu.setEnabled(undoManager.canRedo());//57421
 	}
@@ -139,6 +141,7 @@ class ApplicationMenu {
 		menuActionMap.put(ActionType.AUTO_LOCATE_PICTURES, autoLocatePicturesMenu);
 		menuActionMap.put(ActionType.UNDO, undoMenu);
 		menuActionMap.put(ActionType.REDO, redoMenu);
+		menuActionMap.put(ActionType.COPY, copyMenu);
 	}
 
 	private void createApplicationMenu(ActionListener handler) {
@@ -295,7 +298,7 @@ class ApplicationMenu {
 		menu.addSeparator();
 		//<------------------------------------------------------------------------>
 		
-        menuItem = new JMenuItem(new DefaultEditorKit.CopyAction());
+        /*menuItem = new JMenuItem(new DefaultEditorKit.CopyAction());
         menuItem.setText("Copy");
         menuItem.setMnemonic(KeyEvent.VK_C);
         accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.copy")).getKeyCode();
@@ -303,7 +306,19 @@ class ApplicationMenu {
 		menuItem.setAccelerator(keyStroke);
         menu.add(menuItem);
 
-        menu.addSeparator();
+        menu.addSeparator();*/
+		
+		copyMenu = new JMenuItem(getMessage("applicationPanel.menu.copy"), KeyEvent.VK_C);
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.copyAccelerator")).getKeyCode();
+		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		copyMenu.setAccelerator(keyStroke);
+		copyMenu.getAccessibleContext().setAccessibleDescription("Copies the selected course.");
+		copyMenu.setActionCommand(MenuActionType.COPY.name());
+		copyMenu.addActionListener(handler);
+		copyMenu.setEnabled(false);
+		menu.add(copyMenu);
+		
+		menu.addSeparator();
 		
 		splitAtSelectedMenu = new JMenuItem(getMessage("applicationPanel.menu.splitAtSelected"), KeyEvent.VK_S);
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.splitAtSelectedAccelerator")).getKeyCode();

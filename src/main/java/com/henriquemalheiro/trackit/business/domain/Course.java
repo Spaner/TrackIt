@@ -146,6 +146,7 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		colorScheme = TrackIt.getDefaultColorScheme();// 58406
 		noSpeedInFile = true;//58406
 	}
+	
 
 	// 58406###################################################################################
 
@@ -1393,6 +1394,7 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		supportedActions.add(ActionType.DETECT_PAUSES);// 58406
 		supportedActions.add(ActionType.REMOVE_PAUSES);
 		supportedActions.add(ActionType.IMPORT_PICTURE);// 58406
+		supportedActions.add(ActionType.COPY);// 57421
 		if(!pictures.isEmpty()){
 			supportedActions.add(ActionType.AUTO_LOCATE_PICTURES);//58406
 		}
@@ -1518,6 +1520,10 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	@Override
 	public List<Picture> getPictures() {
 		return pictures;
+	}
+	
+	public void setPictures(List<Picture> pictures){
+		this.pictures = pictures;
 	}
 
 	@Override

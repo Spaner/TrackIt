@@ -246,6 +246,12 @@ public class Constants {
 		public static final String COURSE = "course";
 		public static final String TRACKPOINT = "Trackpoint";
 	}
+	
+	/* Copy Operation Options */
+	public static class CopyOperation {
+		public static final String NAME = "Copy selected";
+		public static final String COURSE = "course";
+	}
 
 	/* Join Operation Options */
 	public static class JoinOperation {

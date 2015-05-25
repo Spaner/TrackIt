@@ -58,13 +58,19 @@ public class ReverseOperation extends OperationBase implements Operation {
 		// Do nothing
 	}
 
-	@Override
-	public void process(GPSDocument document) throws TrackItException {
+	public void process(GPSDocument document, boolean wayback) throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course);
+		reverse(course, wayback);
 	}
 
-	private void reverse(Course course) {
+	private void reverse(Course course, boolean wayback) {
+		
+		if(wayback){
+			Course newCourse = new Course();
+			copyCourse(course, newCourse);
+		}
+				
+		
 		List<Trackpoint> newTrackpointsList = new ArrayList<>();
 		
 		ListIterator<Trackpoint> iter = course.getTrackpoints().listIterator(course.getTrackpoints().size());
@@ -88,7 +94,6 @@ public class ReverseOperation extends OperationBase implements Operation {
 			
 			newTrackpointsList.add(trackpoint);
 		}
-		
 		updateTrackpoints(newTrackpointsList);
 		
 		course.getTrackpoints().clear();
@@ -96,6 +101,14 @@ public class ReverseOperation extends OperationBase implements Operation {
 		
 		
 	}
+	
+	private void copyCourse(Course course, Course newCourse){
+		List<Trackpoint> trackpoints = new ArrayList<Trackpoint>();
+		trackpoints.addAll(course.getTrackpoints());
+		newCourse.setTrackpoints(trackpoints);
+		
+	}
+	
 
 	private void updateTrackpoints(List<Trackpoint> newTrackpointsList) {
 		if (newTrackpointsList.isEmpty()) {
@@ -116,14 +129,14 @@ public class ReverseOperation extends OperationBase implements Operation {
 	@Override
 	public void undoOperation(GPSDocument document) throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course);
+		//reverse(course);
 		
 	}
 
 	@Override
 	public void redoOperation(GPSDocument document) throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course);
+		//reverse(course);
 		
 	}
 
@@ -137,6 +150,12 @@ public class ReverseOperation extends OperationBase implements Operation {
 	@Override
 	public void redoOperation(List<GPSDocument> document)
 			throws TrackItException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void process(GPSDocument document) throws TrackItException {
 		// TODO Auto-generated method stub
 		
 	}
