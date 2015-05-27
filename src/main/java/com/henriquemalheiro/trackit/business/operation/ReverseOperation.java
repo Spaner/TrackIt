@@ -63,20 +63,15 @@ public class ReverseOperation extends OperationBase implements Operation {
 		if(wayback){
 			course = document.getCourses().get(1);
 		}
-		else
-		{
+		else{
 			course = document.getCourses().get(0);
 		}
-		reverse(course, wayback);
+		reverse(course);
 	}
 
-	private void reverse(Course course, boolean wayback) {
+	private void reverse(Course course) {
 		
-		if(wayback){
-			Course newCourse = new Course();
-			copyCourse(course, newCourse);
-		}
-				
+						
 		
 		List<Trackpoint> newTrackpointsList = new ArrayList<>();
 		
@@ -101,21 +96,15 @@ public class ReverseOperation extends OperationBase implements Operation {
 			
 			newTrackpointsList.add(trackpoint);
 		}
-		updateTrackpoints(newTrackpointsList);
+		
 		
 		course.getTrackpoints().clear();
 		course.setTrackpoints(newTrackpointsList);
-		
-		
-	}
-	
-	private void copyCourse(Course course, Course newCourse){
-		List<Trackpoint> trackpoints = new ArrayList<Trackpoint>();
-		trackpoints.addAll(course.getTrackpoints());
-		newCourse.setTrackpoints(trackpoints);
+		updateTrackpoints(newTrackpointsList);
 		
 	}
 	
+
 
 	private void updateTrackpoints(List<Trackpoint> newTrackpointsList) {
 		if (newTrackpointsList.isEmpty()) {
@@ -166,4 +155,5 @@ public class ReverseOperation extends OperationBase implements Operation {
 		// TODO Auto-generated method stub
 		
 	}
+
 }

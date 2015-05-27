@@ -2,22 +2,28 @@ package com.henriquemalheiro.trackit.business.operation;
 
 import static com.henriquemalheiro.trackit.business.common.Messages.getMessage;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.ProgressMonitorInputStream;
 import javax.swing.filechooser.FileFilter;
 
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.DocumentManager;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.FileType;
+import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.domain.Activity;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.CoursePoint;
@@ -28,7 +34,11 @@ import com.henriquemalheiro.trackit.business.domain.Lap;
 import com.henriquemalheiro.trackit.business.domain.Track;
 import com.henriquemalheiro.trackit.business.domain.TrackSegment;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.henriquemalheiro.trackit.business.domain.Waypoint;
+import com.henriquemalheiro.trackit.business.exception.ReaderException;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
+import com.henriquemalheiro.trackit.business.reader.Reader;
+import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
 import com.henriquemalheiro.trackit.business.utility.decoratedlist.EventList;
 import com.henriquemalheiro.trackit.business.writer.Writer;
 import com.henriquemalheiro.trackit.business.writer.WriterFactory;
@@ -69,6 +79,46 @@ public class CopyOperation extends OperationBase implements Operation {
 		// document.add(newCourse);
 		document.setChangedTrue();
 	}
+	
+	private void mergeDocuments(GPSDocument source, GPSDocument destination) {
+		for (Activity activity : source.getActivities()) {
+			activity.setParent(destination);
+		}
+		destination.addActivities(source.getActivities());
+
+		for (Course course : source.getCourses()) {
+			course.setParent(destination);
+		}
+		destination.addCourses(source.getCourses());
+
+		for (Waypoint waypoint : source.getWaypoints()) {
+			waypoint.setParent(destination);
+		}
+		destination.addWaypoints(source.getWaypoints());
+
+	}
+	
+	private InputStream getInputStream(final File file) throws ReaderException {
+		ProgressMonitorInputStream progressMonitor;
+		BufferedInputStream in;
+		try {
+			progressMonitor = new ProgressMonitorInputStream(
+					TrackIt.getApplicationFrame(), "Reading "
+							+ file.getAbsolutePath(), new FileInputStream(file));
+			in = new BufferedInputStream(progressMonitor);
+		} catch (FileNotFoundException fnfe) {
+			throw new ReaderException(fnfe.getMessage());
+		}
+		return in;
+	}
+
+	private void closeInputStream(InputStream inputStream) {
+		try {
+			inputStream.close();
+		} catch (IOException e) {
+			logger.debug("Failed to close input stream.");
+		}
+	}
 
 	private void copyOut(GPSDocument document) {
 
@@ -78,7 +128,7 @@ public class CopyOperation extends OperationBase implements Operation {
 		String suffix = "_copy";
 		String newFilename = newName + suffix + "." + extension;
 
-		File file = new File(newFilename);
+		File tempFile = new File(newFilename);
 		document.setFileName(newFilename);
 
 		String oldCourseName = course.getName();
@@ -89,10 +139,10 @@ public class CopyOperation extends OperationBase implements Operation {
 		// if (!exists){
 		try {
 			Map<String, Object> options = new HashMap<>();
-			options.put(Constants.Writer.OUTPUT_DIR, file.getParentFile()
+			options.put(Constants.Writer.OUTPUT_DIR, tempFile.getParentFile()
 					.getAbsolutePath());
 			Writer writer = WriterFactory.getInstance()
-					.getWriter(file, options);
+					.getWriter(tempFile, options);
 			writer.write(document);
 			TimeUnit.SECONDS.sleep(2);
 		} catch (TrackItException e) {
@@ -116,12 +166,43 @@ public class CopyOperation extends OperationBase implements Operation {
 		// course.getName().length()-5));
 		try {
 			course.setName(oldCourseName);
-			File[] files = new File[1];
-			files[0] = file;
+			//File[] files = new File[1];
+			//files[0] = tempFile;
 			DocumentManager documentManager = DocumentManager.getInstance();
-			documentManager.importDocuments(files);
+			//documentManager.importDocuments(files);
+			GPSDocument readDocument = null;
+			
+			InputStream inputStream = null;
+			Reader reader;
+					try {
+						inputStream = getInputStream(tempFile);
+						reader = ReaderFactory.getInstance().getReader(
+								tempFile, null);
+						readDocument = reader.read(inputStream,
+								tempFile.getAbsolutePath());// 58406
+						mergeDocuments(readDocument, document);
+					} catch (ReaderException re) {
+						
+					} finally {
+						closeInputStream(inputStream);
+					}
+		
+				 
+
+				for (Course c : document.getCourses()) {
+					documentManager.getDatabase().updateDB(c, tempFile);
+					c.setFilepath(tempFile.getAbsolutePath());						
+					if(c.getTrackpoints().get(0).getSpeed() != null)
+						c.setNoSpeedInFile(false);
+					c.setUnsavedFalse();
+				}
+			
+			
+			
+			
+			
 			TimeUnit.SECONDS.sleep(2);
-			file.delete();
+			tempFile.delete();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
