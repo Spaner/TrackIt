@@ -66,6 +66,10 @@ public class AboutDialog extends JDialog{
 	    label.setAlignmentX(CENTER_ALIGNMENT);
 	    label.setAlignmentY(BOTTOM_ALIGNMENT);
 	    panel.add(label);
+	    label = new JLabel(Messages.getMessage("about.copyright.miguel"));
+	    label.setAlignmentX(CENTER_ALIGNMENT);
+	    label.setAlignmentY(BOTTOM_ALIGNMENT);
+	    panel.add(label);
 	    panel.add(Box.createGlue());
 	    getContentPane().add(panel, "Center");
 	    
