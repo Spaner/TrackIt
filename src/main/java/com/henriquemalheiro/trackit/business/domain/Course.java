@@ -21,6 +21,8 @@ package com.henriquemalheiro.trackit.business.domain;
 
 import java.awt.Graphics2D;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -127,6 +129,8 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	private String creator;// 58406
 	private ColorSchemeV2 colorScheme;// 58406
 	private Boolean noSpeedInFile;// 58406
+	
+	private String filename;
 
 	public Course() {
 		super();
@@ -145,6 +149,8 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		pictures = new ArrayList<Picture>();// 58406
 		colorScheme = TrackIt.getDefaultColorScheme();// 58406
 		noSpeedInFile = true;//58406
+		
+		filename = null;
 	}
 	
 
@@ -169,10 +175,26 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void setFilepath(String fullFilepath) {
 		this.filepath = fullFilepath;
+		this.filename = getFilenameFromPath(fullFilepath);
+	}
+	
+	private String getFilenameFromPath(String fullFilepath){
+		String name;
+		Path path = Paths.get(fullFilepath);
+		name = path.getFileName().toString();
+		return name;
 	}
 
 	public String getFilepath() {
 		return filepath;
+	}
+	
+	public void setFilename(String filename) {
+		this.filename = filename;
+	}
+
+	public String getFilename() {
+		return filename;
 	}
 
 	public void setPauses(List<Pause> pauses) {

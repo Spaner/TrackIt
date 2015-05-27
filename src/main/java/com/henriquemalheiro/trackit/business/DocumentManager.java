@@ -19,6 +19,8 @@
  */
 package com.henriquemalheiro.trackit.business;
 
+import static com.henriquemalheiro.trackit.business.common.Messages.getMessage;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,6 +41,7 @@ import javax.swing.ProgressMonitorInputStream;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 
 import com.henriquemalheiro.trackit.TrackIt;
@@ -74,6 +77,8 @@ import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.business.operation.UndoableActionType;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
+import com.henriquemalheiro.trackit.business.writer.Writer;
+import com.henriquemalheiro.trackit.business.writer.WriterFactory;
 import com.henriquemalheiro.trackit.presentation.event.Event;
 import com.henriquemalheiro.trackit.presentation.event.EventListener;
 import com.henriquemalheiro.trackit.presentation.event.EventManager;
@@ -531,6 +536,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public Object execute() throws TrackItException {
+				if(wayback){
+					return reverseBack(course);
+				}
 				return reverse(course);
 			}
 
@@ -547,6 +555,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				GPSDocument document = new GPSDocument(course.getParent()
 						.getFileName());
+				
 				document.add(course);
 
 				try {
@@ -559,14 +568,66 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				return document.getCourses().get(0);
 			}
+			
+			private List<Course> reverseBack(Course course) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.CopyOperation.COURSE, course);
 
+				CopyOperation copyOperation = new CopyOperation(
+						options);
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+			
+
+				try {
+					copyOperation.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+				options.put(
+						com.henriquemalheiro.trackit.business.common.Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+				ReverseOperation reverseOperation = new ReverseOperation(
+						options);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(
+						options);
+
+				try {
+					reverseOperation.process(document, wayback);
+					consolidationOP.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+			
+			@SuppressWarnings("unchecked")
 			@Override
 			public void done(Object result) {
-				Course course = (Course) result;
-				course.setParent(masterDocument);
-				masterDocument.publishUpdateEvent(null);
-				course.setUnsavedTrue();
-				course.publishSelectionEvent(null);
+				if(wayback){
+					List<Course> courses = (List<Course>) result;
+					for (Course course : courses) {
+						course.setParent(masterDocument);
+						course.setUnsavedTrue();
+					}
+
+					masterDocument.remove(course);
+					masterDocument.addCourses(courses);
+
+					masterDocument.publishUpdateEvent(null);
+					courses.get(0).publishSelectionEvent(null);
+				}
+				else{
+					Course course = (Course) result;
+					course.setParent(masterDocument);
+					masterDocument.publishUpdateEvent(null);
+					course.setUnsavedTrue();
+					course.publishSelectionEvent(null);
+				}
 			}
 			
 			
@@ -637,13 +698,96 @@ public class DocumentManager implements EventPublisher, EventListener {
 			
 		}).execute();
 		
-		String name = "REVERSE";
+		String name = "COPY";
 		List<Long> courseId = new ArrayList<Long>();
 		long documentId = masterDocument.getId();
 		
 		courseId.add(course.getId());
 		UndoItem item = new UndoItem(name, documentId, courseId, null);
 		undoManager.pushUndo(item);
+		
+		/*Objects.requireNonNull(course);
+		final GPSDocument masterDocument = course.getParent();
+		
+		SwingWorker<GPSDocument, Void> worker = new SwingWorker<GPSDocument, Void>() {
+			@Override
+			protected GPSDocument doInBackground() {
+		
+				String filename = course.getFilepath();
+				String newName = FilenameUtils.removeExtension(filename);
+				String extension = FilenameUtils.getExtension(filename);
+				String newFilename = newName + "_copy" + "." + extension;
+				
+				File file = new File(newFilename);
+			
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+				document.setFileName(newFilename);
+				
+				//course.setName(course.getName()+ "_copy");
+				boolean exists = file.exists();
+
+				if (!exists){
+					try {
+					Map<String, Object> options = new HashMap<>();
+					options.put(Constants.Writer.OUTPUT_DIR, file
+							.getParentFile().getAbsolutePath());
+					Writer writer = WriterFactory.getInstance().getWriter(
+							file, options);
+					writer.write(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					JOptionPane.showMessageDialog(
+							TrackIt.getApplicationFrame(),
+							getMessage("operation.failure.fileExport",
+									course.getDocumentItemName()),
+							getMessage("operation.failure"),
+							JOptionPane.ERROR_MESSAGE);
+					return null;
+				}
+				}
+				else {
+					logger.error("The file " + file.getAbsolutePath()
+							+ " already exists.");
+				}
+				course.setUnsavedFalse();
+				//course.setName(course.getName().substring(0, course.getName().length()-5));
+				File[] files = new File[1];
+				files[0] = file;
+				importDocuments(files);			
+				file.delete();
+
+				return document;
+			}
+
+			@Override
+			protected void done() {
+				try{
+					GPSDocument document = get();
+					if (document == null) {
+						return;
+					}
+					for (Course course : document.getCourses()) {
+						course.setParent(masterDocument);
+						course.setUnsavedTrue();
+					}
+					masterDocument.remove(course);
+					masterDocument.addCourses(document.getCourses());
+					masterDocument.publishUpdateEvent(null);
+					document.getCourses().get(0).publishSelectionEvent(null);
+				} catch (InterruptedException e) {
+					logger.error(e.getMessage());
+				} catch (ExecutionException e) {
+					logger.error(e.getMessage());
+				} 
+
+		}
+		};
+		worker.execute();*/
+		
+
+		
 	}
 	
 	
@@ -704,6 +848,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 					case REMOVE_PAUSE:
 						break;
 					case SET_PACE:
+						break;
+					case COPY:
 						break;
 					default:
 						// Do nothing

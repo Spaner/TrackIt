@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,7 +56,11 @@ import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainter;
 import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainterFactory;
 
 
-public abstract class TrackItBaseType implements DocumentItem {
+public abstract class TrackItBaseType implements DocumentItem, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3719978530673201262L;
 	protected static Map<String, Map<String, FieldMetadata>> fieldsMetadata;
 	private Map<String, Object> attributes;
 	private long id;

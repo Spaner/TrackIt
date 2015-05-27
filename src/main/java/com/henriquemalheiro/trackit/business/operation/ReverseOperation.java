@@ -59,7 +59,14 @@ public class ReverseOperation extends OperationBase implements Operation {
 	}
 
 	public void process(GPSDocument document, boolean wayback) throws TrackItException {
-		Course course = document.getCourses().get(0);
+		Course course;
+		if(wayback){
+			course = document.getCourses().get(1);
+		}
+		else
+		{
+			course = document.getCourses().get(0);
+		}
 		reverse(course, wayback);
 	}
 

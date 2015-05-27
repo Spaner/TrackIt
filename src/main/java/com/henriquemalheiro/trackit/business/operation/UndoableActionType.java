@@ -28,7 +28,8 @@ public enum UndoableActionType {
 	REVERSE,
 	ADD_PAUSE,
 	REMOVE_PAUSE,
-	SET_PACE;
+	SET_PACE,
+	COPY;
 	
 	public static UndoableActionType lookup(String action) {
 		for (UndoableActionType actionType : values()) {

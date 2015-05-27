@@ -19,6 +19,7 @@
  */
 package com.henriquemalheiro.trackit.business.domain;
 
+
 import java.util.Date;
 import java.util.List;
 
@@ -32,7 +33,9 @@ import com.henriquemalheiro.trackit.business.utility.decoratedlist.ListEvent;
 import com.henriquemalheiro.trackit.presentation.utilities.ImageUtilities;
 import com.henriquemalheiro.trackit.presentation.view.folder.FolderView;
 
-public abstract class Track extends TrackItBaseType implements DocumentItem, EventListener<Trackpoint> {
+public abstract class Track extends TrackItBaseType implements DocumentItem, EventListener<Trackpoint>{
+
+
 	private static ImageIcon icon = ImageUtilities.createImageIcon("track_16.png");
 	
 	private Date startTime;

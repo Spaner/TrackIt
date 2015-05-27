@@ -44,6 +44,11 @@ import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainterFact
 import com.pg58406.trackit.business.domain.Pause;
 
 public abstract class Lap extends TrackItBaseType implements DocumentItem, FolderTreeItem {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7800512688845876607L;
+
 	private static ImageIcon icon = ImageUtilities.createImageIcon("lap_16.png");
 	
 	private Date startTime;
