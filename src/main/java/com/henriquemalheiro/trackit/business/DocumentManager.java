@@ -576,18 +576,18 @@ public class DocumentManager implements EventPublisher, EventListener {
 						reverseOptions);
 
 				try {
-					TimeUnit.SECONDS.sleep(1);
+					//TimeUnit.SECONDS.sleep(1);
 					reverseOperation.process(document, wayback);
-					TimeUnit.SECONDS.sleep(1);
+					//TimeUnit.SECONDS.sleep(1);
 					consolidationOP.process(document);
-					TimeUnit.SECONDS.sleep(1);
+					//TimeUnit.SECONDS.sleep(1);
 				} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
-				} catch (InterruptedException e) {
+				} //catch (InterruptedException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				//	e.printStackTrace();
+				//}
 
 				return document.getCourses();
 			}
@@ -689,13 +689,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 		}).execute();
 
-		String name = "COPY";
+		/*String name = "COPY";
 		List<Long> courseId = new ArrayList<Long>();
 		long documentId = masterDocument.getId();
 
 		courseId.add(course.getId());
 		UndoItem item = new UndoItem(name, documentId, courseId, null);
-		undoManager.pushUndo(item);
+		undoManager.pushUndo(item);*/
 
 	}
 

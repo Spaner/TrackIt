@@ -144,7 +144,7 @@ public class CopyOperation extends OperationBase implements Operation {
 			Writer writer = WriterFactory.getInstance()
 					.getWriter(tempFile, options);
 			writer.write(document);
-			TimeUnit.SECONDS.sleep(2);
+			//TimeUnit.SECONDS.sleep(2);
 		} catch (TrackItException e) {
 			logger.error(e.getMessage());
 			JOptionPane.showMessageDialog(
@@ -152,10 +152,10 @@ public class CopyOperation extends OperationBase implements Operation {
 					getMessage("operation.failure.fileExport",
 							course.getDocumentItemName()),
 					getMessage("operation.failure"), JOptionPane.ERROR_MESSAGE);
-		} catch (InterruptedException e) {
+		} //catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			//e.printStackTrace();
+		//}
 		// }
 		/*
 		 * else { logger.error("The file " + file.getAbsolutePath() +
@@ -164,7 +164,7 @@ public class CopyOperation extends OperationBase implements Operation {
 		// course.setUnsavedFalse();
 		// course.setName(course.getName().substring(0,
 		// course.getName().length()-5));
-		try {
+		//try {
 			course.setName(oldCourseName);
 			//File[] files = new File[1];
 			//files[0] = tempFile;
@@ -189,24 +189,24 @@ public class CopyOperation extends OperationBase implements Operation {
 		
 				 
 
-				for (Course c : document.getCourses()) {
+				/*for (Course c : document.getCourses()) {
 					documentManager.getDatabase().updateDB(c, tempFile);
 					c.setFilepath(tempFile.getAbsolutePath());						
 					if(c.getTrackpoints().get(0).getSpeed() != null)
 						c.setNoSpeedInFile(false);
 					c.setUnsavedFalse();
-				}
+				}*/
 			
 			
 			
 			
 			
-			TimeUnit.SECONDS.sleep(2);
+			//TimeUnit.SECONDS.sleep(2);
 			tempFile.delete();
-		} catch (InterruptedException e) {
+		//} //catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			//e.printStackTrace();
+		//}
 
 		/*
 		 * Course newCourse = new Course(); newCourse.setParent(document);
