@@ -112,7 +112,6 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private LogView logView;
 
 	private List<DocumentItem> selectedItems;
-	
 
 	private static Logger logger = Logger.getLogger(ApplicationPanel.class
 			.getName());
@@ -332,6 +331,9 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 					break;
 				case REVERSE:
 					reverse();
+					break;
+				case RETURN:
+					returnCourse();
 					break;
 				case SHOW_FOLDER:
 					showFolder(e);
@@ -682,65 +684,73 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		JDialog joinDialog = new JoinDialog(courses);
 		joinDialog.setVisible(true);
 	}
+	
 
-	private void reverse() {
-		Object[] options = {"Reverse",
-                "Way Back",
-                "Cancel"};
-		
-		boolean wayback;
-		
+	private void returnCourse() {
+		Object[] options = { "Yes", "No", "Cancel" };
+		int normal = 0;
+		int returnCourse = 1;
+		int returnNewCourse = 2;
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
 				Messages.getMessage("applicationPanel.title.warning"),
 				JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-		
-
 		if (option == JOptionPane.YES_OPTION) {
-			
-			int wayBackOption = JOptionPane.showOptionDialog(
-					TrackIt.getApplicationFrame(), 
+
+			int returnCourseOption = JOptionPane.showOptionDialog(
+					TrackIt.getApplicationFrame(),
 					Messages.getMessage("applicationPanel.reverse.wayBack"),
 					Messages.getMessage("applicationPanel.title.wayBackTitle"),
 					JOptionPane.YES_NO_CANCEL_OPTION,
-					JOptionPane.QUESTION_MESSAGE,
-					null,
-					options,
-					options[2]);
+					JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
 			
-			if(wayBackOption == JOptionPane.NO_OPTION){
-				
-				wayback = true;
-				DocumentManager documentManager = DocumentManager.getInstance();
-				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course, wayback);
-			}
-			
-			if(wayBackOption == JOptionPane.YES_OPTION){
-				
-				wayback = false;
-				DocumentManager documentManager = DocumentManager.getInstance();
-				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course, wayback);
-			}
-					
+			if (returnCourseOption == JOptionPane.NO_OPTION) {
 
-			
+				DocumentManager documentManager = DocumentManager.getInstance();
+				Course course = (Course) selectedItems.get(0);
+				documentManager.reverse(course, Constants.ReverseOperation.RETURN);
+			}
+			if (returnCourseOption == JOptionPane.YES_OPTION) {
+
+				DocumentManager documentManager = DocumentManager.getInstance();
+				Course course = (Course) selectedItems.get(0);
+				documentManager.reverse(course, Constants.ReverseOperation.NEWRETURN);
+			}
+		}
+		
+
+
+	}
+
+	private void reverse() {
+
+		int option = JOptionPane.showConfirmDialog(
+				TrackIt.getApplicationFrame(),
+				Messages.getMessage("applicationPanel.reverse.effects"),
+				Messages.getMessage("applicationPanel.title.warning"),
+				JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+		if (option == JOptionPane.YES_OPTION) {
+			DocumentManager documentManager = DocumentManager.getInstance();
+			Course course = (Course) selectedItems.get(0);
+			documentManager.reverse(course, Constants.ReverseOperation.NORMAL);
+
+
 		}
 	}
-	
-	private void undo(){
+
+	private void undo() {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.undo();
 	}
-	
-	private void redo(){
+
+	private void redo() {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.redo();
 	}
-	
-	private void copy(){
+
+	private void copy() {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		Course course = (Course) selectedItems.get(0);
 		documentManager.copy(course);
@@ -823,7 +833,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private void processItemSelected(DocumentItem item) {
 		DocumentManager documentManager = DocumentManager.getInstance();
-		applicationMenu.refreshMenu(Arrays.asList(item), documentManager.getUndoManager());
+		applicationMenu.refreshMenu(Arrays.asList(item),
+				documentManager.getUndoManager());
 	}
 
 	@Override
@@ -835,8 +846,9 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			selectedItems.add(parent);
 		}
 		DocumentManager documentManager = DocumentManager.getInstance();
-		applicationMenu.refreshMenu(Utilities
-				.<DocumentItem> convert(selectedItems), documentManager.getUndoManager());
+		applicationMenu.refreshMenu(
+				Utilities.<DocumentItem> convert(selectedItems),
+				documentManager.getUndoManager());
 	}
 
 	@Override
@@ -877,8 +889,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 		FileFilterFactory factory = FileFilterFactory.getInstance();
 		for (FileFilter f : factory.getFilters()) {
-			if(!f.getDescription().startsWith("FIT")){
-				if (!f.getDescription().startsWith("KML")){
+			if (!f.getDescription().startsWith("FIT")) {
+				if (!f.getDescription().startsWith("KML")) {
 					fileChooser.addChoosableFileFilter(f);
 				}
 			}
@@ -990,19 +1002,21 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			return;
 		}
 		DocumentItem item = selectedItems.get(0);
-		try{
-		if (item.isActivity()) {
-			Activity a = (Activity) item;
-			new PauseDetectionOperation().process(a);
-			DocumentManager.getInstance().consolidate(a, ConsolidationLevel.SUMMARY);
-		} else if (item.isCourse()) {
-			Course c = (Course) item;
-			new PauseDetectionOperation().process(c);
-			HashMap<String, Object> options = new HashMap<String, Object>();
-			options .put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-			DocumentManager.getInstance().consolidate(c, options);
-		}
-		} catch(Exception e){
+		try {
+			if (item.isActivity()) {
+				Activity a = (Activity) item;
+				new PauseDetectionOperation().process(a);
+				DocumentManager.getInstance().consolidate(a,
+						ConsolidationLevel.SUMMARY);
+			} else if (item.isCourse()) {
+				Course c = (Course) item;
+				new PauseDetectionOperation().process(c);
+				HashMap<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+				DocumentManager.getInstance().consolidate(c, options);
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -1011,9 +1025,10 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		final DocumentItem item = selectedItems.get(0);
 		String action = getMessage("applicationPanel.button.import");
 		JFileChooser fileChooser = new JFileChooser();
-		
-		String[] acceptedExtensions = {"jpg", "jpeg"};
-		FileFilter filter = new FileNameExtensionFilter("JPEG (*.JPG;*JPEG)", acceptedExtensions);
+
+		String[] acceptedExtensions = { "jpg", "jpeg" };
+		FileFilter filter = new FileNameExtensionFilter("JPEG (*.JPG;*JPEG)",
+				acceptedExtensions);
 		fileChooser.setAcceptAllFileFilterUsed(false);
 		fileChooser.setFileFilter(filter);
 
@@ -1021,7 +1036,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		setPictureDirectory(fileChooser);
 		fileChooser.showDialog(application, action);
 		final File[] files = fileChooser.getSelectedFiles();
-		new Task(new Action(){
+		new Task(new Action() {
 
 			@Override
 			public String getMessage() {
@@ -1050,20 +1065,20 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			@Override
 			public void done(Object result) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 		}).execute();
-		
+
 	}
-	
+
 	private void updatePictureDirectory(File file) {
 		TrackIt.getPreferences().setPreference(
 				Constants.PrefsCategories.GLOBAL, null,
 				Constants.GlobalPreferences.LAST_PICTURE_DIRECTORY,
 				file.getParent());
 	}
-	
+
 	private void setPictureDirectory(final JFileChooser fileChooser) {
 		TrackItPreferences prefs = TrackIt.getPreferences();
 		String initialDirectory = prefs.getPreference(
@@ -1073,7 +1088,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		File currentDirectory = new File(initialDirectory);
 		fileChooser.setCurrentDirectory(currentDirectory);
 	}
-	
+
 	private void autoLocatePictures() {
 		if (selectedItems.size() != 1) {
 			JOptionPane
@@ -1084,31 +1099,40 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			return;
 		}
 		DocumentItem item = selectedItems.get(0);
-		try{
-		if (item.isActivity()) {
-			Activity a = (Activity) item;			
-			if(a.getPauses().isEmpty()){				
-				new PauseDetectionPicCaseOperation().process(a);
-				//DocumentManager.getInstance().consolidate(a, ConsolidationLevel.SUMMARY);
+		try {
+			if (item.isActivity()) {
+				Activity a = (Activity) item;
+				if (a.getPauses().isEmpty()) {
+					new PauseDetectionPicCaseOperation().process(a);
+					// DocumentManager.getInstance().consolidate(a,
+					// ConsolidationLevel.SUMMARY);
+				}
+				// PhotoPlacer placer = new
+				// PhotoPlacerDepthFirst(a.getPictures(), a.getPauses(),
+				// a.getDocumentItemName());
+				PhotoPlacer placer = new PhotoPlacerBreadthFirst(
+						a.getPictures(), a.getPauses(), a.getDocumentItemName());
+				placer.EstimateLocation(a.getTrackpoints());
+			} else if (item.isCourse()) {
+				Course c = (Course) item;
+				boolean b = c.getUnsavedChanges();
+				if (c.getPauses().isEmpty()) {
+					new PauseDetectionPicCaseOperation().process(c);
+					// HashMap<String, Object> options = new HashMap<String,
+					// Object>();
+					// options .put(Constants.ConsolidationOperation.LEVEL,
+					// ConsolidationLevel.SUMMARY);
+					// DocumentManager.getInstance().consolidate(c, options);
+				}
+				// PhotoPlacer placer = new
+				// PhotoPlacerDepthFirst(c.getPictures(), c.getPauses(),
+				// c.getDocumentItemName());
+				PhotoPlacer placer = new PhotoPlacerBreadthFirst(
+						c.getPictures(), c.getPauses(), c.getDocumentItemName());
+				placer.EstimateLocation(c.getTrackpoints());
+				c.setUnsavedChanges(b);
 			}
-			//PhotoPlacer placer = new PhotoPlacerDepthFirst(a.getPictures(), a.getPauses(), a.getDocumentItemName());
-			PhotoPlacer placer = new PhotoPlacerBreadthFirst(a.getPictures(), a.getPauses(), a.getDocumentItemName());
-			placer.EstimateLocation(a.getTrackpoints());
-		} else if (item.isCourse()) {
-			Course c = (Course) item;
-			boolean b = c.getUnsavedChanges();
-			if(c.getPauses().isEmpty()){
-			new PauseDetectionPicCaseOperation().process(c);
-			//HashMap<String, Object> options = new HashMap<String, Object>();
-			//options .put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-			//DocumentManager.getInstance().consolidate(c, options);
-			}
-			//PhotoPlacer placer = new PhotoPlacerDepthFirst(c.getPictures(), c.getPauses(), c.getDocumentItemName());
-			PhotoPlacer placer = new PhotoPlacerBreadthFirst(c.getPictures(), c.getPauses(), c.getDocumentItemName());
-			placer.EstimateLocation(c.getTrackpoints());
-			c.setUnsavedChanges(b);
-		}
-		} catch(Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

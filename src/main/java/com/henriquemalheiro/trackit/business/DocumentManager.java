@@ -107,6 +107,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 	private enum ReadMode {
 		OPEN, IMPORT
 	};
+	
+	public enum ReverseMode{
+		NORMAL, RETURN, NEWRETURN
+	};
 
 	private static Logger logger = Logger.getLogger(DocumentManager.class
 			.getName());
@@ -526,7 +530,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void reverse(final Course course, final boolean wayback) {
+	public void reverse(final Course course, final String mode) {
 
 		Objects.requireNonNull(course);
 		final GPSDocument masterDocument = course.getParent();
@@ -553,7 +557,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				GPSDocument document = new GPSDocument(course.getParent()
 						.getFileName());
 				document.add(course);
-				if (wayback) {
+				if (mode.equals(Constants.ReverseOperation.NEWRETURN)) {
 					try {
 						copyOperation.process(document);
 						copyOptions.put(Constants.ConsolidationOperation.LEVEL,
@@ -576,18 +580,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 						reverseOptions);
 
 				try {
-					//TimeUnit.SECONDS.sleep(1);
-					reverseOperation.process(document, wayback);
-					//TimeUnit.SECONDS.sleep(1);
+					reverseOperation.process(document, mode);
 					consolidationOP.process(document);
-					//TimeUnit.SECONDS.sleep(1);
 				} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
-				} //catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-				//	e.printStackTrace();
-				//}
+				} 
 
 				return document.getCourses();
 			}

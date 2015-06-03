@@ -261,9 +261,10 @@ public class Constants {
 	}
 	
 	/* Add Point Operation Options 57421 */
-	public static class AddTrackpointOperation {
-		public static final String NAME = "Add";
-		public static final String COURSES = "course";
+	public static class ReverseOperation {
+		public static final String NORMAL = "Normal";
+		public static final String RETURN = "Return";
+		public static final String NEWRETURN = "New Return";
 	}
 
 	/* Set PaceMaker Operation Options */

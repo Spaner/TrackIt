@@ -71,6 +71,7 @@ class ApplicationMenu {
 	private JMenuItem undoMenu;//57421
 	private JMenuItem redoMenu;//57421
 	private JMenuItem copyMenu;//57421
+	private JMenuItem returnCourseMenu;//57421
 	private JMenuItem removePausesMenu;	
 	private static Map<ActionType, JMenuItem> menuActionMap;
 	private static Logger logger = Logger.getLogger(ApplicationMenu.class);
@@ -95,6 +96,7 @@ class ApplicationMenu {
 		exportMenu.setEnabled(singleItem && (items.get(0).isActivity() || items.get(0).isCourse()));
 		splitAtSelectedMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
 		reverseMenu.setEnabled(singleItem && items.get(0).isCourse());
+		returnCourseMenu.setEnabled(singleItem && items.get(0).isCourse());
 		copyMenu.setEnabled(singleItem && items.get(0).isCourse());
 		
 			
@@ -349,6 +351,16 @@ class ApplicationMenu {
 		reverseMenu.addActionListener(handler);
 		reverseMenu.setEnabled(false);
 		menu.add(reverseMenu);
+		
+		returnCourseMenu = new JMenuItem(getMessage("applicationPanel.menu.returnCourse"));
+		//accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.reverseAccelerator")).getKeyCode();
+		//keyStroke = KeyStroke.getKeyStroke(null, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		//returnCourseMenu.setAccelerator(keyStroke);
+		returnCourseMenu.getAccessibleContext().setAccessibleDescription("Creates a return course.");
+		returnCourseMenu.setActionCommand(MenuActionType.RETURN.name());
+		returnCourseMenu.addActionListener(handler);
+		returnCourseMenu.setEnabled(false);
+		menu.add(returnCourseMenu);
 		
 		JMenu viewMenu = new JMenu(getMessage("applicationPanel.menu.view"));
 		viewMenu.setMnemonic(KeyEvent.VK_V);

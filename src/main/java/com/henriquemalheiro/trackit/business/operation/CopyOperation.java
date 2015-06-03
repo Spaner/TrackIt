@@ -189,13 +189,13 @@ public class CopyOperation extends OperationBase implements Operation {
 		
 				 
 
-				/*for (Course c : document.getCourses()) {
+				for (Course c : document.getCourses()) {
 					documentManager.getDatabase().updateDB(c, tempFile);
 					c.setFilepath(tempFile.getAbsolutePath());						
 					if(c.getTrackpoints().get(0).getSpeed() != null)
 						c.setNoSpeedInFile(false);
 					c.setUnsavedFalse();
-				}*/
+				}
 			
 			
 			

@@ -58,21 +58,20 @@ public class ReverseOperation extends OperationBase implements Operation {
 		// Do nothing
 	}
 
-	public void process(GPSDocument document, boolean wayback)
+	public void process(GPSDocument document, String mode)
 			throws TrackItException {
 		Course course;
-		if (wayback) {
+		if (mode.equals(Constants.ReverseOperation.NEWRETURN)) {
 			course = document.getCourses().get(1);
 		} else {
 			course = document.getCourses().get(0);
 		}
-		reverse(course);
+		reverse(course, mode);
 	}
 
-	private void reverse(Course course) {
+	private void reverse(Course course, String mode) {
 
 		List<Trackpoint> newTrackpointsList = new ArrayList<>();
-		
 
 		ListIterator<Trackpoint> iter = course.getTrackpoints().listIterator(
 				course.getTrackpoints().size());
@@ -81,6 +80,9 @@ public class ReverseOperation extends OperationBase implements Operation {
 		double timeFromPrevious = 0.0;
 		double distanceFromPreviousTemp = 0.0;
 		double distanceFromPrevious = 0.0;
+
+		Date startTime = null;
+		Date endTime = null;
 
 		while (iter.hasPrevious()) {
 			trackpoint = iter.previous();
@@ -96,60 +98,74 @@ public class ReverseOperation extends OperationBase implements Operation {
 
 			newTrackpointsList.add(trackpoint);
 		}
-		
-		List<Lap> newLapList = new ArrayList<>();
-		List<Trackpoint> newTrackpointLapList = new ArrayList<>();
-		ListIterator<Lap> lapIter = course.getLaps().listIterator(course.getLaps().size());
-		ListIterator<Trackpoint> lapPointsIter;
-		Lap lap;
 
-		while (lapIter.hasPrevious()) {
-			lap = lapIter.previous();
-			/*lapPointsIter = lap.getTrackpoints()
-					.listIterator(lap.getTrackpoints().size());
-			while (lapPointsIter.hasPrevious()) {
-				trackpoint = lapPointsIter.previous();
-
-				timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
-				distanceFromPreviousTemp = trackpoint.getDistanceFromPrevious();
-
-				trackpoint.setTimeFromPrevious(timeFromPrevious);
-				trackpoint.setDistanceFromPrevious(distanceFromPrevious);
-
-				timeFromPrevious = timeFromPreviousTemp;
-				distanceFromPrevious = distanceFromPreviousTemp;
-
-				newTrackpointLapList.add(trackpoint);
-			}*/
-			Date newStartTime = lap.getEndTime();
-			Date newEndTime = lap.getStartTime();
-			lap.setStartTime(newStartTime);
-			lap.setEndTime(newEndTime);
-			//lap.getTrackpoints().clear();
-			//lap.setTrackpoints(newTrackpointLapList);
-			//updateTrackpoints(newTrackpointLapList);
-			
-			newLapList.add(lap);
-			
-		}
-		
-		//course.getLaps().clear();
-		//course.setLaps(newLapList);
-		
 		course.getTrackpoints().clear();
 		course.setTrackpoints(newTrackpointsList);
-		updateTrackpoints(newTrackpointsList);
+		updateTrackpoints(newTrackpointsList, mode);
 
-		
+		if (mode.equals(Constants.ReverseOperation.NEWRETURN)
+				|| mode.equals(Constants.ReverseOperation.RETURN)) {
+
+			List<Lap> newLapList = new ArrayList<>();
+			List<Trackpoint> newTrackpointLapList = new ArrayList<>();
+			ListIterator<Lap> lapIter = course.getLaps().listIterator(
+					course.getLaps().size());
+			ListIterator<Trackpoint> lapPointsIter;
+			Lap lap;
+
+			while (lapIter.hasPrevious()) {
+				lap = lapIter.previous();
+				/*
+				 * lapPointsIter = lap.getTrackpoints()
+				 * .listIterator(lap.getTrackpoints().size()); while
+				 * (lapPointsIter.hasPrevious()) { trackpoint =
+				 * lapPointsIter.previous();
+				 * 
+				 * timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
+				 * distanceFromPreviousTemp =
+				 * trackpoint.getDistanceFromPrevious();
+				 * 
+				 * trackpoint.setTimeFromPrevious(timeFromPrevious);
+				 * trackpoint.setDistanceFromPrevious(distanceFromPrevious);
+				 * 
+				 * timeFromPrevious = timeFromPreviousTemp; distanceFromPrevious
+				 * = distanceFromPreviousTemp;
+				 * 
+				 * newTrackpointLapList.add(trackpoint); }
+				 */
+				Date newStartTime = lap.getEndTime();
+				Date newEndTime = lap.getStartTime();
+				lap.setStartTime(newStartTime);
+				lap.setEndTime(newEndTime);
+				// lap.getTrackpoints().clear();
+				// lap.setTrackpoints(newTrackpointLapList);
+				// updateTrackpoints(newTrackpointLapList);
+
+				newLapList.add(lap);
+
+			}
+		}
+
+		// course.getLaps().clear();
+		// course.setLaps(newLapList);
 
 	}
 
-	private void updateTrackpoints(List<Trackpoint> newTrackpointsList) {
+	private void updateTrackpoints(List<Trackpoint> newTrackpointsList,
+			String mode) {
 		if (newTrackpointsList.isEmpty()) {
 			return;
 		}
 
-		long timestamp = newTrackpointsList.get(0).getTimestamp().getTime();
+		long timestamp = 0;
+		if (mode.equals(Constants.ReverseOperation.NORMAL)) {
+			timestamp = newTrackpointsList.get(newTrackpointsList.size() - 1)
+					.getTimestamp().getTime();
+		}
+		if (mode.equals(Constants.ReverseOperation.NEWRETURN)
+				|| mode.equals(Constants.ReverseOperation.RETURN)) {
+			timestamp = newTrackpointsList.get(0).getTimestamp().getTime();
+		}
 		double distance = 0.0;
 		for (Trackpoint trackpoint : newTrackpointsList) {
 			timestamp += (trackpoint.getTimeFromPrevious() * 1000);
@@ -163,14 +179,14 @@ public class ReverseOperation extends OperationBase implements Operation {
 	@Override
 	public void undoOperation(GPSDocument document) throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course);
+		reverse(course, "stuff");
 
 	}
 
 	@Override
 	public void redoOperation(GPSDocument document) throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course);
+		reverse(course, "stuff");
 
 	}
 
