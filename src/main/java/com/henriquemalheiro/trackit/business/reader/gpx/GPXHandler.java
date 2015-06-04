@@ -537,6 +537,10 @@ public class GPXHandler extends DefaultHandler implements XMLFileHandler {
 		course.setName(name);
 		course.setNotes(notes);
 		course.addTrackpoints(trackpoints);
+		
+		//course.setStartTime(course.getTrackpoints().get(0).getTimestamp());
+		//course.setEndTime(course.getTrackpoints().get(course.getTrackpoints().size()-1).getTimestamp());
+		
 		course.setCreator(creator);//58406
 		
 		boolean heartRateMapPresent = (heartRateMap != null);

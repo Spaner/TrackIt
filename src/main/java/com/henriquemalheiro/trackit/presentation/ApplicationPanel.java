@@ -688,9 +688,6 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private void returnCourse() {
 		Object[] options = { "Yes", "No", "Cancel" };
-		int normal = 0;
-		int returnCourse = 1;
-		int returnNewCourse = 2;
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),

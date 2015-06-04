@@ -413,6 +413,8 @@ SEGMENTS,java.util.List,NONE,NONE,DETAIL,course.segments
 EVENTS,java.util.List,NONE,NONE,DETAIL,course.events
 NOTES,java.lang.String,NONE,NONE,SUMMARY,course.notes
 PARENT,com.henriquemalheiro.trackit.business.domain.DocumentItem,NONE,NONE,,course.parent
+START_TIME,java.util.Date,TIME,DATE_TIME,TIMING,course.startTime
+END_TIME,java.util.Date,TIME,DATE_TIME,TIMING,course.endTime
 ELAPSED_TIME,java.lang.Double,DURATION,SECOND,SUMMARY|TIMING,course.elapsedTime
 TIMER_TIME,java.lang.Double,DURATION,SECOND,SUMMARY|TIMING,course.timerTime
 MOVING_TIME,java.lang.Double,DURATION,SECOND,TIMING,course.movingTime

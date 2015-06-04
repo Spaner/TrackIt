@@ -97,7 +97,11 @@ public abstract class TrackItBaseType implements DocumentItem, Serializable {
 	        		properties = line.split(",");
 	        		
 	        		List<FieldGroup> groupsList = new ArrayList<FieldGroup>();
+	        		if(!properties[5].isEmpty() && properties[5].equals("course.elapsedTime")){
+	        			int i = 1;
+	        		}
 	        		if (!properties[4].isEmpty()) {
+	        			
 	        			String[] groups = properties[4].split("\\|");
 	        			for (String group : groups) {
 							groupsList.add(FieldGroup.lookup(group));
@@ -166,6 +170,9 @@ public abstract class TrackItBaseType implements DocumentItem, Serializable {
 		
 		try {
 			Method method = this.getClass().getMethod(methodName.toString(), new Class<?>[0]);
+			if(method.getName().equals("getStartTime")){
+				int i = 0;
+			}
 			return method.invoke(this, new Object[0]);
 		} catch (Exception e) {
 			logger.trace("Attribute with name " + fieldName + " not found.");

@@ -97,6 +97,10 @@ public class ActivityToCourseOperation extends OperationBase implements Operatio
 	private void fillSummaryInfo() {
 		Session session = activity.getFirstSession();
 		
+		course.setFilepath(activity.getFilepath());
+		
+		course.setStartTime(session.getStartTime());
+		course.setEndTime(session.getEndTime());
 		course.setName(activity.getName());
 		course.setSport(session.getSport());
 		course.setSubSport(session.getSubSport());

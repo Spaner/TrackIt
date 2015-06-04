@@ -129,6 +129,8 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	private String creator;// 58406
 	private ColorSchemeV2 colorScheme;// 58406
 	private Boolean noSpeedInFile;// 58406
+	private Date startTime;
+	private Date endTime;
 	
 	private String filename;
 
@@ -1071,6 +1073,9 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		if (subSport == null) {
 			subSport = SubSportType.GENERIC;
 		}
+		
+		this.startTime = this.laps.get(0).getStartTime();
+		this.endTime = this.laps.get(this.laps.size()-1).getEndTime();
 
 		for (Lap lap : laps) {
 			elapsedTime += lap.getElapsedTime();
@@ -1555,6 +1560,22 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void setColorSchemeV2(ColorSchemeV2 colorScheme) {
 		this.colorScheme = colorScheme;
+	}
+	
+	public void setStartTime(Date date){
+		this.startTime = date;
+	}
+	
+	public void setEndTime(Date date){
+		this.endTime = date;
+	}
+	
+	public Date getStartTime(){
+		return startTime;
+	}
+	
+	public Date getEndTime(){
+		return endTime;
 	}
 
 	/*public void updateSpeedWithPauseTime(double pauseLimit) {
