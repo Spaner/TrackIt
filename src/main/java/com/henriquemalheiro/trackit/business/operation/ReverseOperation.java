@@ -61,7 +61,7 @@ public class ReverseOperation extends OperationBase implements Operation {
 	public void process(GPSDocument document, String mode)
 			throws TrackItException {
 		Course course;
-		if (mode.equals(Constants.ReverseOperation.NEWRETURN)) {
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
 			course = document.getCourses().get(1);
 		} else {
 			course = document.getCourses().get(0);
@@ -81,9 +81,6 @@ public class ReverseOperation extends OperationBase implements Operation {
 		double distanceFromPreviousTemp = 0.0;
 		double distanceFromPrevious = 0.0;
 
-		Date startTime = null;
-		Date endTime = null;
-
 		while (iter.hasPrevious()) {
 			trackpoint = iter.previous();
 
@@ -98,74 +95,136 @@ public class ReverseOperation extends OperationBase implements Operation {
 
 			newTrackpointsList.add(trackpoint);
 		}
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)
+				|| mode.equals(Constants.ReverseOperation.RETURN)) {
+			updateLaps(course);
 
+		}
+		long timestamp = 0;
+		if (mode.equals(Constants.ReverseOperation.NORMAL)) {
+			timestamp = newTrackpointsList.get(newTrackpointsList.size() - 1)
+					.getTimestamp().getTime();
+		}
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)
+				|| mode.equals(Constants.ReverseOperation.RETURN)) {
+			timestamp = newTrackpointsList.get(0).getTimestamp().getTime();
+		}
+		updateTrackpoints(newTrackpointsList, timestamp);
+
+		
 		course.getTrackpoints().clear();
 		course.setTrackpoints(newTrackpointsList);
-		updateTrackpoints(newTrackpointsList, mode);
-
-		if (mode.equals(Constants.ReverseOperation.NEWRETURN)
-				|| mode.equals(Constants.ReverseOperation.RETURN)) {
-
-			List<Lap> newLapList = new ArrayList<>();
-			List<Trackpoint> newTrackpointLapList = new ArrayList<>();
-			ListIterator<Lap> lapIter = course.getLaps().listIterator(
-					course.getLaps().size());
-			ListIterator<Trackpoint> lapPointsIter;
-			Lap lap;
-
-			while (lapIter.hasPrevious()) {
-				lap = lapIter.previous();
-				/*
-				 * lapPointsIter = lap.getTrackpoints()
-				 * .listIterator(lap.getTrackpoints().size()); while
-				 * (lapPointsIter.hasPrevious()) { trackpoint =
-				 * lapPointsIter.previous();
-				 * 
-				 * timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
-				 * distanceFromPreviousTemp =
-				 * trackpoint.getDistanceFromPrevious();
-				 * 
-				 * trackpoint.setTimeFromPrevious(timeFromPrevious);
-				 * trackpoint.setDistanceFromPrevious(distanceFromPrevious);
-				 * 
-				 * timeFromPrevious = timeFromPreviousTemp; distanceFromPrevious
-				 * = distanceFromPreviousTemp;
-				 * 
-				 * newTrackpointLapList.add(trackpoint); }
-				 */
-				Date newStartTime = lap.getEndTime();
-				Date newEndTime = lap.getStartTime();
-				lap.setStartTime(newStartTime);
-				lap.setEndTime(newEndTime);
-				// lap.getTrackpoints().clear();
-				// lap.setTrackpoints(newTrackpointLapList);
-				// updateTrackpoints(newTrackpointLapList);
-
-				newLapList.add(lap);
-
-			}
-		}
+		
 
 		// course.getLaps().clear();
 		// course.setLaps(newLapList);
 
 	}
 
-	private void updateTrackpoints(List<Trackpoint> newTrackpointsList,
-			String mode) {
-		if (newTrackpointsList.isEmpty()) {
-			return;
-		}
+	private void undoReverse(Course course, String mode) {
 
+		List<Trackpoint> newTrackpointsList = new ArrayList<>();
+
+		ListIterator<Trackpoint> iter = course.getTrackpoints().listIterator(
+				course.getTrackpoints().size());
+		Trackpoint trackpoint;
+		double timeFromPreviousTemp = 0.0;
+		double timeFromPrevious = 0.0;
+		double distanceFromPreviousTemp = 0.0;
+		double distanceFromPrevious = 0.0;
+
+		
+		while (iter.hasPrevious()) {
+			trackpoint = iter.previous();
+
+			timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
+			distanceFromPreviousTemp = trackpoint.getDistanceFromPrevious();
+
+			trackpoint.setTimeFromPrevious(timeFromPrevious);
+			trackpoint.setDistanceFromPrevious(distanceFromPrevious);
+
+			timeFromPrevious = timeFromPreviousTemp;
+			distanceFromPrevious = distanceFromPreviousTemp;
+
+			newTrackpointsList.add(trackpoint);
+		}
+		
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)
+				|| mode.equals(Constants.ReverseOperation.RETURN)) {
+			updateLaps(course);
+
+		}
 		long timestamp = 0;
 		if (mode.equals(Constants.ReverseOperation.NORMAL)) {
 			timestamp = newTrackpointsList.get(newTrackpointsList.size() - 1)
 					.getTimestamp().getTime();
 		}
-		if (mode.equals(Constants.ReverseOperation.NEWRETURN)
-				|| mode.equals(Constants.ReverseOperation.RETURN)) {
-			timestamp = newTrackpointsList.get(0).getTimestamp().getTime();
+		if (mode.equals(Constants.ReverseOperation.RETURN)) {
+			long firstTimestamp = newTrackpointsList.get(newTrackpointsList.size() - 1)
+					.getTimestamp().getTime();
+			
+			long lastTimestamp = newTrackpointsList.get(0).getTimestamp().getTime();
+			timestamp = firstTimestamp - (lastTimestamp - firstTimestamp);
 		}
+		updateTrackpoints(newTrackpointsList, timestamp);
+		course.getTrackpoints().clear();
+		course.setTrackpoints(newTrackpointsList);
+		
+
+		
+
+		// course.getLaps().clear();
+		// course.setLaps(newLapList);
+
+	}
+
+	private void updateLaps(Course course) {
+		List<Lap> newLapList = new ArrayList<>();
+		//List<Trackpoint> newTrackpointLapList = new ArrayList<>();
+		ListIterator<Lap> lapIter = course.getLaps().listIterator(
+				course.getLaps().size());
+		//ListIterator<Trackpoint> lapPointsIter;
+		Lap lap;
+
+		while (lapIter.hasPrevious()) {
+			lap = lapIter.previous();
+			/*
+			 * lapPointsIter = lap.getTrackpoints()
+			 * .listIterator(lap.getTrackpoints().size()); while
+			 * (lapPointsIter.hasPrevious()) { trackpoint =
+			 * lapPointsIter.previous();
+			 * 
+			 * timeFromPreviousTemp = trackpoint.getTimeFromPrevious();
+			 * distanceFromPreviousTemp = trackpoint.getDistanceFromPrevious();
+			 * 
+			 * trackpoint.setTimeFromPrevious(timeFromPrevious);
+			 * trackpoint.setDistanceFromPrevious(distanceFromPrevious);
+			 * 
+			 * timeFromPrevious = timeFromPreviousTemp; distanceFromPrevious =
+			 * distanceFromPreviousTemp;
+			 * 
+			 * newTrackpointLapList.add(trackpoint); }
+			 */
+			Date newStartTime = lap.getEndTime();
+			Date newEndTime = lap.getStartTime();
+			lap.setStartTime(newStartTime);
+			lap.setEndTime(newEndTime);
+			// lap.getTrackpoints().clear();
+			// lap.setTrackpoints(newTrackpointLapList);
+			// updateTrackpoints(newTrackpointLapList);
+
+			newLapList.add(lap);
+
+		}
+	}
+
+	private void updateTrackpoints(List<Trackpoint> newTrackpointsList,
+			long timestamp) {
+		if (newTrackpointsList.isEmpty()) {
+			return;
+		}
+
+
 		double distance = 0.0;
 		for (Trackpoint trackpoint : newTrackpointsList) {
 			timestamp += (trackpoint.getTimeFromPrevious() * 1000);
@@ -176,17 +235,33 @@ public class ReverseOperation extends OperationBase implements Operation {
 		}
 	}
 
-	@Override
-	public void undoOperation(GPSDocument document) throws TrackItException {
+	public void undoOperation(GPSDocument document, String mode)
+			throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course, "stuff");
+		if (mode.equals(Constants.ReverseOperation.NORMAL)) {
+			reverse(course, mode);
+		}
+		if (mode.equals(Constants.ReverseOperation.RETURN)) {
+			undoReverse(course, mode);
+		}
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
+			// the original course is unchanged so it's assumed undo is not necessary
+		}
 
 	}
 
-	@Override
-	public void redoOperation(GPSDocument document) throws TrackItException {
+	public void redoOperation(GPSDocument document, String mode)
+			throws TrackItException {
 		Course course = document.getCourses().get(0);
-		reverse(course, "stuff");
+		if (mode.equals(Constants.ReverseOperation.NORMAL)) {
+			reverse(course, mode);
+		}
+		if (mode.equals(Constants.ReverseOperation.RETURN)) {
+			reverse(course, mode);
+		}
+		if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
+			// the original course is unchanged so it's assumed undo is not necessary
+		}
 
 	}
 
@@ -206,6 +281,18 @@ public class ReverseOperation extends OperationBase implements Operation {
 
 	@Override
 	public void process(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void undoOperation(GPSDocument document) throws TrackItException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void redoOperation(GPSDocument document) throws TrackItException {
 		// TODO Auto-generated method stub
 
 	}

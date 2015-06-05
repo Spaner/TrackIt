@@ -712,7 +712,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 				DocumentManager documentManager = DocumentManager.getInstance();
 				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course, Constants.ReverseOperation.NEWRETURN);
+				documentManager.reverse(course, Constants.ReverseOperation.RETURN_NEW);
 			}
 		}
 		

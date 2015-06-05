@@ -141,8 +141,8 @@ class ApplicationMenu {
 		menuActionMap.put(ActionType.IMPORT_PICTURE, pictureMenu);
 		menuActionMap.put(ActionType.DETECT_PAUSES, detectPausesMenu);
 		menuActionMap.put(ActionType.AUTO_LOCATE_PICTURES, autoLocatePicturesMenu);
-		menuActionMap.put(ActionType.UNDO, undoMenu);
-		menuActionMap.put(ActionType.REDO, redoMenu);
+		//menuActionMap.put(ActionType.UNDO, undoMenu);
+		//menuActionMap.put(ActionType.REDO, redoMenu);
 		menuActionMap.put(ActionType.COPY, copyMenu);
 	}
 

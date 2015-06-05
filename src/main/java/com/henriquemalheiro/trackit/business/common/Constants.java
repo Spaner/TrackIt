@@ -252,6 +252,12 @@ public class Constants {
 		public static final String NAME = "Copy selected";
 		public static final String COURSE = "course";
 	}
+	
+	/*Undo Options*/
+	public static class UndoOperation{
+		public static final String UNDO = "undo";
+		public static final String REDO = "redo";
+	}
 
 	/* Join Operation Options */
 	public static class JoinOperation {
@@ -264,7 +270,7 @@ public class Constants {
 	public static class ReverseOperation {
 		public static final String NORMAL = "Normal";
 		public static final String RETURN = "Return";
-		public static final String NEWRETURN = "New Return";
+		public static final String RETURN_NEW = "Return New";
 	}
 
 	/* Set PaceMaker Operation Options */

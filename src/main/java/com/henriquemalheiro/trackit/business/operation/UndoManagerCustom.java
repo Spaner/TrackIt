@@ -25,12 +25,31 @@ public class UndoManagerCustom {
 		return canRedo;
 	}
 	
+	public void addUndo(UndoItem item){
+		redoItemList.clear();
+		undoItemList.add(item);
+		canUndo = true;
+		canRedo = false;
+	}
+	
 	public void pushUndo(UndoItem item){
 		undoItemList.add(item);
 		canUndo = true;
 	}
+	
+	public UndoItem getUndoableItem(){
+		int itemIndex = undoItemList.size() - 1;
+		UndoItem lastItem = undoItemList.get(itemIndex);
+		return lastItem;
+	}
+	
+	public UndoItem getRedoableItem(){
+		int itemIndex = redoItemList.size() - 1;
+		UndoItem lastItem = redoItemList.get(itemIndex);
+		return lastItem;
+	}
 
-	public UndoItem popUndo(){
+	public void popUndo(){
 		int itemIndex = undoItemList.size() - 1;
 		UndoItem popItem = undoItemList.get(itemIndex);
 		undoItemList.remove(itemIndex);
@@ -38,7 +57,22 @@ public class UndoManagerCustom {
 		if(undoItemList.isEmpty()){
 			canUndo = false;
 		}
-		return popItem;
+	}
+	
+	public void deleteUndo(){
+		int itemIndex = undoItemList.size() - 1;
+		undoItemList.remove(itemIndex);
+		if(undoItemList.isEmpty()){
+			canUndo = false;
+		}
+	}
+	
+	public void deleteRedo(){
+		int itemIndex = redoItemList.size() - 1;
+		redoItemList.remove(itemIndex);
+		if(redoItemList.isEmpty()){
+			canRedo = false;
+		}
 	}
 	
 	
@@ -47,7 +81,7 @@ public class UndoManagerCustom {
 		canRedo = true;
 	}
 	
-	public UndoItem popRedo(){
+	public void popRedo(){
 		int itemIndex = redoItemList.size() - 1;
 		UndoItem popItem = redoItemList.get(itemIndex);
 		redoItemList.remove(itemIndex);
@@ -55,7 +89,6 @@ public class UndoManagerCustom {
 		if(redoItemList.isEmpty()){
 			canRedo = false;
 		}
-		return popItem;
 	}
 	
 	public void clearRedo(){
