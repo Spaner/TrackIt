@@ -89,6 +89,11 @@ class ApplicationMenu {
 		return applicationMenu;
 	}
 	
+	void refreshUndo(UndoManagerCustom undoManager){
+		undoMenu.setEnabled(undoManager.canUndo());//57421
+		redoMenu.setEnabled(undoManager.canRedo());//57421
+	}
+	
 	void refreshMenu(List<DocumentItem> items, UndoManagerCustom undoManager) {
 		boolean singleItem = (items.size() == 1 && !(items.get(0) instanceof Folder));
 		
@@ -121,9 +126,6 @@ class ApplicationMenu {
 				menuItem.setEnabled(false);
 			}
 		}
-		//logger.debug("\nUNDOMANAGER " + undoManager.canUndo() + "\n");
-		undoMenu.setEnabled(undoManager.canUndo());//57421
-		redoMenu.setEnabled(undoManager.canRedo());//57421
 	}
 	
 	private boolean actionSupported(List<ActionType> supportedActions, ActionType action) {

@@ -651,12 +651,30 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void splitAtSelected() {
+		Object[] options = { "Yes", "No", "Cancel" };
+		boolean keepSpeed;
+		boolean undo = false;
+		int keepSpeedDialog = JOptionPane.showOptionDialog(
+				TrackIt.getApplicationFrame(),
+				Messages.getMessage("applicationPanel.splitAtSelected.keepSpeed"),
+				Messages.getMessage("applicationPanel.splitAtSelected.keepSpeedTitle"),
+				JOptionPane.YES_NO_CANCEL_OPTION,
+				JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
 		DocumentManager documentManager = DocumentManager.getInstance();
-
+		
 		Trackpoint trackpoint = (Trackpoint) selectedItems.get(0);
 		Course course = (Course) trackpoint.getParent();
+		
+		if (keepSpeedDialog == JOptionPane.YES_OPTION) {
+			keepSpeed = true;
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undo);
+		}
+		if (keepSpeedDialog == JOptionPane.NO_OPTION) {
+			keepSpeed = false;
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undo);
+		}
+		
 
-		documentManager.splitAtSelected(course, trackpoint);
 	}
 
 	private void join() throws TrackItException {
@@ -740,11 +758,13 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private void undo() {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.undo();
+		applicationMenu.refreshUndo(documentManager.getUndoManager());
 	}
 
 	private void redo() {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.redo();
+		applicationMenu.refreshUndo(documentManager.getUndoManager());
 	}
 
 	private void copy() {
@@ -830,6 +850,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private void processItemSelected(DocumentItem item) {
 		DocumentManager documentManager = DocumentManager.getInstance();
+		applicationMenu.refreshUndo(documentManager.getUndoManager());
 		applicationMenu.refreshMenu(Arrays.asList(item),
 				documentManager.getUndoManager());
 	}
@@ -843,6 +864,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 			selectedItems.add(parent);
 		}
 		DocumentManager documentManager = DocumentManager.getInstance();
+		applicationMenu.refreshUndo(documentManager.getUndoManager());
 		applicationMenu.refreshMenu(
 				Utilities.<DocumentItem> convert(selectedItems),
 				documentManager.getUndoManager());

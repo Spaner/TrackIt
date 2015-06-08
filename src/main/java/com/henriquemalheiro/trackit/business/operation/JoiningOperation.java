@@ -90,6 +90,7 @@ public class JoiningOperation extends OperationBase implements Operation {
 		Course newCourse = new Course();
 		newCourse.setTrackpoints(trackpoints);
 		newCourse.setCoursePoints(coursePoints);
+		newCourse.setName(courses.get(0).getName());
 		
 		for (Trackpoint trackpoint : trackpoints) {
 			trackpoint.setParent(newCourse);

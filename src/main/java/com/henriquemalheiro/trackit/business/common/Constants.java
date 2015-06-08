@@ -253,7 +253,7 @@ public class Constants {
 		public static final String COURSE = "course";
 	}
 	
-	/*Undo Options*/
+	/*Undo Options 57421*/
 	public static class UndoOperation{
 		public static final String UNDO = "undo";
 		public static final String REDO = "redo";
@@ -266,12 +266,13 @@ public class Constants {
 		public static final String ADD_LAP_MARKER = "Add Lap Marker";
 	}
 	
-	/* Add Point Operation Options 57421 */
+	/* Reverse Operation Options 57421 */
 	public static class ReverseOperation {
 		public static final String NORMAL = "Normal";
 		public static final String RETURN = "Return";
 		public static final String RETURN_NEW = "Return New";
 	}
+	
 
 	/* Set PaceMaker Operation Options */
 	public static class SetPaceOperation {

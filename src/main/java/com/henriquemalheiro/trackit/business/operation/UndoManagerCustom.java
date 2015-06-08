@@ -32,10 +32,13 @@ public class UndoManagerCustom {
 		canRedo = false;
 	}
 	
+	
+	
 	public void pushUndo(UndoItem item){
 		undoItemList.add(item);
 		canUndo = true;
 	}
+	
 	
 	public UndoItem getUndoableItem(){
 		int itemIndex = undoItemList.size() - 1;

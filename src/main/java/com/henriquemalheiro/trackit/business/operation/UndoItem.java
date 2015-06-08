@@ -13,7 +13,8 @@ public class UndoItem {
 	private final Trackpoint trackpoint;
 	private final String reverseMode;
 	private final Course course;
-
+	private final Double splitSpeed;
+	
 	private UndoItem(UndoItemBuilder builder) {
 		this.operationType = builder.operationType;
 		this.changedCoursesIds = builder.changedCoursesIds;
@@ -21,6 +22,7 @@ public class UndoItem {
 		this.trackpoint = builder.trackpoint;
 		this.reverseMode = builder.reverseMode;
 		this.course = builder.course;
+		this.splitSpeed = builder.splitSpeed;
 	}
 
 	public String getOperationType() {
@@ -46,6 +48,10 @@ public class UndoItem {
 	public Course getCourse(){
 		return course;
 	}
+	
+	public Double getSplitSpeed(){
+		return splitSpeed;
+	}
 
 	public long getFirstCourseId() {
 		int first = 0;
@@ -63,6 +69,7 @@ public class UndoItem {
 		private Trackpoint trackpoint;
 		private String reverseMode;
 		private Course course;
+		private Double splitSpeed;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -83,6 +90,11 @@ public class UndoItem {
 		
 		public UndoItemBuilder course(Course course){
 			this.course = course;
+			return this;
+		}
+		
+		public UndoItemBuilder splitSpeed (Double splitSpeed){
+			this.splitSpeed = splitSpeed;
 			return this;
 		}
 
