@@ -204,7 +204,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 		return selectedFolder;
 	}
 
-
 	public GPSDocument createDocument(String folderName) {
 		return createDocument(folderName,
 				Messages.getMessage("documentManager.untitledDocument"));
@@ -473,8 +472,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	public void splitAtSelected(final Course course,
-			final Trackpoint trackpoint, final boolean keepSpeed,
-			final boolean undo) {
+			final Trackpoint trackpoint, final boolean keepSpeed) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
 		final Double tempSpeed = trackpoint.getSpeed();
@@ -530,43 +528,27 @@ public class DocumentManager implements EventPublisher, EventListener {
 					course.setUnsavedTrue();
 				}
 
-				/* undo */
-				
-				if (isSplitForUndo) {
-					logger.debug("ENDSPLIT");
-					List<Long> newIds = new ArrayList<Long>();
-					newIds.add(courses.get(0).getId());
-					newIds.add(courses.get(1).getId());
-					UndoItem item = undoManager.getUndoableItem();
-					UndoItem newItem = new UndoItem.UndoItemBuilder(item
-							.getOperationType(), newIds, item.getDocumentId())
-							.trackpoint(item.getTrackpoint())
-							.splitSpeed(item.getSplitSpeed()).build();
-					undoManager.deleteUndo();
-					undoManager.pushUndo(newItem);
-					isJoinForUndo = false;
-				}
-				
-				if (!undo) {
-					String name = UndoableActionType.SPLIT.toString();
-					List<Long> courseIds = new ArrayList<Long>();
-					long documentId = masterDocument.getId();
-					courseIds.add(courses.get(0).getId());
-					courseIds.add(courses.get(1).getId());
+				String name = UndoableActionType.SPLIT.toString();
+				List<Long> courseIds = new ArrayList<Long>();
+				long documentId = masterDocument.getId();
 
-					if (!keepSpeed) {
-						UndoItem item = new UndoItem.UndoItemBuilder(name,
-								courseIds, documentId).trackpoint(trackpoint)
-								.splitSpeed(tempSpeed).build();
-						undoManager.addUndo(item);
-					}
-					if (keepSpeed) {
-						Double speed = null;
-						UndoItem item = new UndoItem.UndoItemBuilder(name,
-								courseIds, documentId).trackpoint(trackpoint)
-								.splitSpeed(speed).build();
-						undoManager.addUndo(item);
-					}
+				for (Course course : courses) {
+					courseIds.add(course.getId());
+				}
+
+				if (!keepSpeed) {
+					UndoItem item = new UndoItem.UndoItemBuilder(name,
+							courseIds, documentId).trackpoint(trackpoint)
+							.splitSpeed(tempSpeed).build();
+					undoManager.addUndo(item);
+				}
+				if (keepSpeed) {
+					Double speed = null;
+					UndoItem item = new UndoItem.UndoItemBuilder(name,
+							courseIds, documentId).trackpoint(trackpoint)
+							.splitSpeed(speed).build();
+					undoManager.addUndo(item);
+
 				}
 
 				/* end undo */
@@ -1036,22 +1018,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			public void done(Object result) {
 				Course jointCourse = (Course) result;
+				jointCourse.setId(courses.get(0).getId());
 				for (Course course : courses) {
 					masterDocument.remove(course);
-				}
-
-				if (isJoinForUndo) {
-					logger.debug("ENDJOIN");
-					List<Long> newIds = new ArrayList<Long>();
-					newIds.add(jointCourse.getId());
-					UndoItem item = undoManager.getRedoableItem();
-					UndoItem newItem = new UndoItem.UndoItemBuilder(item
-							.getOperationType(), newIds, item.getDocumentId())
-							.trackpoint(item.getTrackpoint())
-							.splitSpeed(item.getSplitSpeed()).build();
-					undoManager.deleteRedo();
-					undoManager.pushRedo(newItem);
-					isJoinForUndo = false;
 				}
 
 				jointCourse.setParent(masterDocument);
@@ -1710,7 +1679,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	public void undoSplit(final UndoItem item, final String undoMode) {
-		
+
 		logger.debug("UNDO SPLIT");
 		List<Course> courses = new ArrayList<Course>();
 		final DocumentEntry entry = documents.get(item.getDocumentId());
@@ -1731,17 +1700,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 						.setSpeed(splitSpeed);
 				courses.get(1).getTrackpoints().get(0).setSpeed(splitSpeed);
 			}
-			isJoinForUndo = true;
-			join(courses);
+			undoJoin(courses);
 
 		} else if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			if (splitSpeed != null) {
 				keepSpeed = false;
 			}
-			isSplitForUndo = true;
-			splitAtSelected(courses.get(0), item.getTrackpoint(), keepSpeed,
+			undoSplitAtSelected(courses.get(0), item.getTrackpoint(), keepSpeed,
 					undo);
-			
 
 		}
 	}
@@ -1830,4 +1796,166 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 
+	public void undoSplitAtSelected(final Course course,
+			final Trackpoint trackpoint, final boolean keepSpeed,
+			final boolean undo) {
+		Objects.requireNonNull(course);
+		Objects.requireNonNull(trackpoint);
+		final Double tempSpeed = trackpoint.getSpeed();
+		if (!keepSpeed) {
+			Double speed = 0.0;
+			trackpoint.setSpeed(speed);
+		}
+
+		final GPSDocument masterDocument = course.getParent();
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages
+						.getMessage("documentManager.message.splitingCourse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return splitCourse(course, trackpoint);
+			}
+
+			private List<Course> splitCourse(Course course,
+					Trackpoint trackpoint) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
+						trackpoint);
+
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
+						options);
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+
+				try {
+					splittingOperation.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void done(Object result) {
+				List<Course> courses = (List<Course>) result;
+				for (Course course : courses) {
+					course.setParent(masterDocument);
+					course.setUnsavedTrue();
+				}
+
+				/* undo */
+
+				
+					logger.debug("ENDSPLIT");
+					List<Long> newIds = new ArrayList<Long>();
+					newIds.add(courses.get(0).getId());
+					newIds.add(courses.get(1).getId());
+					UndoItem item = undoManager.getUndoableItem();
+					UndoItem newItem = new UndoItem.UndoItemBuilder(item
+							.getOperationType(), newIds, item.getDocumentId())
+							.trackpoint(item.getTrackpoint())
+							.splitSpeed(item.getSplitSpeed()).build();
+					undoManager.deleteUndo();
+					undoManager.pushUndo(newItem);
+				
+
+				/* end undo */
+
+				masterDocument.remove(course);
+				masterDocument.addCourses(courses);
+
+				masterDocument.publishUpdateEvent(null);
+				courses.get(0).publishSelectionEvent(null);
+			}
+		}).execute();
+	}
+	
+	public void undoJoin(final List<Course> courses) {
+		if (courses == null || courses.size() < 2) {
+			throw new IllegalArgumentException(
+					"Join only applies to two or more courses!");
+		}
+
+		final GPSDocument masterDocument = courses.get(0).getParent();
+
+		new Task(new Action() {
+			@Override
+			public String getMessage() {
+				return Messages
+						.getMessage("documentManager.message.joiningCourses");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return joinCourses(courses);
+			}
+
+			private Course joinCourses(final List<Course> courses)
+					throws TrackItException {
+				Map<String, Object> options = new HashMap<>();
+				options.put(Constants.JoinOperation.ADD_LAP_MARKER, true);
+				JoiningOperation operation = new JoiningOperation(options);
+				GPSDocument document = new GPSDocument(courses.get(0)
+						.getParent().getFileName());
+				document.addCourses(courses);
+
+				try {
+					operation.process(document);
+					logger.debug("JOIN");
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				if (document.getCourses().size() != 1) {
+					throw new TrackItException(
+							"Join operation resulted in more than one course!");
+				}
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			public void done(Object result) {
+				Course jointCourse = (Course) result;
+				jointCourse.setId(courses.get(0).getId());
+				for (Course course : courses) {
+					masterDocument.remove(course);
+				}
+
+					logger.debug("ENDJOIN");
+					List<Long> newIds = new ArrayList<Long>();
+					newIds.add(jointCourse.getId());
+					UndoItem item = undoManager.getRedoableItem();
+					UndoItem newItem = new UndoItem.UndoItemBuilder(item
+							.getOperationType(), newIds, item.getDocumentId())
+							.trackpoint(item.getTrackpoint())
+							.splitSpeed(item.getSplitSpeed()).build();
+					undoManager.deleteRedo();
+					undoManager.pushRedo(newItem);
+				
+
+				jointCourse.setParent(masterDocument);
+				masterDocument.add(jointCourse);
+
+				masterDocument.publishUpdateEvent(null);
+				jointCourse.publishSelectionEvent(null);
+				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM,
+						jointCourse);
+			}
+		}).execute();
+	}
+
 }
+
+

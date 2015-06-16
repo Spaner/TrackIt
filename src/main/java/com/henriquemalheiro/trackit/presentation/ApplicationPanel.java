@@ -653,7 +653,6 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private void splitAtSelected() {
 		Object[] options = { "Yes", "No", "Cancel" };
 		boolean keepSpeed;
-		boolean undo = false;
 		int keepSpeedDialog = JOptionPane.showOptionDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.splitAtSelected.keepSpeed"),
@@ -667,11 +666,11 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		
 		if (keepSpeedDialog == JOptionPane.YES_OPTION) {
 			keepSpeed = true;
-			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undo);
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed);
 		}
 		if (keepSpeedDialog == JOptionPane.NO_OPTION) {
 			keepSpeed = false;
-			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undo);
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed);
 		}
 		
 
