@@ -14,6 +14,7 @@ public class UndoItem {
 	private final String reverseMode;
 	private final Course course;
 	private final Double splitSpeed;
+	private final long deletedCourseId;
 	
 	private UndoItem(UndoItemBuilder builder) {
 		this.operationType = builder.operationType;
@@ -23,6 +24,7 @@ public class UndoItem {
 		this.reverseMode = builder.reverseMode;
 		this.course = builder.course;
 		this.splitSpeed = builder.splitSpeed;
+		this.deletedCourseId = builder.deletedCourseId;
 	}
 
 	public String getOperationType() {
@@ -52,6 +54,10 @@ public class UndoItem {
 	public Double getSplitSpeed(){
 		return splitSpeed;
 	}
+	
+	public long getDeletedCourseId(){
+		return deletedCourseId;
+	}
 
 	public long getFirstCourseId() {
 		int first = 0;
@@ -70,6 +76,7 @@ public class UndoItem {
 		private String reverseMode;
 		private Course course;
 		private Double splitSpeed;
+		private long deletedCourseId;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -95,6 +102,11 @@ public class UndoItem {
 		
 		public UndoItemBuilder splitSpeed (Double splitSpeed){
 			this.splitSpeed = splitSpeed;
+			return this;
+		}
+		
+		public UndoItemBuilder deletedCourseId(long deletedCourseId){
+			this.deletedCourseId = deletedCourseId;
 			return this;
 		}
 

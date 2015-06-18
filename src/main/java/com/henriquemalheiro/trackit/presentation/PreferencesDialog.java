@@ -1031,7 +1031,9 @@ public class PreferencesDialog extends JDialog {
 
 		final SpinnerModel model = new SpinnerNumberModel(warningDistance, 0.0,
 				2000.0, 100.0);
+
 		final JSpinner warningDistanceSpinner = new JSpinner(model);
+
 		warningDistanceSpinner.putClientProperty("JComponent.sizeVariant",
 				"small");
 		warningDistanceSpinner.setEditor(new JSpinner.NumberEditor(
@@ -1091,19 +1093,113 @@ public class PreferencesDialog extends JDialog {
 			}
 		});
 
+		JLabel lblMinimumDistance = new JLabel(
+				getMessage("preferencesDialog.joinPreferences.minimumDistance"));
+		final double minimumDistance = Double.valueOf(appPreferences
+				.getDoublePreference(Constants.PrefsCategories.JOIN, null,
+						Constants.JoinPreferences.MINIMUM_DISTANCE, 1.0));
+
+		final SpinnerModel model2 = new SpinnerNumberModel(minimumDistance,
+				0.0, 10.0, 0.5);
+		final JSpinner minimumDistanceSpinner = new JSpinner(model2);
+
+		minimumDistanceSpinner.putClientProperty("JComponent.sizeVariant",
+				"small");
+		minimumDistanceSpinner.setEditor(new JSpinner.NumberEditor(
+				minimumDistanceSpinner, "#0.0"));
+		minimumDistanceSpinner.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				final SpinnerModel model2 = minimumDistanceSpinner.getModel();
+				if (model2 instanceof SpinnerNumberModel) {
+					final double newValue = ((SpinnerNumberModel) model2)
+							.getNumber().doubleValue();
+					preferencesToApply.add(new PreferenceTask() {
+						public void execute() {
+							appPreferences.setPreference(
+									Constants.PrefsCategories.JOIN, null,
+									Constants.JoinPreferences.MINIMUM_DISTANCE,
+									newValue);
+						}
+					});
+				}
+			}
+		});
+
+		JLabel lblMinimumDistanceUnit = new JLabel(Unit.METER.toString());
+
+		final boolean warnDistanceBelow = Boolean.valueOf(appPreferences
+				.getBooleanPreference(Constants.PrefsCategories.JOIN, null,
+						Constants.JoinPreferences.WARN_DISTANCE_BELOW,
+						Boolean.TRUE));
+
+		JCheckBox chkWarnDistanceBelow = new JCheckBox();
+		chkWarnDistanceBelow.setSelected(warnDistanceBelow);
+		chkWarnDistanceBelow.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				final boolean selected = ((JCheckBox) e.getSource())
+						.isSelected();
+				minimumDistanceSpinner.setEnabled(selected);
+
+				final SpinnerModel model2 = minimumDistanceSpinner.getModel();
+				final double newValue = ((SpinnerNumberModel) model2)
+						.getNumber().doubleValue();
+
+				preferencesToApply.add(new PreferenceTask() {
+					public void execute() {
+						appPreferences.setPreference(
+								Constants.PrefsCategories.JOIN, null,
+								Constants.JoinPreferences.WARN_DISTANCE_BELOW,
+								selected);
+						appPreferences.setPreference(
+								Constants.PrefsCategories.JOIN, null,
+								Constants.JoinPreferences.MINIMUM_DISTANCE,
+								newValue);
+					}
+				});
+			}
+		});
+
 		layout.setHorizontalGroup(layout
 				.createParallelGroup(GroupLayout.Alignment.LEADING)
 				.addComponent(lblTitle)
 				.addComponent(titleSeparator)
 				.addGroup(
 						layout.createSequentialGroup()
-								.addComponent(chkWarnDistanceExceeded)
-								.addComponent(lblWarningDistance)
-								.addComponent(warningDistanceSpinner,
-										GroupLayout.PREFERRED_SIZE,
-										GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblWarningDistanceUnit)));
+								.addGroup(
+										layout.createParallelGroup(
+												GroupLayout.Alignment.LEADING)
+												.addComponent(
+														chkWarnDistanceExceeded)
+												.addComponent(
+														chkWarnDistanceBelow))
+								.addGroup(
+										layout.createParallelGroup(
+												GroupLayout.Alignment.LEADING)
+												.addComponent(
+														lblWarningDistance)
+												.addComponent(
+														lblMinimumDistance))
+								.addGroup(
+										layout.createParallelGroup(
+												GroupLayout.Alignment.LEADING)
+												.addComponent(
+														warningDistanceSpinner,
+														GroupLayout.PREFERRED_SIZE,
+														GroupLayout.DEFAULT_SIZE,
+														GroupLayout.PREFERRED_SIZE)
+												.addComponent(
+														minimumDistanceSpinner,
+														GroupLayout.PREFERRED_SIZE,
+														GroupLayout.DEFAULT_SIZE,
+														GroupLayout.PREFERRED_SIZE))
+								.addGroup(
+										layout.createParallelGroup(
+												GroupLayout.Alignment.LEADING)
+												.addComponent(
+														lblWarningDistanceUnit)
+												.addComponent(
+														lblMinimumDistanceUnit))));
 
 		layout.setVerticalGroup(layout
 				.createSequentialGroup()
@@ -1115,7 +1211,14 @@ public class PreferencesDialog extends JDialog {
 								.addComponent(chkWarnDistanceExceeded)
 								.addComponent(lblWarningDistance)
 								.addComponent(warningDistanceSpinner)
-								.addComponent(lblWarningDistanceUnit)));
+								.addComponent(lblWarningDistanceUnit))
+				.addGroup(
+						layout.createParallelGroup(
+								GroupLayout.Alignment.BASELINE)
+								.addComponent(chkWarnDistanceBelow)
+								.addComponent(lblMinimumDistance)
+								.addComponent(minimumDistanceSpinner)
+								.addComponent(lblMinimumDistanceUnit)));
 
 		return panel;
 	}
@@ -1441,7 +1544,7 @@ public class PreferencesDialog extends JDialog {
 				MapView mv = TrackIt.getApplicationPanel().getMapView();
 				mv.getMap().getLayer(MapLayerType.PHOTO_LAYER).validate();
 				mv.getMap().refresh();
-			}			
+			}
 		});
 	}
 
@@ -1507,17 +1610,18 @@ public class PreferencesDialog extends JDialog {
 									Constants.PrefsCategories.PAUSE, null,
 									Constants.PausePreferences.SPEED_THRESHOLD,
 									newValue);
-							
+
 							Map<String, Object> options = new HashMap<String, Object>();
 							options.put(Constants.ConsolidationOperation.LEVEL,
 									ConsolidationLevel.RECALCULATION);
-							
+
 							List<GPSDocument> documents = DocumentManager
 									.getInstance().getDocuments();
 							for (GPSDocument doc : documents) {
-								//doc.updateSpeedWithPauseTime(newValue);
+								// doc.updateSpeedWithPauseTime(newValue);
 								try {
-									new ConsolidationOperation(options).process(doc);
+									new ConsolidationOperation(options)
+											.process(doc);
 								} catch (TrackItException e) {
 									e.printStackTrace();
 								}

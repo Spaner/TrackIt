@@ -127,6 +127,8 @@ public class Constants {
 	public static final class JoinPreferences {
 		public static final String WARN_DISTANCE_EXCEEDED = "Warn Distance Exceeded";
 		public static final String WARNING_DISTANCE = "Warning Distance";
+		public static final String MINIMUM_DISTANCE = "Minimum Distance";
+		public static final String WARN_DISTANCE_BELOW = "Warn Distance Below";
 	}
 
 	/* Reader Options */

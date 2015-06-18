@@ -1706,7 +1706,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			if (splitSpeed != null) {
 				keepSpeed = false;
 			}
-			undoSplitAtSelected(courses.get(0), item.getTrackpoint(), keepSpeed,
+			redoSplitAtSelected(courses.get(0), item.getTrackpoint(), keepSpeed,
 					undo);
 
 		}
@@ -1796,12 +1796,11 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 
-	public void undoSplitAtSelected(final Course course,
+	public void redoSplitAtSelected(final Course course,
 			final Trackpoint trackpoint, final boolean keepSpeed,
 			final boolean undo) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
-		final Double tempSpeed = trackpoint.getSpeed();
 		if (!keepSpeed) {
 			Double speed = 0.0;
 			trackpoint.setSpeed(speed);
@@ -1855,13 +1854,15 @@ public class DocumentManager implements EventPublisher, EventListener {
 				}
 
 				/* undo */
+				UndoItem item = undoManager.getUndoableItem();
+				courses.get(1).setId(item.getDeletedCourseId());				
 
 				
 					logger.debug("ENDSPLIT");
 					List<Long> newIds = new ArrayList<Long>();
 					newIds.add(courses.get(0).getId());
 					newIds.add(courses.get(1).getId());
-					UndoItem item = undoManager.getUndoableItem();
+					//UndoItem item = undoManager.getUndoableItem();
 					UndoItem newItem = new UndoItem.UndoItemBuilder(item
 							.getOperationType(), newIds, item.getDocumentId())
 							.trackpoint(item.getTrackpoint())
@@ -1936,11 +1937,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 					logger.debug("ENDJOIN");
 					List<Long> newIds = new ArrayList<Long>();
 					newIds.add(jointCourse.getId());
+					
+					long deletedId = courses.get(1).getId();
 					UndoItem item = undoManager.getRedoableItem();
 					UndoItem newItem = new UndoItem.UndoItemBuilder(item
 							.getOperationType(), newIds, item.getDocumentId())
 							.trackpoint(item.getTrackpoint())
-							.splitSpeed(item.getSplitSpeed()).build();
+							.splitSpeed(item.getSplitSpeed()).deletedCourseId(deletedId).build();
 					undoManager.deleteRedo();
 					undoManager.pushRedo(newItem);
 				
