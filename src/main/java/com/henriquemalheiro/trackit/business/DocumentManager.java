@@ -56,6 +56,7 @@ import com.henriquemalheiro.trackit.business.domain.CourseLap;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
+import com.henriquemalheiro.trackit.business.domain.Lap;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.business.domain.Waypoint;
 import com.henriquemalheiro.trackit.business.exception.ReaderException;
@@ -1706,8 +1707,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			if (splitSpeed != null) {
 				keepSpeed = false;
 			}
-			redoSplitAtSelected(courses.get(0), item.getTrackpoint(), keepSpeed,
-					undo);
+			redoSplitAtSelected(courses.get(0), item.getTrackpoint(),
+					keepSpeed, undo);
 
 		}
 	}
@@ -1855,21 +1856,19 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				/* undo */
 				UndoItem item = undoManager.getUndoableItem();
-				courses.get(1).setId(item.getDeletedCourseId());				
+				courses.get(1).setId(item.getDeletedCourseId());
 
-				
-					logger.debug("ENDSPLIT");
-					List<Long> newIds = new ArrayList<Long>();
-					newIds.add(courses.get(0).getId());
-					newIds.add(courses.get(1).getId());
-					//UndoItem item = undoManager.getUndoableItem();
-					UndoItem newItem = new UndoItem.UndoItemBuilder(item
-							.getOperationType(), newIds, item.getDocumentId())
-							.trackpoint(item.getTrackpoint())
-							.splitSpeed(item.getSplitSpeed()).build();
-					undoManager.deleteUndo();
-					undoManager.pushUndo(newItem);
-				
+				logger.debug("ENDSPLIT");
+				List<Long> newIds = new ArrayList<Long>();
+				newIds.add(courses.get(0).getId());
+				newIds.add(courses.get(1).getId());
+				// UndoItem item = undoManager.getUndoableItem();
+				UndoItem newItem = new UndoItem.UndoItemBuilder(item
+						.getOperationType(), newIds, item.getDocumentId())
+						.trackpoint(item.getTrackpoint())
+						.splitSpeed(item.getSplitSpeed()).build();
+				undoManager.deleteUndo();
+				undoManager.pushUndo(newItem);
 
 				/* end undo */
 
@@ -1881,7 +1880,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}).execute();
 	}
-	
+
 	public void undoJoin(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
 			throw new IllegalArgumentException(
@@ -1912,7 +1911,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				document.addCourses(courses);
 
 				try {
-					operation.process(document);
+					operation.undoSplit(document);
 					logger.debug("JOIN");
 				} catch (TrackItException e) {
 					logger.error(e.getMessage());
@@ -1934,19 +1933,23 @@ public class DocumentManager implements EventPublisher, EventListener {
 					masterDocument.remove(course);
 				}
 
-					logger.debug("ENDJOIN");
-					List<Long> newIds = new ArrayList<Long>();
-					newIds.add(jointCourse.getId());
-					
-					long deletedId = courses.get(1).getId();
-					UndoItem item = undoManager.getRedoableItem();
-					UndoItem newItem = new UndoItem.UndoItemBuilder(item
-							.getOperationType(), newIds, item.getDocumentId())
-							.trackpoint(item.getTrackpoint())
-							.splitSpeed(item.getSplitSpeed()).deletedCourseId(deletedId).build();
-					undoManager.deleteRedo();
-					undoManager.pushRedo(newItem);
+				logger.debug("ENDJOIN");
+				List<Long> newIds = new ArrayList<Long>();
+				newIds.add(jointCourse.getId());
+
 				
+				long deletedId = courses.get(1).getId();
+				UndoItem item = undoManager.getRedoableItem();
+				
+				
+				
+				UndoItem newItem = new UndoItem.UndoItemBuilder(item
+						.getOperationType(), newIds, item.getDocumentId())
+						.trackpoint(item.getTrackpoint())
+						.splitSpeed(item.getSplitSpeed())
+						.deletedCourseId(deletedId).build();
+				undoManager.deleteRedo();
+				undoManager.pushRedo(newItem);
 
 				jointCourse.setParent(masterDocument);
 				masterDocument.add(jointCourse);
@@ -1958,7 +1961,4 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}).execute();
 	}
-
 }
-
-

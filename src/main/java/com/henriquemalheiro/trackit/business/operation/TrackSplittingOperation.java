@@ -88,6 +88,11 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 		for (Trackpoint tp : temp){
 			copy.add(tp.clone());
 		}
+		int index = 0;
+		while(index < copy.size()){
+			copy.get(index).setId(temp.get(index).getId());
+			index++;
+		}
 		Trackpoint tp = copy.get(0);
 		tp.setDistanceFromPrevious(0.);
 		tp.setTimeFromPrevious(0.);

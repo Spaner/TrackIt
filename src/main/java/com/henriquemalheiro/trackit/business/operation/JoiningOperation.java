@@ -74,6 +74,29 @@ public class JoiningOperation extends OperationBase implements Operation {
 		document.getCourses().clear();
 		document.add(newCourse);
 	}
+	
+	public void undoSplit(GPSDocument document) throws TrackItException{
+		Course newCourse = join(document);
+		
+		int index = 0;
+		
+		double distance;
+		while (index < newCourse.getLaps().size()-1){
+			
+			Trackpoint leftLapLastTrackPoint = newCourse.getLaps().get(index).getLastTrackpoint();
+			Trackpoint rightLapFirstTrackPoint = newCourse.getLaps().get(index+1).getFirstTrackpoint();
+			distance = calculateDistance(leftLapLastTrackPoint, rightLapFirstTrackPoint);
+			if(leftLapLastTrackPoint.getId() == rightLapFirstTrackPoint.getId()){
+				newCourse.getLaps().get(index).setEndTime(newCourse.getLaps().get(index+1).getEndTime());
+				newCourse.getLaps().remove(index+1);
+				newCourse.getLaps().get(index).consolidate(ConsolidationLevel.SUMMARY);
+			}
+		}
+		
+		document.getCourses().clear();
+		document.add(newCourse);
+		
+	}
 
 	private Course join(GPSDocument document) {
 		courses = document.getCourses();
