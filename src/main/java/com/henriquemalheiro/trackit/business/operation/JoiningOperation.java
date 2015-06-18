@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Pair;
 import com.henriquemalheiro.trackit.business.domain.Course;
@@ -162,9 +163,31 @@ public class JoiningOperation extends OperationBase implements Operation {
 	private void joinTrackpoints(List<Trackpoint> leftTrackpoints, List<Trackpoint> rightTrackpoints) {
 		long timeGap = calculateTimeGap(leftTrackpoints, rightTrackpoints);
 		double distanceGap = calculateDistanceGap(leftTrackpoints, rightTrackpoints);
+		
+		int removeIndex = leftTrackpoints.size()-1;
+		int rightSize = rightTrackpoints.size();
+		
 		shiftTrackpoints(rightTrackpoints, timeGap, distanceGap);
 		adjustJoiningTrackpoints(leftTrackpoints, rightTrackpoints);
+		
 		leftTrackpoints.addAll(rightTrackpoints);
+		if(rightSize != leftTrackpoints.size()){
+			mergeJoiningPoints(leftTrackpoints, removeIndex);
+		}
+	}
+	
+	private void mergeJoiningPoints(List<Trackpoint> leftTrackpoints, int index) {
+		
+		if (!leftTrackpoints.isEmpty()) {
+			Trackpoint leftLastTrackpoint = leftTrackpoints.get(index);
+			Trackpoint firstRightTrackpoint = leftTrackpoints.get(index+1);
+			
+			double distance = calculateDistance(leftLastTrackpoint, firstRightTrackpoint);
+			
+			if(distance < getMinimumDistance()){
+				leftTrackpoints.remove(index+1);
+			}
+		}
 	}
 
 	private long calculateTimeGap(List<Trackpoint> leftTrackpoints, List<Trackpoint> rightTrackpoints) {
@@ -250,6 +273,11 @@ public class JoiningOperation extends OperationBase implements Operation {
 	private double calculateTimeDifference(Trackpoint leftTrackpoint,
 			Trackpoint rightTrackpoint) {
 		return (rightTrackpoint.getTimestamp().getTime() - leftTrackpoint.getTimestamp().getTime()) / 1000.0;
+	}
+	
+	private double getMinimumDistance() {
+		return TrackIt.getPreferences().getDoublePreference(Constants.PrefsCategories.JOIN, null,
+				Constants.JoinPreferences.MINIMUM_DISTANCE, 1.0);
 	}
 
 	@Override

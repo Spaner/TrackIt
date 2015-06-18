@@ -225,12 +225,14 @@ class JoinDialog extends JDialog {
 
 		private boolean validJoin(List<Course> joiningCourses) {
 			boolean validJoin = true;
+			boolean minDistance = false;
 			
-			if (!warnDistanceExceeded()) {
+			if (!warnDistanceExceeded() && !warnDistanceBelow()) {
 				return validJoin;
 			}
 			
 			final double warningDistance = getWarningDistance();
+			final double minimumDistance = getMinimumDistance();
 			Trackpoint trailingTrackpoint;
 			Trackpoint leadingTrackpoint;
 			double distance;
@@ -242,13 +244,23 @@ class JoinDialog extends JDialog {
 				
 				if (distance > warningDistance) {
 					validJoin = false;
-					break;
+					//break;
+				}
+				if (distance < minimumDistance) {
+					minDistance = true;
+					//break;
 				}
 			}
 			
 			if (!validJoin) {
 				int option = JOptionPane.showConfirmDialog(TrackIt.getApplicationFrame(),
 						Messages.getMessage("joinDialog.message.warningDistanceExceeded", Formatters.getFormatedDistance(warningDistance)),
+						Messages.getMessage("trackIt.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+				validJoin = (option == JOptionPane.YES_OPTION); 
+			}
+			if (minDistance) {
+				int option = JOptionPane.showConfirmDialog(TrackIt.getApplicationFrame(),
+						Messages.getMessage("joinDialog.message.warningDistanceDelow", Formatters.getFormatedDistance(minimumDistance)),
 						Messages.getMessage("trackIt.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 				validJoin = (option == JOptionPane.YES_OPTION); 
 			}
@@ -261,9 +273,19 @@ class JoinDialog extends JDialog {
 					Constants.JoinPreferences.WARN_DISTANCE_EXCEEDED, Boolean.TRUE);
 		}
 		
+		private boolean warnDistanceBelow() {
+			return TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.JOIN, null,
+					Constants.JoinPreferences.WARN_DISTANCE_BELOW, Boolean.TRUE);
+		}
+		
 		private double getWarningDistance() {
 			return TrackIt.getPreferences().getDoublePreference(Constants.PrefsCategories.JOIN, null,
 					Constants.JoinPreferences.WARNING_DISTANCE, 100.0);
+		}
+		
+		private double getMinimumDistance() {
+			return TrackIt.getPreferences().getDoublePreference(Constants.PrefsCategories.JOIN, null,
+					Constants.JoinPreferences.MINIMUM_DISTANCE, 1.0);
 		}
 
 		private Double calculateDistance(Trackpoint trailingTrackpoint, Trackpoint leadingTrackpoint) {
