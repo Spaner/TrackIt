@@ -1,6 +1,8 @@
-package com.henriquemalheiro.trackit.business.operation;
+package com.miguelpernas.trackit.business.operation;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
@@ -9,6 +11,7 @@ public class UndoItem {
 
 	private final String operationType;
 	private final List<Long> changedCoursesIds;
+	private final Map<Long, Long> connectingPointsIds;
 	private final long documentId;
 	private final Trackpoint trackpoint;
 	private final String reverseMode;
@@ -25,6 +28,7 @@ public class UndoItem {
 		this.course = builder.course;
 		this.splitSpeed = builder.splitSpeed;
 		this.deletedCourseId = builder.deletedCourseId;
+		this.connectingPointsIds = builder.connectingPointsIds;
 	}
 
 	public String getOperationType() {
@@ -58,6 +62,10 @@ public class UndoItem {
 	public long getDeletedCourseId(){
 		return deletedCourseId;
 	}
+	
+	public Map<Long, Long> getConnectingPointsIds(){
+		return connectingPointsIds;
+	}
 
 	public long getFirstCourseId() {
 		int first = 0;
@@ -77,6 +85,7 @@ public class UndoItem {
 		private Course course;
 		private Double splitSpeed;
 		private long deletedCourseId;
+		private Map<Long, Long> connectingPointsIds = new HashMap<Long, Long>();
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -107,6 +116,11 @@ public class UndoItem {
 		
 		public UndoItemBuilder deletedCourseId(long deletedCourseId){
 			this.deletedCourseId = deletedCourseId;
+			return this;
+		}
+		
+		public UndoItemBuilder connectingPointsIds(Map<Long, Long> connectingPointsIds){
+			this.connectingPointsIds = connectingPointsIds;
 			return this;
 		}
 

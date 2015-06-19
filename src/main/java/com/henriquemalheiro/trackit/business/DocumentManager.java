@@ -19,8 +19,6 @@
  */
 package com.henriquemalheiro.trackit.business;
 
-import static com.henriquemalheiro.trackit.business.common.Messages.getMessage;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,21 +27,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.JOptionPane;
 import javax.swing.ProgressMonitorInputStream;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.derby.catalog.GetProcedureColumns;
 import org.apache.log4j.Logger;
 
 import com.henriquemalheiro.trackit.TrackIt;
@@ -56,7 +53,6 @@ import com.henriquemalheiro.trackit.business.domain.CourseLap;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
-import com.henriquemalheiro.trackit.business.domain.Lap;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.business.domain.Waypoint;
 import com.henriquemalheiro.trackit.business.exception.ReaderException;
@@ -65,7 +61,6 @@ import com.henriquemalheiro.trackit.business.operation.ActivityToCourseOperation
 import com.henriquemalheiro.trackit.business.operation.AddLapOperation;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationOperation;
-import com.henriquemalheiro.trackit.business.operation.CopyOperation;
 import com.henriquemalheiro.trackit.business.operation.DetectClimbsDescentsOperation;
 import com.henriquemalheiro.trackit.business.operation.JoiningOperation;
 import com.henriquemalheiro.trackit.business.operation.MarkingOperation;
@@ -75,13 +70,8 @@ import com.henriquemalheiro.trackit.business.operation.ReverseOperation;
 import com.henriquemalheiro.trackit.business.operation.SettingPaceOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSimplificationOperation;
 import com.henriquemalheiro.trackit.business.operation.TrackSplittingOperation;
-import com.henriquemalheiro.trackit.business.operation.UndoItem;
-import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
-import com.henriquemalheiro.trackit.business.operation.UndoableActionType;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
-import com.henriquemalheiro.trackit.business.writer.Writer;
-import com.henriquemalheiro.trackit.business.writer.WriterFactory;
 import com.henriquemalheiro.trackit.presentation.event.Event;
 import com.henriquemalheiro.trackit.presentation.event.EventListener;
 import com.henriquemalheiro.trackit.presentation.event.EventManager;
@@ -90,6 +80,10 @@ import com.henriquemalheiro.trackit.presentation.task.Action;
 import com.henriquemalheiro.trackit.presentation.task.Task;
 import com.henriquemalheiro.trackit.presentation.view.map.MapView;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
+import com.miguelpernas.trackit.business.operation.CopyOperation;
+import com.miguelpernas.trackit.business.operation.UndoItem;
+import com.miguelpernas.trackit.business.operation.UndoManagerCustom;
+import com.miguelpernas.trackit.business.operation.UndoableActionType;
 import com.pg58406.trackit.business.db.Database;
 
 public class DocumentManager implements EventPublisher, EventListener {
@@ -105,8 +99,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 	private Database database;
 
 	private UndoManagerCustom undoManager; // 57421
-	private boolean isJoinForUndo;
-	private boolean isSplitForUndo;
 
 	private enum ReadMode {
 		OPEN, IMPORT
@@ -143,8 +135,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 		database = Database.getInstance();
 
 		undoManager = new UndoManagerCustom(); // 57421
-		isJoinForUndo = false;
-		isSplitForUndo = false;
 	}
 
 	public UndoManagerCustom getUndoManager() {
@@ -528,7 +518,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 					course.setParent(masterDocument);
 					course.setUnsavedTrue();
 				}
-
+				
+				/* undo */
 				String name = UndoableActionType.SPLIT.toString();
 				List<Long> courseIds = new ArrayList<Long>();
 				long documentId = masterDocument.getId();
@@ -735,6 +726,19 @@ public class DocumentManager implements EventPublisher, EventListener {
 			iterCourse = iter.next();
 			if (iterCourse.getId() == courseId) {
 				return iterCourse;
+			}
+
+		}
+		return null;
+	}
+	
+	public Trackpoint getTrackpoint(Course course, long trackpointId) {
+		ListIterator<Trackpoint> iter = course.getTrackpoints().listIterator();
+		Trackpoint trackpoint;
+		while (iter.hasNext()) {
+			trackpoint = iter.next();
+			if (trackpoint.getId() == trackpointId) {
+				return trackpoint;
 			}
 
 		}
@@ -1003,8 +1007,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				try {
 					operation.process(document);
-					logger.debug("JOIN");
-				} catch (TrackItException e) {
+					} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
 				}
@@ -1023,6 +1026,24 @@ public class DocumentManager implements EventPublisher, EventListener {
 				for (Course course : courses) {
 					masterDocument.remove(course);
 				}
+				
+				/* undo */
+				String name = UndoableActionType.JOIN.toString();
+				List<Long> courseIds = new ArrayList<Long>();
+				Map<Long, Long> connectingPoints = new HashMap<Long, Long>();
+				long documentId = masterDocument.getId();
+
+				for (Course course : courses) {
+					courseIds.add(course.getId());
+					connectingPoints.put(course.getId(), course.getFirstTrackpoint().getId());
+				}
+				Collections.reverse(courseIds);
+				
+				UndoItem item = new UndoItem.UndoItemBuilder(name,
+							courseIds, documentId).connectingPointsIds(connectingPoints).build();
+					undoManager.addUndo(item);
+
+				/* end undo */
 
 				jointCourse.setParent(masterDocument);
 				masterDocument.add(jointCourse);
@@ -1579,7 +1600,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 		} else {
 			return false;
 		}
-		final List<Long> coursesIds = item.getCoursesIds();
+		List<Long> coursesIds = new ArrayList<Long>();
+		
+		if(item.getOperationType().equals(UndoableActionType.JOIN.toString())){
+			coursesIds.add(item.getCoursesIds().get(item.getCoursesIds().size()-1));
+		}
+		else{
+			coursesIds = item.getCoursesIds();
+		}
 		for (long id : coursesIds) {
 			Course course = getCourse(document, id);
 			if (course == null) {
@@ -1602,11 +1630,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case REMOVE_TRACKPOINT:
 				break;
 			case JOIN:
+				undoJoinSetup(item, Constants.UndoOperation.UNDO);
+				undoManager.popUndo();
 				break;
 			case SPLIT:
 				undoSplit(item, Constants.UndoOperation.UNDO);
 				undoManager.popUndo();
-				logger.debug("END UNDO");
 				break;
 			case REVERSE:
 				undoReverse(item, Constants.UndoOperation.UNDO);
@@ -1648,11 +1677,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case REMOVE_TRACKPOINT:
 				break;
 			case JOIN:
+				undoJoinSetup(item, Constants.UndoOperation.REDO);
+				undoManager.popRedo();
 				break;
 			case SPLIT:
 				undoSplit(item, Constants.UndoOperation.REDO);
 				undoManager.popRedo();
-				logger.debug("END UNDO");
 				break;
 			case REVERSE:
 				undoReverse(item, Constants.UndoOperation.REDO);
@@ -1678,10 +1708,41 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 
 	}
+	public void undoJoinSetup(final UndoItem item, final String undoMode) {
+		List<Long> courses = new ArrayList<Long>();
+				
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		for (long id : item.getCoursesIds()) {
+			courses.add(id);
+		}
+		
+		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
+			courses.remove(courses.size()-1);
+			Course joinedCourse = getCourse(document, item.getCoursesIds().get(item.getCoursesIds().size()-1));
+			for(Long course : courses){
+				Trackpoint trackpoint = getTrackpoint(joinedCourse, item.getConnectingPointsIds().get(course));
+				undoSplitAtSelected(joinedCourse, trackpoint, course);
+			}
+			
+			
+		}
+		if (undoMode.equals(Constants.UndoOperation.REDO)) {
+			List<Course> coursesToJoin = new ArrayList<Course>();
+			for(Long course : courses){
+				coursesToJoin.add(getCourse(document, course));
+			}
+			Collections.reverse(coursesToJoin);
+			redoJoin(coursesToJoin);
+			
+			
+		}
+		
+		
+	}
 
 	public void undoSplit(final UndoItem item, final String undoMode) {
 
-		logger.debug("UNDO SPLIT");
 		List<Course> courses = new ArrayList<Course>();
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
@@ -1858,8 +1919,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				UndoItem item = undoManager.getUndoableItem();
 				courses.get(1).setId(item.getDeletedCourseId());
 
-				logger.debug("ENDSPLIT");
-				List<Long> newIds = new ArrayList<Long>();
+								List<Long> newIds = new ArrayList<Long>();
 				newIds.add(courses.get(0).getId());
 				newIds.add(courses.get(1).getId());
 				// UndoItem item = undoManager.getUndoableItem();
@@ -1871,6 +1931,127 @@ public class DocumentManager implements EventPublisher, EventListener {
 				undoManager.pushUndo(newItem);
 
 				/* end undo */
+
+				masterDocument.remove(course);
+				masterDocument.addCourses(courses);
+
+				masterDocument.publishUpdateEvent(null);
+				courses.get(0).publishSelectionEvent(null);
+			}
+		}).execute();
+	}
+	
+	public void redoJoin(final List<Course> courses) {
+		if (courses == null || courses.size() < 2) {
+			throw new IllegalArgumentException(
+					"Join only applies to two or more courses!");
+		}
+
+		final GPSDocument masterDocument = courses.get(0).getParent();
+
+		new Task(new Action() {
+			@Override
+			public String getMessage() {
+				return Messages
+						.getMessage("documentManager.message.joiningCourses");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return joinCourses(courses);
+			}
+
+			private Course joinCourses(final List<Course> courses)
+					throws TrackItException {
+				Map<String, Object> options = new HashMap<>();
+				options.put(Constants.JoinOperation.ADD_LAP_MARKER, true);
+				JoiningOperation operation = new JoiningOperation(options);
+				GPSDocument document = new GPSDocument(courses.get(0)
+						.getParent().getFileName());
+				document.addCourses(courses);
+
+				try {
+					operation.process(document);
+					} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				if (document.getCourses().size() != 1) {
+					throw new TrackItException(
+							"Join operation resulted in more than one course!");
+				}
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			public void done(Object result) {
+				Course jointCourse = (Course) result;
+				jointCourse.setId(courses.get(0).getId());
+				for (Course course : courses) {
+					masterDocument.remove(course);
+				}
+				
+				jointCourse.setParent(masterDocument);
+				masterDocument.add(jointCourse);
+
+				masterDocument.publishUpdateEvent(null);
+				jointCourse.publishSelectionEvent(null);
+				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM,
+						jointCourse);
+			}
+		}).execute();
+	}
+
+	public void undoSplitAtSelected(final Course course,
+			final Trackpoint trackpoint, final long newId){
+		Objects.requireNonNull(course);
+		Objects.requireNonNull(trackpoint);
+		final GPSDocument masterDocument = course.getParent();
+		new Task(new Action() {
+			@Override
+			public String getMessage() {
+				return Messages
+						.getMessage("documentManager.message.splitingCourse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return splitCourse(course, trackpoint);
+			}
+
+			private List<Course> splitCourse(Course course,
+					Trackpoint trackpoint) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
+						trackpoint);
+
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
+						options);
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+
+				try {
+					splittingOperation.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void done(Object result) {
+				List<Course> courses = (List<Course>) result;
+				for (Course course : courses) {
+					course.setParent(masterDocument);
+					course.setUnsavedTrue();
+				}
+				courses.get(1).setId(newId);
 
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
@@ -1912,8 +2093,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				try {
 					operation.undoSplit(document);
-					logger.debug("JOIN");
-				} catch (TrackItException e) {
+									} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
 				}
@@ -1933,7 +2113,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 					masterDocument.remove(course);
 				}
 
-				logger.debug("ENDJOIN");
 				List<Long> newIds = new ArrayList<Long>();
 				newIds.add(jointCourse.getId());
 

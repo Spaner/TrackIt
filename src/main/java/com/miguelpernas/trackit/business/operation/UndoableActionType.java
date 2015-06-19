@@ -17,7 +17,7 @@
  * along with Track It!. If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-package com.henriquemalheiro.trackit.business.operation;
+package com.miguelpernas.trackit.business.operation;
 
 //57421
 public enum UndoableActionType {

@@ -80,12 +80,11 @@ public class JoiningOperation extends OperationBase implements Operation {
 		
 		int index = 0;
 		
-		double distance;
+		
 		while (index < newCourse.getLaps().size()-1){
 			
 			Trackpoint leftLapLastTrackPoint = newCourse.getLaps().get(index).getLastTrackpoint();
 			Trackpoint rightLapFirstTrackPoint = newCourse.getLaps().get(index+1).getFirstTrackpoint();
-			distance = calculateDistance(leftLapLastTrackPoint, rightLapFirstTrackPoint);
 			if(leftLapLastTrackPoint.getId() == rightLapFirstTrackPoint.getId()){
 				newCourse.getLaps().get(index).setEndTime(newCourse.getLaps().get(index+1).getEndTime());
 				newCourse.getLaps().remove(index+1);
@@ -207,7 +206,7 @@ public class JoiningOperation extends OperationBase implements Operation {
 			
 			double distance = calculateDistance(leftLastTrackpoint, firstRightTrackpoint);
 			
-			if(distance < getMinimumDistance()){
+			if(distance < getMinimumDistance() || distance == 0){
 				leftTrackpoints.remove(index+1);
 			}
 		}

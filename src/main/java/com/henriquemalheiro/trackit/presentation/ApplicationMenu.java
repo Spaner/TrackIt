@@ -47,9 +47,9 @@ import com.henriquemalheiro.trackit.business.common.OperatingSystem;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
-import com.henriquemalheiro.trackit.business.operation.UndoManagerCustom;
 import com.henriquemalheiro.trackit.presentation.task.ActionType;
 import com.henriquemalheiro.trackit.presentation.utilities.Operation;
+import com.miguelpernas.trackit.business.operation.UndoManagerCustom;
 import com.pg58406.trackit.business.utility.AboutDialog;
 
 class ApplicationMenu {

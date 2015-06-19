@@ -1,4 +1,4 @@
-package com.henriquemalheiro.trackit.business.operation;
+package com.miguelpernas.trackit.business.operation;
 
 import static com.henriquemalheiro.trackit.business.common.Messages.getMessage;
 
@@ -8,43 +8,29 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.ProgressMonitorInputStream;
-import javax.swing.filechooser.FileFilter;
 
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.DocumentManager;
 import com.henriquemalheiro.trackit.business.common.Constants;
-import com.henriquemalheiro.trackit.business.common.FileType;
-import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.domain.Activity;
 import com.henriquemalheiro.trackit.business.domain.Course;
-import com.henriquemalheiro.trackit.business.domain.CoursePoint;
-import com.henriquemalheiro.trackit.business.domain.DocumentItem;
-import com.henriquemalheiro.trackit.business.domain.Event;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
-import com.henriquemalheiro.trackit.business.domain.Lap;
-import com.henriquemalheiro.trackit.business.domain.Track;
-import com.henriquemalheiro.trackit.business.domain.TrackSegment;
-import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.business.domain.Waypoint;
 import com.henriquemalheiro.trackit.business.exception.ReaderException;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
+import com.henriquemalheiro.trackit.business.operation.Operation;
+import com.henriquemalheiro.trackit.business.operation.OperationBase;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
-import com.henriquemalheiro.trackit.business.utility.decoratedlist.EventList;
 import com.henriquemalheiro.trackit.business.writer.Writer;
 import com.henriquemalheiro.trackit.business.writer.WriterFactory;
-import com.henriquemalheiro.trackit.presentation.FileFilterFactory;
-import com.pg58406.trackit.business.domain.Pause;
-import com.pg58406.trackit.business.domain.Picture;
+
 
 import org.apache.commons.io.FilenameUtils;
 
