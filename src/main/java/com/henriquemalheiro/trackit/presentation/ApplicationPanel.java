@@ -120,6 +120,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		this.application = application;
 		initComponents();
 	}
+	
 
 	private void initComponents() {
 		Image applicationImage = Toolkit.getDefaultToolkit().getImage(
@@ -752,6 +753,11 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 
 		}
+	}
+	
+	public void forceRefresh(){
+		DocumentManager documentManager = DocumentManager.getInstance();
+		applicationMenu.refreshUndo(documentManager.getUndoManager());
 	}
 
 	private void undo() {

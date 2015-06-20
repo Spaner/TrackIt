@@ -1126,7 +1126,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	public void removeTrackpoint(final Course course,
 			final Trackpoint trackpoint) {
 		final GPSDocument masterDocument = course.getParent();
-
+		final int index = course.getTrackpoints().indexOf(trackpoint);
 		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
 			@Override
 			protected Course doInBackground() {
@@ -1213,13 +1213,28 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			protected void done() {
 				try {
-					Course course = get();
-					if (course != null) {
-						course.setParent(masterDocument);
-						course.publishUpdateEvent(null);
+					Course resultCourse = get();
+					if (resultCourse != null) {
+						resultCourse.setParent(masterDocument);
+						resultCourse.publishUpdateEvent(null);
 						EventManager.getInstance().publish(null,
 								Event.TRACKPOINT_HIGHLIGHTED, null);
 					}
+					/* Undo */
+					String name = UndoableActionType.REMOVE_TRACKPOINT.toString();
+					List<Long> courseIds = new ArrayList<Long>();
+					long documentId = masterDocument.getId();
+					courseIds.add(resultCourse.getId());
+					Trackpoint savePoint = trackpoint.clone();
+					savePoint.setId(trackpoint.getId());
+					UndoItem item = new UndoItem.UndoItemBuilder(name,
+								courseIds, documentId).trackpoint(savePoint).trackpointIndex(index).build();
+						undoManager.addUndo(item);
+						TrackIt.getApplicationPanel().forceRefresh();
+						
+						
+					/* end undo */
+					
 				} catch (InterruptedException | ExecutionException ignore) {
 				}
 
@@ -1628,6 +1643,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case ADD_TRACKPOINT:
 				break;
 			case REMOVE_TRACKPOINT:
+				undoRemoveTrackpointSetup(item, Constants.UndoOperation.UNDO);
+				undoManager.popUndo();
 				break;
 			case JOIN:
 				undoJoinSetup(item, Constants.UndoOperation.UNDO);
@@ -1675,6 +1692,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case ADD_TRACKPOINT:
 				break;
 			case REMOVE_TRACKPOINT:
+				undoRemoveTrackpointSetup(item, Constants.UndoOperation.REDO);
+				undoManager.popRedo();
 				break;
 			case JOIN:
 				undoJoinSetup(item, Constants.UndoOperation.REDO);
@@ -1708,6 +1727,22 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 
 	}
+	
+	public void undoRemoveTrackpointSetup(final UndoItem item, final String undoMode){
+		List<Long> courses = new ArrayList<Long>();
+		
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
+			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
+		}
+		if(undoMode.equals(Constants.UndoOperation.REDO)){
+			redoRemoveTrackpoint(course, item.getTrackpoint());
+		}
+		
+	}
+	
 	public void undoJoinSetup(final UndoItem item, final String undoMode) {
 		List<Long> courses = new ArrayList<Long>();
 				
@@ -2139,5 +2174,176 @@ public class DocumentManager implements EventPublisher, EventListener {
 						jointCourse);
 			}
 		}).execute();
+	}
+	
+
+	public void undoRemoveTrackpoint(final Course course, final Trackpoint trackpoint,
+			final int index) {
+		final GPSDocument masterDocument = course.getParent();
+		final String courseName = course.getName();// 58406
+		final String filepath = course.getFilepath();
+
+		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
+			@Override
+			protected Course doInBackground() {
+				trackpoint.setParent(course);
+				course.getTrackpoints().add(index, trackpoint);
+
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				publish(document.getCourses().get(0));
+
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.RECALCULATION);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+			}
+
+			@Override
+			protected void done() {
+				try {
+					Course course = get();
+					if (course != null) {
+						course.setParent(masterDocument);
+						course.publishUpdateEvent(null);
+					}
+				} catch (InterruptedException | ExecutionException ignore) {
+				}
+				course.setName(courseName);
+				course.setFilepath(filepath);
+
+			}
+		};
+		worker.execute();
+
+	}
+	
+	public void redoRemoveTrackpoint(final Course course,
+			final Trackpoint trackpoint) {
+		final GPSDocument masterDocument = course.getParent();
+		final int index = course.getTrackpoints().indexOf(trackpoint);
+		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
+			@Override
+			protected Course doInBackground() {
+				boolean keepTimes = TrackIt
+						.getPreferences()
+						.getBooleanPreference(
+								Constants.PrefsCategories.EDITION,
+								null,
+								Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL,
+								true);
+				if (keepTimes) {
+					List<Trackpoint> trackpoints = course.getTrackpoints();
+					int n = trackpoints.indexOf(trackpoint);
+					if (n == 0) {
+						Trackpoint trkp = trackpoints.get(1);
+						trkp.setDistance(0.0);
+						trkp.setDistanceFromPrevious(0.0);
+						trkp.setTimeFromPrevious(0.0);
+						trkp.setSpeed(0.0);
+					} else if (n == trackpoints.size() - 1) {
+						// DO NOTHING
+					} else {
+						Trackpoint prevTrakp = trackpoints.get(n - 1);
+						Trackpoint nextTrakp = trackpoints.get(n + 1);
+						Double distanceFromPrevious = trackpoint
+								.getDistanceFromPrevious()
+								+ nextTrakp.getDistanceFromPrevious();
+						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
+						Double timeFromPrevious = trackpoint
+								.getTimeFromPrevious()
+								+ nextTrakp.getTimeFromPrevious();
+						nextTrakp.setTimeFromPrevious(timeFromPrevious);
+						Trackpoint temp = trackpoints.get(n - 2);
+						Double speed = (nextTrakp.getDistance() - temp
+								.getDistance())
+								/ (nextTrakp.getTimeFromPrevious()
+										+ trackpoint.getTimeFromPrevious() + prevTrakp
+											.getTimeFromPrevious());
+						prevTrakp.setSpeed(speed);
+						temp = trackpoints.get(n + 2);
+						speed = (temp.getDistance() - prevTrakp.getDistance())
+								/ (temp.getTimeFromPrevious()
+										+ nextTrakp.getTimeFromPrevious() + trackpoint
+											.getTimeFromPrevious());
+						nextTrakp.setSpeed(speed);
+					}
+				}
+				course.remove(trackpoint);// 58406
+
+				GPSDocument document = new GPSDocument(course.getParent()
+						.getFileName());
+				document.add(course);
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.SUMMARY);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				publish(course);
+
+				options.put(Constants.ConsolidationOperation.LEVEL,
+						ConsolidationLevel.RECALCULATION);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				return course;
+
+			}
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+			}
+
+			@Override
+			protected void done() {
+				try {
+					Course resultCourse = get();
+					if (resultCourse != null) {
+						resultCourse.setParent(masterDocument);
+						resultCourse.publishUpdateEvent(null);
+						EventManager.getInstance().publish(null,
+								Event.TRACKPOINT_HIGHLIGHTED, null);
+					}
+					
+				} catch (InterruptedException | ExecutionException ignore) {
+				}
+
+			}
+		};
+		worker.execute();
+
 	}
 }
