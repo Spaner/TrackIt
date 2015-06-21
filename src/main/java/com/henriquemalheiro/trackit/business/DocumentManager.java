@@ -1107,16 +1107,31 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			protected void done() {
 				try {
-					Course course = get();
-					if (course != null) {
-						course.setParent(masterDocument);
-						course.publishUpdateEvent(null);
+					Course resultCourse = get();
+					if (resultCourse != null) {
+						resultCourse.setParent(masterDocument);
+						resultCourse.publishUpdateEvent(null);
 					}
 				} catch (InterruptedException | ExecutionException ignore) {
 				}
 				course.setName(courseName);
 				course.setFilepath(filepath);
-
+				
+				/* Undo */
+				String name = UndoableActionType.ADD_TRACKPOINT.toString();
+				List<Long> courseIds = new ArrayList<Long>();
+				long documentId = masterDocument.getId();
+				courseIds.add(course.getId());
+				Trackpoint savePoint = trackpoint.clone();
+				savePoint.setId(trackpoint.getId());
+				UndoItem item = new UndoItem.UndoItemBuilder(name,
+							courseIds, documentId).trackpoint(savePoint).trackpointIndex(index).build();
+					undoManager.addUndo(item);
+					TrackIt.getApplicationPanel().forceRefresh();
+					
+					
+				/* end undo */
+				
 			}
 		};
 		worker.execute();
@@ -1641,6 +1656,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			switch (undoableAction) {
 			case ADD_TRACKPOINT:
+				undoAddTrackpointSetup(item, Constants.UndoOperation.UNDO);
+				undoManager.popUndo();
 				break;
 			case REMOVE_TRACKPOINT:
 				undoRemoveTrackpointSetup(item, Constants.UndoOperation.UNDO);
@@ -1690,6 +1707,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			switch (undoableAction) {
 			case ADD_TRACKPOINT:
+				undoAddTrackpointSetup(item, Constants.UndoOperation.REDO);
+				undoManager.popRedo();
 				break;
 			case REMOVE_TRACKPOINT:
 				undoRemoveTrackpointSetup(item, Constants.UndoOperation.REDO);
@@ -1728,8 +1747,19 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 	
+	public void undoAddTrackpointSetup(final UndoItem item, final String undoMode){
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
+			redoRemoveTrackpoint(course, item.getTrackpoint());
+		}
+		if(undoMode.equals(Constants.UndoOperation.REDO)){
+			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
+		}
+	}
+	
 	public void undoRemoveTrackpointSetup(final UndoItem item, final String undoMode){
-		List<Long> courses = new ArrayList<Long>();
 		
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
@@ -1757,7 +1787,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			Course joinedCourse = getCourse(document, item.getCoursesIds().get(item.getCoursesIds().size()-1));
 			for(Long course : courses){
 				Trackpoint trackpoint = getTrackpoint(joinedCourse, item.getConnectingPointsIds().get(course));
-				undoSplitAtSelected(joinedCourse, trackpoint, course);
+				undoJoin(joinedCourse, trackpoint, course);
 			}
 			
 			
@@ -1797,13 +1827,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 						.setSpeed(splitSpeed);
 				courses.get(1).getTrackpoints().get(0).setSpeed(splitSpeed);
 			}
-			undoJoin(courses);
+			undoSplit(courses);
 
 		} else if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			if (splitSpeed != null) {
 				keepSpeed = false;
 			}
-			redoSplitAtSelected(courses.get(0), item.getTrackpoint(),
+			redoSplit(courses.get(0), item.getTrackpoint(),
 					keepSpeed, undo);
 
 		}
@@ -1893,7 +1923,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 
-	public void redoSplitAtSelected(final Course course,
+	public void redoSplit(final Course course,
 			final Trackpoint trackpoint, final boolean keepSpeed,
 			final boolean undo) {
 		Objects.requireNonNull(course);
@@ -2038,7 +2068,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void undoSplitAtSelected(final Course course,
+	public void undoJoin(final Course course,
 			final Trackpoint trackpoint, final long newId){
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
@@ -2097,7 +2127,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void undoJoin(final List<Course> courses) {
+	public void undoSplit(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
 			throw new IllegalArgumentException(
 					"Join only applies to two or more courses!");
