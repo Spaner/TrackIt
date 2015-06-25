@@ -16,7 +16,7 @@
  * along with Track It!. If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-package com.pg58406.trackit.business.operation;
+package com.pg58406.trackit.business.operation.oldversions;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,33 +27,34 @@ import java.util.List;
 
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.pg58406.trackit.business.domain.Pause;
+import com.pg58406.trackit.business.operation.DetectPausesInterface;
 import com.pg58406.trackit.business.utility.ExcelWriter;
 
-public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
-	// Reverse order average
+public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
+	// Simple Distance Interpolation
 	//private DocumentItem item;
 	private Double[] mInterpolatedField;
-	private Double[] mSpeed;
+	private Double[] mDistance;
 	private Date[] mTime;
 	private Integer[] mSeconds;
 	//private SimpleDateFormat dateFormat;
 
-	public DetPausesOpSpeedDescAVG(List<Trackpoint> trkpoints) {
+	public DetPausesOpDistanceNoAVG(List<Trackpoint> trkpoints) {
 		//dateFormat = new SimpleDateFormat("HH:mm:ss");
 		int listSize = trkpoints.size();
 		mInterpolatedField = null;
-		mSpeed = new Double[listSize];
+		mDistance = new Double[listSize];
 		mTime = new Date[listSize];
 		mSeconds = new Integer[listSize];
 		Trackpoint t = trkpoints.get(0);
-		mSpeed[0] = t.getSpeed();
+		mDistance[0] = t.getDistance();
 		mTime[0] = t.getTimestamp();
 		mSeconds[0] = (int) (t.getTimestamp().getTime() / 1000);
 		int i = 1;
 		Trackpoint trk;
 		while (i < listSize) {
 			trk = trkpoints.get(i);
-			mSpeed[i] = trk.getSpeed();
+			mDistance[i] = trk.getDistance();
 			mTime[i] = trk.getTimestamp();
 			mSeconds[i] = (int) (mTime[i].getTime() / 1000);
 			i++;
@@ -63,38 +64,14 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 	public boolean DetectPauses(int start, int end, Double timestep,
 			Double limit, List<Pause> pauses) {
 		File dir = new File("XLS");
-		if (!dir.exists()) {
+		if(!dir.exists()){
 			dir.mkdir();
 		}
-		ExcelWriter excelWriter = new ExcelWriter(
-				"XLS\\DetPausesSpeedDescAVG.xls");
+		ExcelWriter excelWriter = new ExcelWriter("XLS\\DetPausesDistanceNoAVG.xls");
 		boolean any = false;
-		int no = InterpolateSpeed(start, end, timestep);
-		Double[] simple = SimpleMovingAverageFilter(no, mInterpolatedField, 5);
-		Double[] weighed = WeightedMovingAverageFilter(no, mInterpolatedField,
-				5);
-		int currentTime = mSeconds[start];
-		try {
-			PrintWriter writer = new PrintWriter("Simple & Weighed.txt",
-					"UTF-8");
-			for (int i = 0; i < no; i++) {
-				if (simple[i] < 1)
-					writer.print("simple[" + i + "]= " + simple[i]
-							+ " WARNING\t\t\t");
-				else
-					writer.print("simple[" + i + "]= " + simple[i] + "\t\t\t");
-				if (weighed[i] < 1)
-					writer.println("weighed[" + i + "]= " + weighed[i]
-							+ " WARNING");
-				else
-					writer.println("weighed[" + i + "]= " + weighed[i]);
-			}
-			writer.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
+		int no = InterpolateDistance(start, end, timestep);
+
+		int currentTime = (int) mSeconds[start];
 		int idx = 0;
 		int iend;
 		PrintWriter writer;
@@ -102,10 +79,10 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 		try {
 			writer = new PrintWriter("Pauses Log.txt", "UTF-8");
 			while (idx < no) {
-				if (simple[idx] <= limit || weighed[idx] <= limit) {
+				if (mInterpolatedField[idx] <= limit) {
 					iend = idx;
 					while (iend < (no - 1)
-							&& (simple[iend + 1] <= limit || weighed[iend + 1] <= limit))
+							&& mInterpolatedField[iend + 1] <= limit)
 						iend++;
 					Date startDate = new Date(
 							(long) (mTime[start].getTime() + (idx * 1000 * timestep)));
@@ -126,11 +103,11 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 					idx = iend + 1;
 					currentTime = new Double((mSeconds[start]) + (idx + iend)
 							* timestep * .5).intValue();
+					pauses.add(pause);
+					any = true;
 				} else
 					idx++;
 			}
-			if (pauses.size() == 0)
-				writer.println("No Pauses Detected!");
 			writer.close();
 			excelWriter.close();
 		} catch (FileNotFoundException e) {
@@ -142,13 +119,14 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 	}
 
 	// Long seconds = date.getTime()/1000;
-	private int InterpolateSpeed(int start, int end, Double timestep) {
+	private int InterpolateDistance(int start, int end, Double timestep) {
 		int no = new Double(((mSeconds[end]) - (mSeconds[start])) / timestep
 				+ 1).intValue();
 		if (no > 1) {
-			// if(!(mInterpolatedField.equals(null))) mInterpolatedField = null;
+			if (!(mInterpolatedField != null))
+				mInterpolatedField = null;
 			mInterpolatedField = new Double[no];
-			mInterpolatedField[0] = mSpeed[start];
+			mInterpolatedField[0] = mDistance[start];
 			double currentTime = mSeconds[start];
 			double factor;
 			int idx = start;
@@ -158,13 +136,11 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 					idx++;
 				factor = (currentTime - (mSeconds[idx - 1]))
 						/ ((mSeconds[idx]) - (mSeconds[idx - 1]));
-				mInterpolatedField[i] = (1 - factor) * mSpeed[idx - 1] + factor
-						* mSpeed[idx];
+				mInterpolatedField[i] = (1 - factor) * mDistance[idx - 1]
+						+ factor * mDistance[idx];
 			}
-			/*
-			 * for (int i = no - 1; i > 0; i--) mInterpolatedField[i] -=
-			 * mInterpolatedField[i - 1];
-			 */
+			for (int i = no - 1; i > 0; i--)
+				mInterpolatedField[i] -= mInterpolatedField[i - 1];
 		} else
 			no = 0;
 		try {
@@ -172,65 +148,18 @@ public class DetPausesOpSpeedDescAVG implements DetectPausesInterface {
 					"mInterpolatedField Values.txt", "UTF-8");
 			int i = 0;
 			for (Double d : mInterpolatedField) {
-				if (d < 1)
-					writer.println("[" + i + "]\t\t" + d + "\tWARNING");
+				if (d < timestep)
+					writer.println("[" + i + "]\t" + d + "\tWARNING");
 				else
-					writer.println("[" + i + "]\t\t" + d);
+					writer.println("[" + i + "]\t" + d);
 				i++;
 			}
 			writer.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return no;
-	}
-
-	// Reverse order of default
-	private Double[] SimpleMovingAverageFilter(int no, Double[] values,
-			int displace) {
-		if (no > displace) {
-			Double[] averaged = new Double[no];
-			Double sum;
-			int imin, imax;
-			// for (int i = no - 1; i >= 0; i--) {
-			for (int i = 0; i < no; i++) {
-				imin = Math.max(0, i);
-				imax = Math.min(no - 1, i + displace);
-				sum = 0.;
-				for (int k = imax; k >= imin; k--)
-					sum += values[k];
-				averaged[i] = sum / (imax - imin - 1);
-			}
-			return averaged;
-		}
-		return null;
-	}
-
-	// Reverse order of default
-	private Double[] WeightedMovingAverageFilter(int no, Double[] values,
-			int displace) {
-		int[] weight = { 100, 50, 20, 6, 2, 1 };
-		if (no > displace) {
-			Double[] averaged = new Double[no];
-			Double sum, weights;
-			int imin, imax, side;
-			for (int i = no - 1; i >= 0; i--) {
-				imin = Math.max(0, i);
-				imax = Math.min(no - 1, i + displace);
-				sum = weights = 0.;
-				for (int k = imax; k >= imin; k--) {
-					side = Math.abs(i - k);
-					sum += (values[k] * weight[side]);
-					weights += weight[side];
-				}
-				averaged[i] = sum / weights;
-			}
-			return averaged;
-		}
-		return null;
 	}
 }

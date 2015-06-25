@@ -72,6 +72,7 @@ import com.henriquemalheiro.trackit.business.operation.TrackSimplificationOperat
 import com.henriquemalheiro.trackit.business.operation.TrackSplittingOperation;
 import com.henriquemalheiro.trackit.business.reader.Reader;
 import com.henriquemalheiro.trackit.business.reader.ReaderFactory;
+import com.henriquemalheiro.trackit.business.utility.Utilities;
 import com.henriquemalheiro.trackit.presentation.event.Event;
 import com.henriquemalheiro.trackit.presentation.event.EventListener;
 import com.henriquemalheiro.trackit.presentation.event.EventManager;
@@ -976,7 +977,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 	}
 
-	public void join(final List<Course> courses) {
+	public void join(final List<Course> courses, final boolean merge) {
 		if (courses == null || courses.size() < 2) {
 			throw new IllegalArgumentException(
 					"Join only applies to two or more courses!");
@@ -1023,11 +1024,23 @@ public class DocumentManager implements EventPublisher, EventListener {
 			public void done(Object result) {
 				Course jointCourse = (Course) result;
 				jointCourse.setId(courses.get(0).getId());
+				
+				List<Long> allPointsIds = new ArrayList<Long>();
+				List<Long> possibleMergePoints = new ArrayList<Long>();
 				for (Course course : courses) {
+					for(Trackpoint trackpoint : course.getTrackpoints()){
+						allPointsIds.add(trackpoint.getId());
+					}
 					masterDocument.remove(course);
 				}
 				
 				/* undo */
+				
+				for(Long id : allPointsIds){
+					if(Collections.frequency(allPointsIds, id) > 1){
+						possibleMergePoints.add(id);
+					}
+				}
 				String name = UndoableActionType.JOIN.toString();
 				List<Long> courseIds = new ArrayList<Long>();
 				Map<Long, Long> connectingPoints = new HashMap<Long, Long>();
@@ -1040,7 +1053,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Collections.reverse(courseIds);
 				
 				UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).connectingPointsIds(connectingPoints).build();
+							courseIds, documentId).connectingPointsIds(connectingPoints).duplicatePointIds(possibleMergePoints).build();
 					undoManager.addUndo(item);
 
 				/* end undo */
@@ -1778,6 +1791,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
+		final List<Long> merge = item.getDuplicatePointIds();
 		for (long id : item.getCoursesIds()) {
 			courses.add(id);
 		}
@@ -1787,7 +1801,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			Course joinedCourse = getCourse(document, item.getCoursesIds().get(item.getCoursesIds().size()-1));
 			for(Long course : courses){
 				Trackpoint trackpoint = getTrackpoint(joinedCourse, item.getConnectingPointsIds().get(course));
-				undoJoin(joinedCourse, trackpoint, course);
+				undoJoin(joinedCourse, trackpoint, course, merge);
 			}
 			
 			
@@ -2067,9 +2081,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}).execute();
 	}
+	
 
 	public void undoJoin(final Course course,
-			final Trackpoint trackpoint, final long newId){
+			final Trackpoint trackpoint, final long newId, final List<Long> ids){
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
 		final GPSDocument masterDocument = course.getParent();
@@ -2117,7 +2132,16 @@ public class DocumentManager implements EventPublisher, EventListener {
 					course.setUnsavedTrue();
 				}
 				courses.get(1).setId(newId);
-
+				
+				List<Long> allPointIds = new ArrayList<Long>();
+				
+				for (Course course : courses){
+					if(!ids.contains(course.getLastTrackpoint().getId())){
+						course.getTrackpoints().remove(course.getTrackpoints().size()-1);
+						course.getLaps().remove(course.getLastLap());
+					}
+				}
+				
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
 

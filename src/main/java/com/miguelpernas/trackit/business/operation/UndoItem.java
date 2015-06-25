@@ -11,7 +11,9 @@ public class UndoItem {
 
 	private final String operationType;
 	private final List<Long> changedCoursesIds;
+	private final List<Long> duplicatePointIds;
 	private final Map<Long, Long> connectingPointsIds; //join
+	private final boolean joinMergedPoints;
 	private final long documentId;
 	private final Trackpoint trackpoint;
 	private final String reverseMode; //reverse
@@ -31,6 +33,8 @@ public class UndoItem {
 		this.deletedCourseId = builder.deletedCourseId;
 		this.connectingPointsIds = builder.connectingPointsIds;
 		this.trackpointIndex = builder.trackpointIndex;
+		this.joinMergedPoints = builder.joinMergedPoints;
+		this.duplicatePointIds = builder.duplicatePointIds;
 	}
 
 	public String getOperationType() {
@@ -72,6 +76,14 @@ public class UndoItem {
 	public int getTrackpointIndex(){
 		return trackpointIndex;
 	}
+	
+	public boolean getJoinMergedPoints(){
+		return joinMergedPoints;
+	}
+	
+	public List<Long> getDuplicatePointIds(){
+		return duplicatePointIds;
+	}
 
 	public long getFirstCourseId() {
 		int first = 0;
@@ -93,6 +105,8 @@ public class UndoItem {
 		private long deletedCourseId;
 		private Map<Long, Long> connectingPointsIds = new HashMap<Long, Long>();
 		private int trackpointIndex;
+		private boolean joinMergedPoints;
+		private List<Long> duplicatePointIds;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -133,6 +147,16 @@ public class UndoItem {
 		
 		public UndoItemBuilder trackpointIndex(int trackpointIndex){
 			this.trackpointIndex = trackpointIndex;
+			return this;
+		}
+		
+		public UndoItemBuilder joinMergedPoints(boolean joinMergedPoints){
+			this.joinMergedPoints = joinMergedPoints;
+			return this;
+		}
+		
+		public UndoItemBuilder duplicatePointIds(List<Long> duplicatePointIds){
+			this.duplicatePointIds = duplicatePointIds;
 			return this;
 		}
 

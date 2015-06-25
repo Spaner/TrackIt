@@ -65,6 +65,8 @@ class JoinDialog extends JDialog {
 	private JButton cmdCancel;
 	private DefaultListModel<Course> coursesModel;
 	
+	private boolean merge;
+	
 	JoinDialog(List<Course> courses) {
 		super(TrackIt.getApplicationFrame());
 		this.courses = courses;
@@ -217,7 +219,7 @@ class JoinDialog extends JDialog {
 			if (validJoin(joiningCourses)) {
 				final Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.JoinOperation.COURSES, joiningCourses);
-				DocumentManager.getInstance().join(joiningCourses);
+				DocumentManager.getInstance().join(joiningCourses, merge);
 				
 				JoinDialog.this.dispose();
 			}
@@ -225,8 +227,9 @@ class JoinDialog extends JDialog {
 
 		private boolean validJoin(List<Course> joiningCourses) {
 			boolean validJoin = true;
-			boolean minDistance = false;
-			
+			merge = false;
+			//boolean minDistance = false;
+						
 			if (!warnDistanceExceeded() && !warnDistanceBelow()) {
 				return validJoin;
 			}
@@ -244,10 +247,11 @@ class JoinDialog extends JDialog {
 				
 				if (distance > warningDistance) {
 					validJoin = false;
-					//break;
+					
 				}
 				if (distance < minimumDistance) {
-					minDistance = true;
+					//minDistance = true;
+					merge = true;
 					//break;
 				}
 			}
@@ -258,12 +262,12 @@ class JoinDialog extends JDialog {
 						Messages.getMessage("trackIt.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 				validJoin = (option == JOptionPane.YES_OPTION); 
 			}
-			if (minDistance) {
+			/*if (minDistance) {
 				int option = JOptionPane.showConfirmDialog(TrackIt.getApplicationFrame(),
 						Messages.getMessage("joinDialog.message.warningDistanceDelow", Formatters.getFormatedDistance(minimumDistance)),
 						Messages.getMessage("trackIt.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 				validJoin = (option == JOptionPane.YES_OPTION); 
-			}
+			}*/
 			
 			return validJoin;
 		}

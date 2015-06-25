@@ -16,7 +16,7 @@
  * along with Track It!. If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-package com.pg58406.trackit.business.operation;
+package com.pg58406.trackit.business.operation.oldversions;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,33 +27,34 @@ import java.util.List;
 
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.pg58406.trackit.business.domain.Pause;
+import com.pg58406.trackit.business.operation.DetectPausesInterface;
 import com.pg58406.trackit.business.utility.ExcelWriter;
 
-public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
-	// Simple Distance Interpolation
+public class DetPausesOpSpeedNoAVG implements DetectPausesInterface {
+	// Speed (no average)
 	//private DocumentItem item;
 	private Double[] mInterpolatedField;
-	private Double[] mDistance;
+	private Double[] mSpeed;
 	private Date[] mTime;
 	private Integer[] mSeconds;
 	//private SimpleDateFormat dateFormat;
 
-	public DetPausesOpDistanceNoAVG(List<Trackpoint> trkpoints) {
+	public DetPausesOpSpeedNoAVG(List<Trackpoint> trkpoints) {
 		//dateFormat = new SimpleDateFormat("HH:mm:ss");
 		int listSize = trkpoints.size();
 		mInterpolatedField = null;
-		mDistance = new Double[listSize];
+		mSpeed = new Double[listSize];
 		mTime = new Date[listSize];
 		mSeconds = new Integer[listSize];
 		Trackpoint t = trkpoints.get(0);
-		mDistance[0] = t.getDistance();
+		mSpeed[0] = t.getSpeed();
 		mTime[0] = t.getTimestamp();
 		mSeconds[0] = (int) (t.getTimestamp().getTime() / 1000);
 		int i = 1;
 		Trackpoint trk;
 		while (i < listSize) {
 			trk = trkpoints.get(i);
-			mDistance[i] = trk.getDistance();
+			mSpeed[i] = trk.getSpeed();
 			mTime[i] = trk.getTimestamp();
 			mSeconds[i] = (int) (mTime[i].getTime() / 1000);
 			i++;
@@ -63,12 +64,13 @@ public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
 	public boolean DetectPauses(int start, int end, Double timestep,
 			Double limit, List<Pause> pauses) {
 		File dir = new File("XLS");
-		if(!dir.exists()){
+		if (!dir.exists()) {
 			dir.mkdir();
 		}
-		ExcelWriter excelWriter = new ExcelWriter("XLS\\DetPausesDistanceNoAVG.xls");
+		ExcelWriter excelWriter = new ExcelWriter(
+				"XLS\\DetPausesSpeedNoAVG.xls");
 		boolean any = false;
-		int no = InterpolateDistance(start, end, timestep);
+		int no = InterpolateSpeed(start, end, timestep);
 
 		int currentTime = (int) mSeconds[start];
 		int idx = 0;
@@ -89,21 +91,20 @@ public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
 							(long) (mTime[start].getTime() + (iend * 1000 * timestep)));
 					Double sec = new Double(
 							(endDate.getTime() - startDate.getTime()) / 1000);
-					// if (sec > 30) {
-					excelWriter.writeValue(3, row, startDate);
-					excelWriter.writeValue(4, row, endDate);
-					row++;
-					Pause pause = new Pause(startDate, endDate, sec);
-					writer.println(pause.toString());
-					pause.setCurrentTime(currentTime);
-					pauses.add(pause);
-					any = true;
-					// }
+					if (sec > 0) {
+						excelWriter.writeValue(3, row, startDate);
+						excelWriter.writeValue(4, row, endDate);
+						row++;
+						Pause pause = new Pause(startDate, endDate, sec);
+						writer.println(pause.toString());
+						pause.setCurrentTime(currentTime);
+						pauses.add(pause);
+						any = true;
+					}
 					idx = iend + 1;
 					currentTime = new Double((mSeconds[start]) + (idx + iend)
 							* timestep * .5).intValue();
-					pauses.add(pause);
-					any = true;
+					
 				} else
 					idx++;
 			}
@@ -118,14 +119,14 @@ public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
 	}
 
 	// Long seconds = date.getTime()/1000;
-	private int InterpolateDistance(int start, int end, Double timestep) {
+	private int InterpolateSpeed(int start, int end, Double timestep) {
 		int no = new Double(((mSeconds[end]) - (mSeconds[start])) / timestep
 				+ 1).intValue();
 		if (no > 1) {
 			if (!(mInterpolatedField != null))
 				mInterpolatedField = null;
 			mInterpolatedField = new Double[no];
-			mInterpolatedField[0] = mDistance[start];
+			mInterpolatedField[0] = mSpeed[start];
 			double currentTime = mSeconds[start];
 			double factor;
 			int idx = start;
@@ -135,11 +136,13 @@ public class DetPausesOpDistanceNoAVG implements DetectPausesInterface{
 					idx++;
 				factor = (currentTime - (mSeconds[idx - 1]))
 						/ ((mSeconds[idx]) - (mSeconds[idx - 1]));
-				mInterpolatedField[i] = (1 - factor) * mDistance[idx - 1]
-						+ factor * mDistance[idx];
+				mInterpolatedField[i] = (1 - factor) * mSpeed[idx - 1] + factor
+						* mSpeed[idx];
 			}
-			for (int i = no - 1; i > 0; i--)
-				mInterpolatedField[i] -= mInterpolatedField[i - 1];
+			/*
+			 * for (int i = no - 1; i > 0; i--) mInterpolatedField[i] -=
+			 * mInterpolatedField[i - 1];
+			 */
 		} else
 			no = 0;
 		try {
