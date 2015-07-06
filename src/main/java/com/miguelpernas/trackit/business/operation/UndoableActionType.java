@@ -22,6 +22,7 @@ package com.miguelpernas.trackit.business.operation;
 //57421
 public enum UndoableActionType {
 	ADD_TRACKPOINT,
+	APPEND,
 	ADD_ROUTE,
 	REMOVE_TRACKPOINT,
 	JOIN,

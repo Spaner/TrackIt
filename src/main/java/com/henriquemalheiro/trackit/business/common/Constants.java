@@ -129,6 +129,7 @@ public class Constants {
 		public static final String WARNING_DISTANCE = "Warning Distance";
 		public static final String MINIMUM_DISTANCE = "Minimum Distance";
 		public static final String WARN_DISTANCE_BELOW = "Warn Distance Below";
+		public static final String JOIN_OPTIONS = "Join Speed Options";
 	}
 
 	/* Reader Options */
@@ -312,6 +313,7 @@ public class Constants {
 		public static final String AVOID_TOLL_ROADS = "Avoid Toll Roads";
 		public static final String ADD_COURSE_POINTS_AT_JUNCTIONS = "Add Course Points at Junctions";
 		public static final String KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL = "Keep Original Times at Point Removal";//58406
+		
 	}
 
 	public static final class RoutingOptions {
@@ -349,4 +351,5 @@ public class Constants {
 	public static final class PausePreferences {
 		public static final String SPEED_THRESHOLD = "Speed Threshold";
 	}
+	
 }

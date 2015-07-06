@@ -26,6 +26,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -92,6 +93,8 @@ import com.henriquemalheiro.trackit.presentation.view.map.MapView;
 import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayerType;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MilitaryMapResolution;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MilitaryMapsProvider;
+import com.henriquemalheiro.trackit.presentation.view.map.provider.RoutingType;
+import com.miguelpernas.trackit.presentation.JoinSpeedOptions;
 
 public class PreferencesDialog extends JDialog {
 	private static final long serialVersionUID = -2244160308153565900L;
@@ -297,6 +300,10 @@ public class PreferencesDialog extends JDialog {
 
 		final JComboBox<ComboBoxLocaleModel> cbLanguages = new JComboBox<ComboBoxLocaleModel>(
 				model);
+		// final JComboBox<ComboBoxLocaleModel> cbLanguages = new
+		// JComboBox<ComboBoxLocaleModel>();
+		// cbLanguages.setModel(new
+		// DefaultComboBoxModel<ComboBoxLocaleModel>(model));
 		cbLanguages.addFocusListener(new FocusAdapter() {
 
 			@Override
@@ -1128,37 +1135,62 @@ public class PreferencesDialog extends JDialog {
 
 		JLabel lblMinimumDistanceUnit = new JLabel(Unit.METER.toString());
 
-		final boolean warnDistanceBelow = Boolean.valueOf(appPreferences
-				.getBooleanPreference(Constants.PrefsCategories.JOIN, null,
-						Constants.JoinPreferences.WARN_DISTANCE_BELOW,
-						Boolean.TRUE));
+		/*
+		 * final boolean warnDistanceBelow = Boolean.valueOf(appPreferences
+		 * .getBooleanPreference(Constants.PrefsCategories.JOIN, null,
+		 * Constants.JoinPreferences.WARN_DISTANCE_BELOW, Boolean.TRUE));
+		 */
 
 		JCheckBox chkWarnDistanceBelow = new JCheckBox();
-		chkWarnDistanceBelow.setSelected(warnDistanceBelow);
-		chkWarnDistanceBelow.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				final boolean selected = ((JCheckBox) e.getSource())
-						.isSelected();
-				minimumDistanceSpinner.setEnabled(selected);
+		chkWarnDistanceBelow.setVisible(false);
+		/*
+		 * chkWarnDistanceBelow.setSelected(warnDistanceBelow);
+		 * chkWarnDistanceBelow.addActionListener(new ActionListener() { public
+		 * void actionPerformed(ActionEvent e) { final boolean selected =
+		 * ((JCheckBox) e.getSource()) .isSelected();
+		 * minimumDistanceSpinner.setEnabled(selected);
+		 * 
+		 * final SpinnerModel model2 = minimumDistanceSpinner.getModel(); final
+		 * double newValue = ((SpinnerNumberModel) model2)
+		 * .getNumber().doubleValue();
+		 * 
+		 * preferencesToApply.add(new PreferenceTask() { public void execute() {
+		 * appPreferences.setPreference( Constants.PrefsCategories.JOIN, null,
+		 * Constants.JoinPreferences.WARN_DISTANCE_BELOW, selected);
+		 * appPreferences.setPreference( Constants.PrefsCategories.JOIN, null,
+		 * Constants.JoinPreferences.MINIMUM_DISTANCE, newValue); } }); } });
+		 */
 
-				final SpinnerModel model2 = minimumDistanceSpinner.getModel();
-				final double newValue = ((SpinnerNumberModel) model2)
-						.getNumber().doubleValue();
+		JLabel lblJoinOptions = new JLabel(
+				Messages.getMessage("preferencesDialog.joinPreferences.speed"));
+		lblJoinOptions.setFont(lblJoinOptions.getFont().deriveFont(Font.BOLD));
 
+		final JComboBox<JoinSpeedOptions> speedOptionsChooser = new JComboBox<>(
+				JoinSpeedOptions.values());
+
+		speedOptionsChooser.putClientProperty("JComponent.sizeVariant", "mini");
+		speedOptionsChooser.setMaximumSize((new Dimension(40, 10)));
+		speedOptionsChooser.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				final JoinSpeedOptions speedOptions = (JoinSpeedOptions) speedOptionsChooser
+						.getSelectedItem();
+				
 				preferencesToApply.add(new PreferenceTask() {
 					public void execute() {
+						String option = speedOptions.getJoinSpeedName();
+
 						appPreferences.setPreference(
 								Constants.PrefsCategories.JOIN, null,
-								Constants.JoinPreferences.WARN_DISTANCE_BELOW,
-								selected);
-						appPreferences.setPreference(
-								Constants.PrefsCategories.JOIN, null,
-								Constants.JoinPreferences.MINIMUM_DISTANCE,
-								newValue);
+								Constants.JoinPreferences.JOIN_OPTIONS, option);
+
+						TrackIt.updateApplicationMenu();
 					}
 				});
+
 			}
 		});
+		
 
 		layout.setHorizontalGroup(layout
 				.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -1173,6 +1205,7 @@ public class PreferencesDialog extends JDialog {
 														chkWarnDistanceExceeded)
 												.addComponent(
 														chkWarnDistanceBelow))
+
 								.addGroup(
 										layout.createParallelGroup(
 												GroupLayout.Alignment.LEADING)
@@ -1180,6 +1213,7 @@ public class PreferencesDialog extends JDialog {
 														lblWarningDistance)
 												.addComponent(
 														lblMinimumDistance))
+
 								.addGroup(
 										layout.createParallelGroup(
 												GroupLayout.Alignment.LEADING)
@@ -1199,7 +1233,14 @@ public class PreferencesDialog extends JDialog {
 												.addComponent(
 														lblWarningDistanceUnit)
 												.addComponent(
-														lblMinimumDistanceUnit))));
+														lblMinimumDistanceUnit)))
+
+				.addGroup(
+						layout.createSequentialGroup().addGroup(
+								layout.createParallelGroup(
+										GroupLayout.Alignment.LEADING)
+										.addComponent(lblJoinOptions)
+										.addComponent(speedOptionsChooser))));
 
 		layout.setVerticalGroup(layout
 				.createSequentialGroup()
@@ -1212,13 +1253,15 @@ public class PreferencesDialog extends JDialog {
 								.addComponent(lblWarningDistance)
 								.addComponent(warningDistanceSpinner)
 								.addComponent(lblWarningDistanceUnit))
+
 				.addGroup(
 						layout.createParallelGroup(
 								GroupLayout.Alignment.BASELINE)
 								.addComponent(chkWarnDistanceBelow)
 								.addComponent(lblMinimumDistance)
 								.addComponent(minimumDistanceSpinner)
-								.addComponent(lblMinimumDistanceUnit)));
+								.addComponent(lblMinimumDistanceUnit))
+				.addComponent(lblJoinOptions).addComponent(speedOptionsChooser));
 
 		return panel;
 	}

@@ -65,8 +65,6 @@ class JoinDialog extends JDialog {
 	private JButton cmdCancel;
 	private DefaultListModel<Course> coursesModel;
 	
-	private boolean merge;
-	
 	JoinDialog(List<Course> courses) {
 		super(TrackIt.getApplicationFrame());
 		this.courses = courses;
@@ -84,7 +82,7 @@ class JoinDialog extends JDialog {
 		GroupLayout layout = new GroupLayout(getContentPane());
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
-		setLayout(layout);
+		getContentPane().setLayout(layout);
 
 		layout.setHorizontalGroup(
 				layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -219,15 +217,37 @@ class JoinDialog extends JDialog {
 			if (validJoin(joiningCourses)) {
 				final Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.JoinOperation.COURSES, joiningCourses);
-				DocumentManager.getInstance().join(joiningCourses, merge);
+				boolean merge = mergeJoin(joiningCourses);
+				final double minimumDistance = getMinimumDistance();
+				DocumentManager.getInstance().join(joiningCourses, merge, minimumDistance);
 				
 				JoinDialog.this.dispose();
 			}
 		}
+		
+		private boolean mergeJoin(List<Course> joiningCourses) {
+			boolean merge = true;
+
+			final double minimumDistance = getMinimumDistance();
+			Trackpoint trailingTrackpoint;
+			Trackpoint leadingTrackpoint;
+			double distance;
+			
+			for (int i = 0; i < joiningCourses.size() - 1; i++) {
+				trailingTrackpoint = joiningCourses.get(i).getLastTrackpoint();
+				leadingTrackpoint = joiningCourses.get(i + 1).getFirstTrackpoint();
+				distance = calculateDistance(trailingTrackpoint, leadingTrackpoint) * 1000.0;
+				
+				if (distance > minimumDistance) {
+					merge = false;
+				}
+			}
+			
+			return merge;
+		}
 
 		private boolean validJoin(List<Course> joiningCourses) {
 			boolean validJoin = true;
-			merge = false;
 			//boolean minDistance = false;
 						
 			if (!warnDistanceExceeded() && !warnDistanceBelow()) {
@@ -235,7 +255,6 @@ class JoinDialog extends JDialog {
 			}
 			
 			final double warningDistance = getWarningDistance();
-			final double minimumDistance = getMinimumDistance();
 			Trackpoint trailingTrackpoint;
 			Trackpoint leadingTrackpoint;
 			double distance;
@@ -248,11 +267,6 @@ class JoinDialog extends JDialog {
 				if (distance > warningDistance) {
 					validJoin = false;
 					
-				}
-				if (distance < minimumDistance) {
-					//minDistance = true;
-					merge = true;
-					//break;
 				}
 			}
 			

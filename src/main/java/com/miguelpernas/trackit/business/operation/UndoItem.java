@@ -4,8 +4,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.henriquemalheiro.trackit.business.common.Location;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 
 public class UndoItem {
 
@@ -22,6 +24,10 @@ public class UndoItem {
 	private final long deletedCourseId; //split/join
 	private final int trackpointIndex;
 	
+	private final MapProvider mapProvider;
+	private final Map<String, Object> routingOptions;
+	private final Location location;
+	
 	private UndoItem(UndoItemBuilder builder) {
 		this.operationType = builder.operationType;
 		this.changedCoursesIds = builder.changedCoursesIds;
@@ -35,6 +41,9 @@ public class UndoItem {
 		this.trackpointIndex = builder.trackpointIndex;
 		this.joinMergedPoints = builder.joinMergedPoints;
 		this.duplicatePointIds = builder.duplicatePointIds;
+		this.mapProvider = builder.mapProvider;
+		this.routingOptions = builder.routingOptions;
+		this.location = builder.location;
 	}
 
 	public String getOperationType() {
@@ -93,6 +102,18 @@ public class UndoItem {
 	public long getCourseIdAt(int index) {
 		return changedCoursesIds.get(index);
 	}
+	
+	public MapProvider getMapProvider(){
+		return mapProvider;
+	}
+	
+	public Map<String, Object> getRoutingOptions(){
+		return routingOptions;
+	}
+	
+	public Location getLocation(){
+		return location;
+	}
 
 	public static class UndoItemBuilder {
 		private final String operationType;
@@ -107,6 +128,9 @@ public class UndoItem {
 		private int trackpointIndex;
 		private boolean joinMergedPoints;
 		private List<Long> duplicatePointIds;
+		private MapProvider mapProvider;
+		private Map<String, Object> routingOptions;
+		private Location location;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -157,6 +181,21 @@ public class UndoItem {
 		
 		public UndoItemBuilder duplicatePointIds(List<Long> duplicatePointIds){
 			this.duplicatePointIds = duplicatePointIds;
+			return this;
+		}
+		
+		public UndoItemBuilder mapProvider(MapProvider mapProvider){
+			this.mapProvider = mapProvider;
+			return this;
+		}
+		
+		public UndoItemBuilder routingOptions(Map<String, Object> routingOptions){
+			this.routingOptions = routingOptions;
+			return this;
+		}
+		
+		public UndoItemBuilder location(Location location){
+			this.location = location;
 			return this;
 		}
 
