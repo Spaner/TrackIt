@@ -1681,5 +1681,17 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	public void setNoSpeedInFile(Boolean noSpeedInFile) {
 		this.noSpeedInFile = noSpeedInFile;
 	}
+	
+	//57421
+		public boolean isInsidePause(Long time){
+			for(Pause pause : pauses){
+				Long startTime = pause.getStart().getTime();
+				Long endTime = pause.getEnd().getTime();
+				if(time >= startTime && time <= endTime){
+					return true;
+				}
+			}
+			return false;
+		}
 
 }
