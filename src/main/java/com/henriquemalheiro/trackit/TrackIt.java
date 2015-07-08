@@ -1,7 +1,7 @@
 /*
  * This file is part of Track It!.
  * Copyright (C) 2013 Henrique Malheiro
- * Copyright (C) 2015 Pedro Gomes
+ * Copyright (C) 2015 Pedro Gomes, J. Brisson Lopes
  * 
  * TrackIt! is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,10 @@ import org.apache.log4j.PropertyConfigurator;
 
 import com.apple.eawt.AboutHandler;
 import com.apple.eawt.Application;
+import com.apple.eawt.QuitHandler;
+import com.apple.eawt.QuitResponse;
 import com.apple.eawt.AppEvent.AboutEvent;
+import com.apple.eawt.AppEvent.QuitEvent;
 import com.henriquemalheiro.trackit.business.DocumentManager;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Messages;
@@ -72,28 +75,23 @@ public class TrackIt {
 
 		if (OperatingSystem.isMac()) {
 			StringBuilder sb = new StringBuilder();
-			sb.append(System.getProperty("user.home")).append(File.separator)
-					.append("Library").append(File.separator)
+			sb.append(System.getProperty("user.home")).append(File.separator).append("Library").append(File.separator)
 					.append("Application Support");
 			sb.append(File.separator).append(Constants.APP_NAME_NORMALIZED);
 			defaultUserCacheLocation = sb.toString();
 		} else if (OperatingSystem.isUnix()) {
 			StringBuilder sb = new StringBuilder();
-			sb.append(System.getProperty("user.home")).append(File.separator)
-					.append(".").append(Constants.APP_NAME_NORMALIZED);
+			sb.append(System.getProperty("user.home")).append(File.separator).append(".")
+					.append(Constants.APP_NAME_NORMALIZED);
 			defaultUserCacheLocation = sb.toString();
 		} else if (OperatingSystem.isWindows()) {
 			StringBuilder sb = new StringBuilder();
-			sb.append(System.getenv("APPDATA")).append(File.separator)
-					.append(Constants.APP_NAME_NORMALIZED);
+			sb.append(System.getenv("APPDATA")).append(File.separator).append(Constants.APP_NAME_NORMALIZED);
 			defaultUserCacheLocation = sb.toString();
 		}
-		
-		
 
-		return userPreferences.getPreference(Constants.PrefsCategories.MAPS,
-				null, Constants.MapPreferences.CACHE_LOCATION,
-				defaultUserCacheLocation);
+		return userPreferences.getPreference(Constants.PrefsCategories.MAPS, null,
+				Constants.MapPreferences.CACHE_LOCATION, defaultUserCacheLocation);
 	}
 
 	public static JFrame getApplicationFrame() {
@@ -137,28 +135,21 @@ public class TrackIt {
 	}
 
 	private static void setWindowSizeAndPosition() {
-		int xPosition = TrackIt.getPreferences().getIntPreference(
-				Constants.PrefsCategories.GLOBAL, null,
+		int xPosition = TrackIt.getPreferences().getIntPreference(Constants.PrefsCategories.GLOBAL, null,
 				Constants.GlobalPreferences.APPLICATION_X, 0);
-		int yPosition = TrackIt.getPreferences().getIntPreference(
-				Constants.PrefsCategories.GLOBAL, null,
+		int yPosition = TrackIt.getPreferences().getIntPreference(Constants.PrefsCategories.GLOBAL, null,
 				Constants.GlobalPreferences.APPLICATION_Y, 0);
 
-		int windowWidth = TrackIt.getPreferences().getIntPreference(
-				Constants.PrefsCategories.GLOBAL, null,
+		int windowWidth = TrackIt.getPreferences().getIntPreference(Constants.PrefsCategories.GLOBAL, null,
 				Constants.GlobalPreferences.APPLICATION_WIDTH, 640);
-		int windowHeight = TrackIt.getPreferences().getIntPreference(
-				Constants.PrefsCategories.GLOBAL, null,
+		int windowHeight = TrackIt.getPreferences().getIntPreference(Constants.PrefsCategories.GLOBAL, null,
 				Constants.GlobalPreferences.APPLICATION_HEIGHT, 480);
 
-		GraphicsEnvironment env = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
+		GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		applicationFrame.setMaximizedBounds(env.getMaximumWindowBounds());
-		applicationFrame.setBounds(new Rectangle(xPosition, yPosition,
-				windowWidth, windowHeight));
+		applicationFrame.setBounds(new Rectangle(xPosition, yPosition, windowWidth, windowHeight));
 		applicationFrame.setVisible(true);
-		applicationFrame.setExtendedState(applicationFrame.getExtendedState()
-				| JFrame.MAXIMIZED_BOTH);
+		applicationFrame.setExtendedState(applicationFrame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
 		applicationFrame.addComponentListener(new TrackItListener());
 	}
 
@@ -186,25 +177,20 @@ public class TrackIt {
 
 			TrackItPreferences prefs = TrackItPreferences.getInstance();
 
-			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null,
-					Constants.GlobalPreferences.APPLICATION_X,
+			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.APPLICATION_X,
 					(int) bounds.getX());
-			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null,
-					Constants.GlobalPreferences.APPLICATION_Y,
+			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.APPLICATION_Y,
 					(int) bounds.getY());
-			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null,
-					Constants.GlobalPreferences.APPLICATION_WIDTH,
+			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.APPLICATION_WIDTH,
 					(int) bounds.getWidth());
-			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null,
-					Constants.GlobalPreferences.APPLICATION_HEIGHT,
+			prefs.setPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.APPLICATION_HEIGHT,
 					(int) bounds.getHeight());
 		}
 	}
 
 	private static void init() {
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
-		System.setProperty("com.apple.mrj.application.apple.menu.about.name",
-				Constants.APP_NAME);
+		System.setProperty("com.apple.mrj.application.apple.menu.about.name", Constants.APP_NAME);
 
 		// try {
 		// UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -228,8 +214,7 @@ public class TrackIt {
 			// If Nimbus is not available, you can set the GUI to another look
 			// and feel.
 			try {
-				UIManager.setLookAndFeel(UIManager
-						.getSystemLookAndFeelClassName());
+				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 			} catch (ClassNotFoundException e1) {
 				e1.printStackTrace();
 			} catch (InstantiationException e1) {
@@ -241,40 +226,41 @@ public class TrackIt {
 			}
 		}
 
-		PropertyConfigurator.configure(TrackIt.class
-				.getResource("/log4j.properties"));
+		PropertyConfigurator.configure(TrackIt.class.getResource("/log4j.properties"));
 
-		UIManager.put("OptionPane.cancelButtonText",
-				Messages.getMessage("messages.cancel"));
-		UIManager.put("OptionPane.noButtonText",
-				Messages.getMessage("messages.no"));
-		UIManager.put("OptionPane.okButtonText",
-				Messages.getMessage("messages.ok"));
-		UIManager.put("OptionPane.yesButtonText",
-				Messages.getMessage("messages.yes"));
+		UIManager.put("OptionPane.cancelButtonText", Messages.getMessage("messages.cancel"));
+		UIManager.put("OptionPane.noButtonText", Messages.getMessage("messages.no"));
+		UIManager.put("OptionPane.okButtonText", Messages.getMessage("messages.ok"));
+		UIManager.put("OptionPane.yesButtonText", Messages.getMessage("messages.yes"));
 
-		int savedTraceColor = userPreferences.getIntPreference(
-				Constants.PrefsCategories.COLOR, null,
+		int savedTraceColor = userPreferences.getIntPreference(Constants.PrefsCategories.COLOR, null,
 				Constants.ColorPreferences.FILL_RGB, 65535);
 		Color newColor = new Color(savedTraceColor);
 
 		int tempRed = newColor.getRed();
 		int tempGreen = newColor.getGreen();
 		int tempBlue = newColor.getBlue();
-		Color selectionFill = new Color(255 - tempRed, 255 - tempGreen,
-				255 - tempBlue);
-		defaultColorScheme = new ColorSchemeV2(newColor, newColor.darker(),
-				selectionFill.darker(), selectionFill);
-		
-		if(OperatingSystem.isMac()){
+		Color selectionFill = new Color(255 - tempRed, 255 - tempGreen, 255 - tempBlue);
+		defaultColorScheme = new ColorSchemeV2(newColor, newColor.darker(), selectionFill.darker(), selectionFill);
+
+		if (OperatingSystem.isMac()) {
 			Application macApp = Application.getApplication();
 			macApp.setAboutHandler(new AboutHandler() {
-				
+
 				@Override
 				public void handleAbout(AboutEvent arg0) {
 					new AboutDialog(applicationFrame);
 				}
 			});
+			// 12335 start
+			macApp.setQuitHandler(new QuitHandler() {
+
+				@Override
+				public void handleQuitRequestWith(QuitEvent arg0, QuitResponse arg1) {
+					SaveTools.getInstance().saveAndExit();
+				}
+			});
+			// 12335 end
 		}
 	}
 
@@ -313,11 +299,8 @@ public class TrackIt {
 
 	public static void restartApplication() {
 		try {
-			final String javaBin = System.getProperty("java.home")
-					+ File.separator + "bin" + File.separator + "java";
-			final File currentJar = new File(TrackIt.class
-					.getProtectionDomain().getCodeSource().getLocation()
-					.toURI());
+			final String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+			final File currentJar = new File(TrackIt.class.getProtectionDomain().getCodeSource().getLocation().toURI());
 
 			/* is it a jar file? */
 			if (!currentJar.getName().endsWith(".jar"))
@@ -340,16 +323,14 @@ public class TrackIt {
 	}
 
 	public static void setDefaultColorScheme() {
-		int savedTraceColor = userPreferences.getIntPreference(
-				Constants.PrefsCategories.COLOR, null,
+		int savedTraceColor = userPreferences.getIntPreference(Constants.PrefsCategories.COLOR, null,
 				Constants.ColorPreferences.FILL_RGB, 65535);
 		Color newColor = new Color(savedTraceColor);
 
 		int tempRed = newColor.getRed();
 		int tempGreen = newColor.getGreen();
 		int tempBlue = newColor.getBlue();
-		Color selectionFill = new Color(255 - tempRed, 255 - tempGreen,
-				255 - tempBlue);
+		Color selectionFill = new Color(255 - tempRed, 255 - tempGreen, 255 - tempBlue);
 
 		defaultColorScheme.setFillColor(newColor);
 		defaultColorScheme.setLineColor(newColor.darker());
