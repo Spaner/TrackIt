@@ -80,7 +80,10 @@ import com.henriquemalheiro.trackit.presentation.event.EventPublisher;
 import com.henriquemalheiro.trackit.presentation.task.Action;
 import com.henriquemalheiro.trackit.presentation.task.Task;
 import com.henriquemalheiro.trackit.presentation.view.map.MapView;
+import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayer;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
+import com.henriquemalheiro.trackit.presentation.view.map.provider.RoutingType;
+import com.henriquemalheiro.trackit.presentation.view.map.provider.TransportMode;
 import com.miguelpernas.trackit.business.operation.CopyOperation;
 import com.miguelpernas.trackit.business.operation.UndoItem;
 import com.miguelpernas.trackit.business.operation.UndoManagerCustom;
@@ -977,24 +980,43 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 	}
 	
-	public void join(final List<Course> courses, final boolean merge, final Double minimumDistance) {
-		//if(merge){
+	public void join(final List<Course> courses, final boolean merge, final Double minimumDistance) throws TrackItException {
+		if(merge){
 			join(courses);
-		//}
-		/*else{
-			appendRoute(final MapProvider mapProvider,
-					final Map<String, Object> routingOptions, final Course course,
-					final Location location)
-		}*/
+		}
+		else{
+			List<Course> courseList = appendJoin(courses, minimumDistance);
+			join(courseList);
+		}
 		
 	}
 	
-	/*private List<Course> appendJoin(final List<Course> joiningCourses, final Double minimumDistance) {
+	private List<Course> appendJoin(final List<Course> joiningCourses, final Double minimumDistance) throws TrackItException {
 
 		List<Course> newJoiningCourses = new ArrayList<Course>();
 		Trackpoint trailingTrackpoint;
 		Trackpoint leadingTrackpoint;
 		double distance;
+		
+		RoutingType routingType = RoutingType.lookup(TrackIt.getPreferences().getPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ROUTING_TYPE, RoutingType.FASTEST.getRoutingTypeName()));
+		TransportMode transportMode = TransportMode.lookup(TrackIt.getPreferences().getPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.TRANSPORT_MODE, TransportMode.CAR.getTransportModeName()));
+		boolean followRoads = TrackIt.getPreferences().getBooleanPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.FOLLOW_ROADS, true);
+		boolean avoidHighways = TrackIt.getPreferences().getBooleanPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.AVOID_HIGHWAYS, true);
+		boolean avoidTollRoads = TrackIt.getPreferences().getBooleanPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.AVOID_TOLL_ROADS, true);
+		boolean addDirectionCoursePoints = TrackIt.getPreferences().getBooleanPreference(
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ADD_COURSE_POINTS_AT_JUNCTIONS, true);
+		
+		java.util.Map<String, Object> routingOptions = new HashMap<>();
+		routingOptions.put(Constants.RoutingOptions.ROUTING_TYPE, routingType);
+		routingOptions.put(Constants.RoutingOptions.TRANSPORT_MODE, transportMode);
+		routingOptions.put(Constants.RoutingOptions.AVOID_HIGHWAYS, avoidHighways);
+		routingOptions.put(Constants.RoutingOptions.AVOID_TOLL_ROADS, avoidTollRoads);
+		routingOptions.put(Constants.RoutingOptions.ADD_DIRECTION_COURSE_POINTS, addDirectionCoursePoints);
 
 		for (int i = 0; i < joiningCourses.size() - 1; i++) {
 			trailingTrackpoint = joiningCourses.get(i).getLastTrackpoint();
@@ -1005,11 +1027,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 			
 			newJoiningCourses.add(joiningCourses.get(i));
 			
+			Location location = new Location(joiningCourses.get(i+1).getFirstTrackpoint().getLongitude(), joiningCourses.get(i+1).getFirstTrackpoint().getLatitude());
+			
 			if (distance > minimumDistance) {
-				newJoiningCourses.add(createInnerJoinCourse);
+				newJoiningCourses.add(createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i), location));
 			}
 			
 		}
+		newJoiningCourses.add(joiningCourses.get(joiningCourses.size()-1));
 
 		return newJoiningCourses;
 	}
@@ -1059,7 +1084,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				trailingTrackpoint.getLongitude(),
 				leadingTrackpoint.getLatitude(),
 				leadingTrackpoint.getLongitude());
-	}*/
+	}
 
 	public void join(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
@@ -1419,6 +1444,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Course route = mapProvider.getRoute(startLocation, endLocation,
 						routingOptions);
 				route.getTrackpoints().remove(0);
+				
 
 				Map<String, Object> options = new HashMap<>();
 				options.put(Constants.ConsolidationOperation.LEVEL,

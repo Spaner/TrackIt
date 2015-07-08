@@ -94,6 +94,7 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayerType;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MilitaryMapResolution;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MilitaryMapsProvider;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.RoutingType;
+import com.miguelpernas.trackit.business.common.JoinOptions;
 import com.miguelpernas.trackit.presentation.JoinSpeedOptions;
 
 public class PreferencesDialog extends JDialog {
@@ -1099,6 +1100,8 @@ public class PreferencesDialog extends JDialog {
 				});
 			}
 		});
+		
+		
 
 		JLabel lblMinimumDistance = new JLabel(
 				getMessage("preferencesDialog.joinPreferences.minimumDistance"));
@@ -1135,62 +1138,43 @@ public class PreferencesDialog extends JDialog {
 
 		JLabel lblMinimumDistanceUnit = new JLabel(Unit.METER.toString());
 
-		/*
-		 * final boolean warnDistanceBelow = Boolean.valueOf(appPreferences
-		 * .getBooleanPreference(Constants.PrefsCategories.JOIN, null,
-		 * Constants.JoinPreferences.WARN_DISTANCE_BELOW, Boolean.TRUE));
-		 */
 
 		JCheckBox chkWarnDistanceBelow = new JCheckBox();
 		chkWarnDistanceBelow.setVisible(false);
-		/*
-		 * chkWarnDistanceBelow.setSelected(warnDistanceBelow);
-		 * chkWarnDistanceBelow.addActionListener(new ActionListener() { public
-		 * void actionPerformed(ActionEvent e) { final boolean selected =
-		 * ((JCheckBox) e.getSource()) .isSelected();
-		 * minimumDistanceSpinner.setEnabled(selected);
-		 * 
-		 * final SpinnerModel model2 = minimumDistanceSpinner.getModel(); final
-		 * double newValue = ((SpinnerNumberModel) model2)
-		 * .getNumber().doubleValue();
-		 * 
-		 * preferencesToApply.add(new PreferenceTask() { public void execute() {
-		 * appPreferences.setPreference( Constants.PrefsCategories.JOIN, null,
-		 * Constants.JoinPreferences.WARN_DISTANCE_BELOW, selected);
-		 * appPreferences.setPreference( Constants.PrefsCategories.JOIN, null,
-		 * Constants.JoinPreferences.MINIMUM_DISTANCE, newValue); } }); } });
-		 */
 
-		JLabel lblJoinOptions = new JLabel(
+		JLabel lblJoinOptionsTitle = new JLabel(
 				Messages.getMessage("preferencesDialog.joinPreferences.speed"));
-		lblJoinOptions.setFont(lblJoinOptions.getFont().deriveFont(Font.BOLD));
+		lblJoinOptionsTitle.setFont(lblJoinOptionsTitle.getFont().deriveFont(Font.BOLD));
 
-		final JComboBox<JoinSpeedOptions> speedOptionsChooser = new JComboBox<>(
-				JoinSpeedOptions.values());
+		String[] availableOptions = JoinOptions.getAvailableOptions().toArray(new String[0]);
+		final JComboBox<String> speedOptionsChooser = new JComboBox<String>(availableOptions);
 
-		speedOptionsChooser.putClientProperty("JComponent.sizeVariant", "mini");
+		//speedOptionsChooser.putClientProperty("JComponent.sizeVariant", "mini");
 		speedOptionsChooser.setMaximumSize((new Dimension(40, 10)));
 		speedOptionsChooser.addFocusListener(new FocusAdapter() {
+
 			@Override
 			public void focusLost(FocusEvent e) {
-				final JoinSpeedOptions speedOptions = (JoinSpeedOptions) speedOptionsChooser
-						.getSelectedItem();
-				
+				final String selectedOption = speedOptionsChooser
+						.getSelectedItem().toString();
+
 				preferencesToApply.add(new PreferenceTask() {
 					public void execute() {
-						String option = speedOptions.getJoinSpeedName();
+						String option = selectedOption;
 
 						appPreferences.setPreference(
 								Constants.PrefsCategories.JOIN, null,
 								Constants.JoinPreferences.JOIN_OPTIONS, option);
 
+						JoinOptions.setOption(option);
+
 						TrackIt.updateApplicationMenu();
 					}
 				});
-
 			}
 		});
-		
+		speedOptionsChooser.setSelectedItem(JoinOptions.getOption());
+
 
 		layout.setHorizontalGroup(layout
 				.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -1239,7 +1223,7 @@ public class PreferencesDialog extends JDialog {
 						layout.createSequentialGroup().addGroup(
 								layout.createParallelGroup(
 										GroupLayout.Alignment.LEADING)
-										.addComponent(lblJoinOptions)
+										.addComponent(lblJoinOptionsTitle)
 										.addComponent(speedOptionsChooser))));
 
 		layout.setVerticalGroup(layout
@@ -1261,7 +1245,7 @@ public class PreferencesDialog extends JDialog {
 								.addComponent(lblMinimumDistance)
 								.addComponent(minimumDistanceSpinner)
 								.addComponent(lblMinimumDistanceUnit))
-				.addComponent(lblJoinOptions).addComponent(speedOptionsChooser));
+				.addComponent(lblJoinOptionsTitle).addComponent(speedOptionsChooser));
 
 		return panel;
 	}
@@ -1467,7 +1451,8 @@ public class PreferencesDialog extends JDialog {
 			return true;
 		}
 	}
-
+	
+	
 	// 58406##############################################################################################
 
 	private JPanel createColorCustomizationPanel() {

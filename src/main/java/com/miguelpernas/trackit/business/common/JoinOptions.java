@@ -19,24 +19,18 @@
  */
 package com.miguelpernas.trackit.business.common;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
-import com.henriquemalheiro.trackit.business.common.Constants.GlobalPreferences;
-import com.henriquemalheiro.trackit.business.common.Constants.PrefsCategories;
+import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 
-/*public class JoinOptions {
-	private static final String DEFAULT_OPTION = "constant default speed";
-	private static final String BUNDLE_NAME = "MessagesBundle";
+public class JoinOptions {
+	private static final String DEFAULT_OPTION = Messages.getMessage("joinSpeedOptions.constantDefault");
 	
-	private static ResourceBundle resourceBundle;
+	
 	private static String currentOption;
 	
 	private static List<String> availableOptions;
@@ -44,49 +38,39 @@ import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 	static {
 		TrackItPreferences preferences = TrackIt.getPreferences();
 		
-		String country = preferences.getPreference(Constants.PrefsCategories.GLOBAL, null,
-				Constants.GlobalPreferences.COUNTRY, DEFAULT_LOCALE.getCountry());
-		String language = preferences.getPreference(Constants.PrefsCategories.GLOBAL, null,
-				Constants.GlobalPreferences.LANGUAGE, DEFAULT_LOCALE.getLanguage());
+		String option = preferences.getPreference(Constants.PrefsCategories.JOIN, null,
+				Constants.JoinPreferences.JOIN_OPTIONS, DEFAULT_OPTION);
 		
-		currentLocale = new Locale(language, country);
+		currentOption = option;
 		
-		resourceBundle = ResourceBundle.getBundle(BUNDLE_NAME, currentLocale);
-		initAvailableLocales();
+		initAvailableOptions();
 	}
 	
-	public static Locale getLocale() {
-		return currentLocale;
+	public static String getOption() {
+		return currentOption;
 	}
 	
-	public static void setLocale(Locale locale) {
-		currentLocale = locale;
-		resourceBundle = ResourceBundle.getBundle(BUNDLE_NAME, currentLocale);
+	public static void setOption(String option) {
+		currentOption = option;
 	}
 	
-	public static List<Locale> getAvailableLocales() {
-		return availableLocales;
+	public static List<String> getAvailableOptions() {
+		return availableOptions;
 	}
 	
-	public static String getMessage(String key) {
-		try {
-            return resourceBundle.getString(key);
-        } catch (MissingResourceException e) {
-            return '!' + key + '!';
-        }
-	}
 	
-	public static String getMessage(String key, Object... parameters) {
-		try {
-            return MessageFormat.format(resourceBundle.getString(key), parameters);
-        } catch (MissingResourceException e) {
-            return '!' + key + '!';
-        }
+	private static void initAvailableOptions() {
+		availableOptions = new ArrayList<String>();
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.constantDefault"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.constantUser"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.firstAvg"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.firstEnd"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.secondAvg"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.secondStart"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.avgBothCourses"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.avgConnecting"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.keepTimestamps"));
+		availableOptions.add(Messages.getMessage("joinSpeedOptions.setTime"));
+
 	}
-	
-	private static void initAvailableLocales() {
-		availableLocales = new ArrayList<Locale>();
-		availableLocales.add(new Locale("en", "UK"));
-		availableLocales.add(new Locale("pt", "PT"));
-	}
-}*/
+}

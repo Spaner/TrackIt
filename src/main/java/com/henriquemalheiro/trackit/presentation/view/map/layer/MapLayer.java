@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
+import com.henriquemalheiro.trackit.business.DocumentManager;
 import com.henriquemalheiro.trackit.business.common.Location;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.presentation.utilities.Operation;
@@ -32,7 +33,7 @@ import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 
 public abstract class MapLayer extends JPanel {
 	private static final long serialVersionUID = 8619529830886552901L;
-	protected Map map;
+	protected static Map map;
 	
 	public MapLayer(Map map) {
 		this.map = map;
@@ -42,6 +43,10 @@ public abstract class MapLayer extends JPanel {
 	public abstract MapLayerType getType();
 	
 	public MapProvider getMapProvider() {
+		return map.getMapProvider();
+	}
+	
+	public synchronized static MapProvider getInstance() {
 		return map.getMapProvider();
 	}
 	

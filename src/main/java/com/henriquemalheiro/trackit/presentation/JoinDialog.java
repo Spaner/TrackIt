@@ -48,6 +48,7 @@ import com.henriquemalheiro.trackit.business.common.Formatters;
 import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.henriquemalheiro.trackit.business.exception.TrackItException;
 import com.henriquemalheiro.trackit.business.utility.Utilities;
 
 class JoinDialog extends JDialog {
@@ -210,10 +211,15 @@ class JoinDialog extends JDialog {
 		@Override
 		public void actionPerformed(ActionEvent event) {
 			List<Course> joiningCourses = Collections.list(coursesModel.elements());
-			join(joiningCourses);
+			try {
+				join(joiningCourses);
+			} catch (TrackItException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
-		private void join(List<Course> joiningCourses) {
+		private void join(List<Course> joiningCourses) throws TrackItException {
 			if (validJoin(joiningCourses)) {
 				final Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.JoinOperation.COURSES, joiningCourses);
