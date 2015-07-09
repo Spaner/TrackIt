@@ -47,9 +47,11 @@ import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Location;
 import com.henriquemalheiro.trackit.business.common.Messages;
+import com.henriquemalheiro.trackit.business.common.SetPaceMethod;
 import com.henriquemalheiro.trackit.business.domain.Activity;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.CourseLap;
+import com.henriquemalheiro.trackit.business.domain.CoursePoint;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
 import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
@@ -108,8 +110,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		OPEN, IMPORT
 	};
 
-	private static Logger logger = Logger.getLogger(DocumentManager.class
-			.getName());
+	private static Logger logger = Logger.getLogger(DocumentManager.class.getName());
 
 	static {
 		documentManager = new DocumentManager();
@@ -200,8 +201,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	public GPSDocument createDocument(String folderName) {
-		return createDocument(folderName,
-				Messages.getMessage("documentManager.untitledDocument"));
+		return createDocument(folderName, Messages.getMessage("documentManager.untitledDocument"));
 	}
 
 	public GPSDocument createDocument(String folderName, String documentName) {
@@ -246,20 +246,17 @@ public class DocumentManager implements EventPublisher, EventListener {
 			protected GPSDocument doInBackground() {
 				InputStream inputStream = null;
 				Reader reader;
-				GPSDocument selectedDocument = (mode.equals(ReadMode.IMPORT) ? documents
-						.get(selectedDocumentId).getDocument()
-						: new GPSDocument(
-								Messages.getMessage("gpsDocument.label")));
+				GPSDocument selectedDocument = (mode.equals(ReadMode.IMPORT)
+						? documents.get(selectedDocumentId).getDocument()
+						: new GPSDocument(Messages.getMessage("gpsDocument.label")));
 				GPSDocument document = null;
 
 				for (File file : files) {
 					if (file.exists()) {
 						try {
 							inputStream = getInputStream(file);
-							reader = ReaderFactory.getInstance().getReader(
-									file, null);
-							document = reader.read(inputStream,
-									file.getAbsolutePath());// 58406
+							reader = ReaderFactory.getInstance().getReader(file, null);
+							document = reader.read(inputStream, file.getAbsolutePath());// 58406
 							mergeDocuments(document, selectedDocument);
 						} catch (ReaderException re) {
 							return null;
@@ -267,8 +264,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 							closeInputStream(inputStream);
 						}
 					} else {
-						logger.error("The file " + file.getAbsolutePath()
-								+ " does not exist. Skipping file.");
+						logger.error("The file " + file.getAbsolutePath() + " does not exist. Skipping file.");
 						continue;
 					}
 					for (Activity a : document.getActivities()) {
@@ -300,14 +296,11 @@ public class DocumentManager implements EventPublisher, EventListener {
 					}
 
 					Map<String, Object> options = new HashMap<>();
-					options.put(Constants.ConsolidationOperation.LEVEL,
-							ConsolidationLevel.BASIC);
+					options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
 					new ConsolidationOperation(options).process(document);
 
 					if (mode.equals(ReadMode.IMPORT)) {
-						EventManager.getInstance().publish(
-								DocumentManager.this, Event.DOCUMENT_UPDATED,
-								document);
+						EventManager.getInstance().publish(DocumentManager.this, Event.DOCUMENT_UPDATED, document);
 					} else {
 						addDocument(getFolder(FOLDER_WORKSPACE), document);
 					}
@@ -327,14 +320,11 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			private void selectDocumentsFirstItem(GPSDocument document) {
 				if (!document.getActivities().isEmpty()) {
-					document.getActivities().get(0)
-							.publishSelectionEvent(DocumentManager.this);
+					document.getActivities().get(0).publishSelectionEvent(DocumentManager.this);
 				} else if (!document.getCourses().isEmpty()) {
-					document.getCourses().get(0)
-							.publishSelectionEvent(DocumentManager.this);
+					document.getCourses().get(0).publishSelectionEvent(DocumentManager.this);
 				} else if (!document.getWaypoints().isEmpty()) {
-					document.getWaypoints().get(0)
-							.publishSelectionEvent(DocumentManager.this);
+					document.getWaypoints().get(0).publishSelectionEvent(DocumentManager.this);
 				}
 			}
 		};
@@ -345,9 +335,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		ProgressMonitorInputStream progressMonitor;
 		BufferedInputStream in;
 		try {
-			progressMonitor = new ProgressMonitorInputStream(
-					TrackIt.getApplicationFrame(), "Reading "
-							+ file.getAbsolutePath(), new FileInputStream(file));
+			progressMonitor = new ProgressMonitorInputStream(TrackIt.getApplicationFrame(),
+					"Reading " + file.getAbsolutePath(), new FileInputStream(file));
 			in = new BufferedInputStream(progressMonitor);
 		} catch (FileNotFoundException fnfe) {
 			throw new ReaderException(fnfe.getMessage());
@@ -368,10 +357,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
-						message,
-						Messages.getMessage("documentManager.title.error"),
-						JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(), message,
+						Messages.getMessage("documentManager.title.error"), JOptionPane.ERROR_MESSAGE);
 			}
 		});
 	}
@@ -381,8 +368,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			for (GPSDocument document : currentFolder.getDocuments()) {
 				if (document.getActivities().contains(activity)) {
 					document.remove(activity);
-					EventManager.getInstance().publish(this,
-							Event.ACTIVITY_REMOVED, activity);
+					EventManager.getInstance().publish(this, Event.ACTIVITY_REMOVED, activity);
 					return;
 				}
 			}
@@ -394,8 +380,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			for (GPSDocument document : currentFolder.getDocuments()) {
 				if (document.getCourses().contains(course)) {
 					document.remove(course);
-					EventManager.getInstance().publish(this,
-							Event.COURSE_REMOVED, course);
+					EventManager.getInstance().publish(this, Event.COURSE_REMOVED, course);
 					return;
 				}
 			}
@@ -407,8 +392,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		folder.remove(document);
 		documents.remove(document.getId());// 58406
 
-		EventManager.getInstance().publish(this, Event.DOCUMENT_DISCARDED,
-				document);
+		EventManager.getInstance().publish(this, Event.DOCUMENT_DISCARDED, document);
 	}
 
 	private void mergeDocuments(GPSDocument source, GPSDocument destination) {
@@ -436,14 +420,11 @@ public class DocumentManager implements EventPublisher, EventListener {
 		DocumentEntry entry = new DocumentEntry(folder, document);
 		documents.put(document.getId(), entry);
 
-		EventManager.getInstance().publish(DocumentManager.this,
-				Event.DOCUMENT_ADDED, document);
+		EventManager.getInstance().publish(DocumentManager.this, Event.DOCUMENT_ADDED, document);
 	}
 
-	public Activity consolidate(final Activity activity,
-			final ConsolidationLevel level) throws TrackItException {
-		GPSDocument document = new GPSDocument(activity.getParent()
-				.getFileName());
+	public Activity consolidate(final Activity activity, final ConsolidationLevel level) throws TrackItException {
+		GPSDocument document = new GPSDocument(activity.getParent().getFileName());
 		document.add(activity);
 
 		Map<String, Object> options = new HashMap<>();
@@ -460,14 +441,11 @@ public class DocumentManager implements EventPublisher, EventListener {
 		course.setName(Messages.getMessage("course.newCourse.name"));
 		document.add(course);
 
-		EventManager.getInstance().publish(this, Event.DOCUMENT_UPDATED,
-				document);
-		EventManager.getInstance().publish(DocumentManager.this,
-				Event.COURSE_SELECTED, course);
+		EventManager.getInstance().publish(this, Event.DOCUMENT_UPDATED, document);
+		EventManager.getInstance().publish(DocumentManager.this, Event.COURSE_SELECTED, course);
 	}
 
-	public void splitAtSelected(final Course course,
-			final Trackpoint trackpoint, final boolean keepSpeed) {
+	public void splitAtSelected(final Course course, final Trackpoint trackpoint, final boolean keepSpeed) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
 		final Double tempSpeed = trackpoint.getSpeed();
@@ -482,8 +460,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.splitingCourse");
+				return Messages.getMessage("documentManager.message.splitingCourse");
 			}
 
 			@Override
@@ -491,17 +468,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return splitCourse(course, trackpoint);
 			}
 
-			private List<Course> splitCourse(Course course,
-					Trackpoint trackpoint) {
+			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
 				Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
-				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
-						trackpoint);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
 
-				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
-						options);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 
 				try {
@@ -522,7 +495,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					course.setParent(masterDocument);
 					course.setUnsavedTrue();
 				}
-				
+
 				/* undo */
 				String name = UndoableActionType.SPLIT.toString();
 				List<Long> courseIds = new ArrayList<Long>();
@@ -533,15 +506,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				}
 
 				if (!keepSpeed) {
-					UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).trackpoint(trackpoint)
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
 							.splitSpeed(tempSpeed).build();
 					undoManager.addUndo(item);
 				}
 				if (keepSpeed) {
 					Double speed = null;
-					UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).trackpoint(trackpoint)
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
 							.splitSpeed(speed).build();
 					undoManager.addUndo(item);
 
@@ -581,16 +552,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				CopyOperation copyOperation = new CopyOperation(copyOptions);
 
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
 					try {
 						copyOperation.process(document);
-						copyOptions.put(Constants.ConsolidationOperation.LEVEL,
-								ConsolidationLevel.BASIC);
-						new ConsolidationOperation(copyOptions)
-								.process(document);
+						copyOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
+						new ConsolidationOperation(copyOptions).process(document);
 
 					} catch (TrackItException e) {
 						logger.error(e.getMessage());
@@ -599,13 +567,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 				}
 
 				Map<String, Object> reverseOptions = new HashMap<String, Object>();
-				reverseOptions.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				reverseOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 
-				ReverseOperation reverseOperation = new ReverseOperation(
-						reverseOptions);
-				ConsolidationOperation consolidationOP = new ConsolidationOperation(
-						reverseOptions);
+				ReverseOperation reverseOperation = new ReverseOperation(reverseOptions);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(reverseOptions);
 
 				try {
 					reverseOperation.process(document, mode);
@@ -636,10 +601,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
 					courseIds.add(courses.get(1).getId());
 				}
-				if (mode.equals(Constants.ReverseOperation.RETURN)
-						|| mode.equals(Constants.ReverseOperation.NORMAL)) {
-					UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).reverseMode(mode).build();
+				if (mode.equals(Constants.ReverseOperation.RETURN) || mode.equals(Constants.ReverseOperation.NORMAL)) {
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).reverseMode(mode).build();
 					undoManager.addUndo(item);
 				}
 				/* end undo */
@@ -678,8 +641,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				options.put(Constants.CopyOperation.COURSE, course);
 
 				CopyOperation copyOperation = new CopyOperation(options);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 
 				try {
@@ -689,8 +651,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					return null;
 				}
 
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.BASIC);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -735,7 +696,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 		return null;
 	}
-	
+
 	public Trackpoint getTrackpoint(Course course, long trackpointId) {
 		ListIterator<Trackpoint> iter = course.getTrackpoints().listIterator();
 		Trackpoint trackpoint;
@@ -762,8 +723,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public Object execute() throws TrackItException {
-				AddLapOperation addLapOperation = new AddLapOperation(course,
-						trackpoint);
+				AddLapOperation addLapOperation = new AddLapOperation(course, trackpoint);
 				addLapOperation.execute();
 
 				return null;
@@ -789,8 +749,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public Object execute() throws TrackItException {
-				RemoveLapOperation removeLapOperation = new RemoveLapOperation(
-						lap);
+				RemoveLapOperation removeLapOperation = new RemoveLapOperation(lap);
 				removeLapOperation.execute();
 
 				return null;
@@ -803,21 +762,16 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void activityToCourse(final Activity activity,
-			final boolean removeActivity) {
+	public void activityToCourse(final Activity activity, final boolean removeActivity) {
 		final GPSDocument originalDocument = activity.getParent();
 
 		SwingWorker<Runnable, Void> worker = new SwingWorker<Runnable, Void>() {
 			@Override
 			protected Runnable doInBackground() {
 				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(
-						Constants.ActivitiesToCoursesOperation.REMOVE_ACTIVITIES,
-						removeActivity);
-				ActivityToCourseOperation Operation = new ActivityToCourseOperation(
-						options);
-				GPSDocument document = new GPSDocument(activity.getParent()
-						.getFileName());
+				options.put(Constants.ActivitiesToCoursesOperation.REMOVE_ACTIVITIES, removeActivity);
+				ActivityToCourseOperation Operation = new ActivityToCourseOperation(options);
+				GPSDocument document = new GPSDocument(activity.getParent().getFileName());
 				document.add(activity);
 
 				try {
@@ -866,36 +820,30 @@ public class DocumentManager implements EventPublisher, EventListener {
 		EventManager.getInstance().publish(this, Event.COURSE_UPDATED, course);
 	}
 
-	public Course setPace(Course course, Map<String, Object> options)
-			throws TrackItException {
+	public Course setPace(Course course, Map<String, Object> options) throws TrackItException {
 		GPSDocument document = new GPSDocument(course.getParent().getFileName());
 		document.add(course);
 
 		new SettingPaceOperation(options).process(document);
 
-		options.put(Constants.ConsolidationOperation.LEVEL,
-				ConsolidationLevel.SUMMARY);
+		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 		new ConsolidationOperation(options).process(document);
 		course.setUnsavedTrue();
 		return document.getCourses().get(0);
 	}
 
-	public void consolidate(final Course course,
-			final Map<String, Object> options) {
+	public void consolidate(final Course course, final Map<String, Object> options) {
 		final GPSDocument masterDocument = course.getParent();
 
 		new Task(new Action() {
 			@Override
 			public String getMessage() {
-				return Messages.getMessage(
-						"documentManager.message.consolidating",
-						course.getDocumentItemName());
+				return Messages.getMessage("documentManager.message.consolidating", course.getDocumentItemName());
 			}
 
 			@Override
 			public Object execute() {
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				try {
 					new ConsolidationOperation(options).process(document);
@@ -909,11 +857,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			public void done(Object result) {
 				if (result == null) {
-					JOptionPane.showMessageDialog(
-							TrackIt.getApplicationFrame(),
+					JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
 							Messages.getMessage("documentManager.error.consolidationError"),
-							Messages.getMessage("documentManager.title.error"),
-							JOptionPane.ERROR_MESSAGE);
+							Messages.getMessage("documentManager.title.error"), JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 				Course course = (Course) result;
@@ -923,8 +869,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}, false).execute();
 	}
 
-	public DocumentItem simplify(DocumentItem item, Map<String, Object> options)
-			throws TrackItException {
+	public DocumentItem simplify(DocumentItem item, Map<String, Object> options) throws TrackItException {
 		GPSDocument document = new GPSDocument(null);
 
 		if (!item.isCourse()) {
@@ -936,15 +881,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 		new TrackSimplificationOperation(options).process(document);
 
-		options.put(Constants.ConsolidationOperation.LEVEL,
-				ConsolidationLevel.SUMMARY);
+		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 		new ConsolidationOperation(options).process(document);
 
 		return document.getCourses().get(0);
 	}
 
-	public DocumentItem mark(DocumentItem item, Map<String, Object> options)
-			throws TrackItException {
+	public DocumentItem mark(DocumentItem item, Map<String, Object> options) throws TrackItException {
 		GPSDocument document = new GPSDocument(null);
 
 		if (!item.isCourse()) {
@@ -959,8 +902,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		return document.getCourses().get(0);
 	}
 
-	public DocumentItem detectClimbsDescents(DocumentItem item,
-			Map<String, Object> options) throws TrackItException {
+	public DocumentItem detectClimbsDescents(DocumentItem item, Map<String, Object> options) throws TrackItException {
 		GPSDocument document = new GPSDocument(null);
 
 		if (item.isActivity()) {
@@ -979,38 +921,42 @@ public class DocumentManager implements EventPublisher, EventListener {
 			return document.getCourses().get(0);
 		}
 	}
-	
-	public void join(final List<Course> courses, final boolean merge, final Double minimumDistance) throws TrackItException {
-		if(merge){
+
+	public void join(final List<Course> courses, final boolean merge, final Double minimumDistance)
+			throws TrackItException {
+		if (merge) {
 			join(courses);
-		}
-		else{
+		} else {
 			List<Course> courseList = appendJoin(courses, minimumDistance);
 			join(courseList);
 		}
-		
+
 	}
-	
-	private List<Course> appendJoin(final List<Course> joiningCourses, final Double minimumDistance) throws TrackItException {
+
+	private List<Course> appendJoin(final List<Course> joiningCourses, final Double minimumDistance)
+			throws TrackItException {
 
 		List<Course> newJoiningCourses = new ArrayList<Course>();
 		Trackpoint trailingTrackpoint;
 		Trackpoint leadingTrackpoint;
 		double distance;
-		
-		RoutingType routingType = RoutingType.lookup(TrackIt.getPreferences().getPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ROUTING_TYPE, RoutingType.FASTEST.getRoutingTypeName()));
-		TransportMode transportMode = TransportMode.lookup(TrackIt.getPreferences().getPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.TRANSPORT_MODE, TransportMode.CAR.getTransportModeName()));
-		boolean followRoads = TrackIt.getPreferences().getBooleanPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.FOLLOW_ROADS, true);
-		boolean avoidHighways = TrackIt.getPreferences().getBooleanPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.AVOID_HIGHWAYS, true);
-		boolean avoidTollRoads = TrackIt.getPreferences().getBooleanPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.AVOID_TOLL_ROADS, true);
+
+		RoutingType routingType = RoutingType
+				.lookup(TrackIt.getPreferences().getPreference(Constants.PrefsCategories.EDITION, null,
+						Constants.EditionPreferences.ROUTING_TYPE, RoutingType.FASTEST.getRoutingTypeName()));
+		TransportMode transportMode = TransportMode
+				.lookup(TrackIt.getPreferences().getPreference(Constants.PrefsCategories.EDITION, null,
+						Constants.EditionPreferences.TRANSPORT_MODE, TransportMode.CAR.getTransportModeName()));
+		boolean followRoads = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION, null,
+				Constants.EditionPreferences.FOLLOW_ROADS, true);
+		boolean avoidHighways = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION, null,
+				Constants.EditionPreferences.AVOID_HIGHWAYS, true);
+		boolean avoidTollRoads = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION, null,
+				Constants.EditionPreferences.AVOID_TOLL_ROADS, true);
 		boolean addDirectionCoursePoints = TrackIt.getPreferences().getBooleanPreference(
-				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ADD_COURSE_POINTS_AT_JUNCTIONS, true);
-		
+				Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ADD_COURSE_POINTS_AT_JUNCTIONS,
+				true);
+
 		java.util.Map<String, Object> routingOptions = new HashMap<>();
 		routingOptions.put(Constants.RoutingOptions.ROUTING_TYPE, routingType);
 		routingOptions.put(Constants.RoutingOptions.TRANSPORT_MODE, transportMode);
@@ -1020,76 +966,63 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 		for (int i = 0; i < joiningCourses.size() - 1; i++) {
 			trailingTrackpoint = joiningCourses.get(i).getLastTrackpoint();
-			leadingTrackpoint = joiningCourses.get(i + 1)
-					.getFirstTrackpoint();
-			distance = calculateDistance(trailingTrackpoint,
-					leadingTrackpoint) * 1000.0;
-			
+			leadingTrackpoint = joiningCourses.get(i + 1).getFirstTrackpoint();
+			distance = calculateDistance(trailingTrackpoint, leadingTrackpoint) * 1000.0;
+
 			newJoiningCourses.add(joiningCourses.get(i));
-			
-			Location location = new Location(joiningCourses.get(i+1).getFirstTrackpoint().getLongitude(), joiningCourses.get(i+1).getFirstTrackpoint().getLatitude());
-			
+
+			Location location = new Location(joiningCourses.get(i + 1).getFirstTrackpoint().getLongitude(),
+					joiningCourses.get(i + 1).getFirstTrackpoint().getLatitude());
+
 			if (distance > minimumDistance) {
-				newJoiningCourses.add(createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i), location));
+				newJoiningCourses.add(
+						createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i), location));
 			}
-			
+
 		}
-		newJoiningCourses.add(joiningCourses.get(joiningCourses.size()-1));
+		newJoiningCourses.add(joiningCourses.get(joiningCourses.size() - 1));
 
 		return newJoiningCourses;
 	}
-	
-	private Course createInnerJoinCourse(final MapProvider mapProvider,
-			final Map<String, Object> routingOptions, final Course course,
-			final Location location) throws TrackItException{
+
+	private Course createInnerJoinCourse(final MapProvider mapProvider, final Map<String, Object> routingOptions,
+			final Course course, final Location location) throws TrackItException {
 		Objects.requireNonNull(mapProvider);
 		Objects.requireNonNull(routingOptions);
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(location);
 
 		if (!mapProvider.hasRoutingSupport()) {
-			throw new TrackItException(String.format(
-					"%s provider does not have routing support!",
-					mapProvider.getName()));
+			throw new TrackItException(
+					String.format("%s provider does not have routing support!", mapProvider.getName()));
 		}
 
 		final GPSDocument masterDocument = course.getParent();
-				Trackpoint startTrackpoint = course.getLastTrackpoint();
-				Location startLocation = new Location(startTrackpoint
-						.getLongitude(), startTrackpoint.getLatitude());
-				Location endLocation = location;
-				Course route = mapProvider.getRoute(startLocation, endLocation,
-						routingOptions);
-				route.getTrackpoints().remove(0);
+		Trackpoint startTrackpoint = course.getLastTrackpoint();
+		Location startLocation = new Location(startTrackpoint.getLongitude(), startTrackpoint.getLatitude());
+		Location endLocation = location;
+		Course route = mapProvider.getRoute(startLocation, endLocation, routingOptions);
+		route.getTrackpoints().remove(0);
 
-				Map<String, Object> options = new HashMap<>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
-				document.add(route);
-				new ConsolidationOperation(options).process(document);
-				route = document.getCourses().get(0);
-				route.setParent(masterDocument);
+		Map<String, Object> options = new HashMap<>();
+		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
+		GPSDocument document = new GPSDocument(course.getParent().getFileName());
+		document.add(route);
+		new ConsolidationOperation(options).process(document);
+		route = document.getCourses().get(0);
+		route.setParent(masterDocument);
 
-				
-				return route;
-			}
-		
-	
-	private Double calculateDistance(Trackpoint trailingTrackpoint,
-			Trackpoint leadingTrackpoint) {
-		return Utilities.getGreatCircleDistance(
-				trailingTrackpoint.getLatitude(),
-				trailingTrackpoint.getLongitude(),
-				leadingTrackpoint.getLatitude(),
-				leadingTrackpoint.getLongitude());
+		return route;
+	}
+
+	private Double calculateDistance(Trackpoint trailingTrackpoint, Trackpoint leadingTrackpoint) {
+		return Utilities.getGreatCircleDistance(trailingTrackpoint.getLatitude(), trailingTrackpoint.getLongitude(),
+				leadingTrackpoint.getLatitude(), leadingTrackpoint.getLongitude());
 	}
 
 	public void join(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
-			throw new IllegalArgumentException(
-					"Join only applies to two or more courses!");
+			throw new IllegalArgumentException("Join only applies to two or more courses!");
 		}
 
 		final GPSDocument masterDocument = courses.get(0).getParent();
@@ -1097,8 +1030,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		new Task(new Action() {
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.joiningCourses");
+				return Messages.getMessage("documentManager.message.joiningCourses");
 			}
 
 			@Override
@@ -1106,25 +1038,22 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return joinCourses(courses);
 			}
 
-			private Course joinCourses(final List<Course> courses)
-					throws TrackItException {
+			private Course joinCourses(final List<Course> courses) throws TrackItException {
 				Map<String, Object> options = new HashMap<>();
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, true);
 				JoiningOperation operation = new JoiningOperation(options);
-				GPSDocument document = new GPSDocument(courses.get(0)
-						.getParent().getFileName());
+				GPSDocument document = new GPSDocument(courses.get(0).getParent().getFileName());
 				document.addCourses(courses);
 
 				try {
 					operation.process(document);
-					} catch (TrackItException e) {
+				} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
 				}
 
 				if (document.getCourses().size() != 1) {
-					throw new TrackItException(
-							"Join operation resulted in more than one course!");
+					throw new TrackItException("Join operation resulted in more than one course!");
 				}
 				return document.getCourses().get(0);
 			}
@@ -1133,20 +1062,20 @@ public class DocumentManager implements EventPublisher, EventListener {
 			public void done(Object result) {
 				Course jointCourse = (Course) result;
 				jointCourse.setId(courses.get(0).getId());
-				
+
 				List<Long> allPointsIds = new ArrayList<Long>();
 				List<Long> possibleMergePoints = new ArrayList<Long>();
 				for (Course course : courses) {
-					for(Trackpoint trackpoint : course.getTrackpoints()){
+					for (Trackpoint trackpoint : course.getTrackpoints()) {
 						allPointsIds.add(trackpoint.getId());
 					}
 					masterDocument.remove(course);
 				}
-				
+
 				/* undo */
-				
-				for(Long id : allPointsIds){
-					if(Collections.frequency(allPointsIds, id) > 1){
+
+				for (Long id : allPointsIds) {
+					if (Collections.frequency(allPointsIds, id) > 1) {
 						possibleMergePoints.add(id);
 					}
 				}
@@ -1160,10 +1089,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 					connectingPoints.put(course.getId(), course.getFirstTrackpoint().getId());
 				}
 				Collections.reverse(courseIds);
-				
-				UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).connectingPointsIds(connectingPoints).duplicatePointIds(possibleMergePoints).build();
-					undoManager.addUndo(item);
+
+				UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId)
+						.connectingPointsIds(connectingPoints).duplicatePointIds(possibleMergePoints).build();
+				undoManager.addUndo(item);
 
 				/* end undo */
 
@@ -1172,8 +1101,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				masterDocument.publishUpdateEvent(null);
 				jointCourse.publishSelectionEvent(null);
-				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM,
-						jointCourse);
+				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, jointCourse);
 			}
 		}).execute();
 	}
@@ -1182,8 +1110,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		addTrackpoint(course, trackpoint, course.getTrackpoints().size());
 	}
 
-	public void addTrackpoint(final Course course, final Trackpoint trackpoint,
-			final int index) {
+	public void addTrackpoint(final Course course, final Trackpoint trackpoint, final int index) {
 		final GPSDocument masterDocument = course.getParent();
 		final String courseName = course.getName();// 58406
 		final String filepath = course.getFilepath();
@@ -1194,12 +1121,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 				trackpoint.setParent(course);
 				course.getTrackpoints().add(index, trackpoint);
 
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -1208,8 +1133,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				publish(document.getCourses().get(0));
 
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -1238,7 +1162,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				}
 				course.setName(courseName);
 				course.setFilepath(filepath);
-				
+
 				/* Undo */
 				String name = UndoableActionType.ADD_TRACKPOINT.toString();
 				List<Long> courseIds = new ArrayList<Long>();
@@ -1246,34 +1170,27 @@ public class DocumentManager implements EventPublisher, EventListener {
 				courseIds.add(course.getId());
 				Trackpoint savePoint = trackpoint.clone();
 				savePoint.setId(trackpoint.getId());
-				UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).trackpoint(savePoint).trackpointIndex(index).build();
-					undoManager.addUndo(item);
-					TrackIt.getApplicationPanel().forceRefresh();
-					
-					
+				UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
+						.trackpointIndex(index).build();
+				undoManager.addUndo(item);
+				TrackIt.getApplicationPanel().forceRefresh();
+
 				/* end undo */
-				
+
 			}
 		};
 		worker.execute();
 
 	}
 
-	public void removeTrackpoint(final Course course,
-			final Trackpoint trackpoint) {
+	public void removeTrackpoint(final Course course, final Trackpoint trackpoint) {
 		final GPSDocument masterDocument = course.getParent();
 		final int index = course.getTrackpoints().indexOf(trackpoint);
 		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
 			@Override
 			protected Course doInBackground() {
-				boolean keepTimes = TrackIt
-						.getPreferences()
-						.getBooleanPreference(
-								Constants.PrefsCategories.EDITION,
-								null,
-								Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL,
-								true);
+				boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
+						null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
 				if (keepTimes) {
 					List<Trackpoint> trackpoints = course.getTrackpoints();
 					int n = trackpoints.indexOf(trackpoint);
@@ -1288,37 +1205,27 @@ public class DocumentManager implements EventPublisher, EventListener {
 					} else {
 						Trackpoint prevTrakp = trackpoints.get(n - 1);
 						Trackpoint nextTrakp = trackpoints.get(n + 1);
-						Double distanceFromPrevious = trackpoint
-								.getDistanceFromPrevious()
+						Double distanceFromPrevious = trackpoint.getDistanceFromPrevious()
 								+ nextTrakp.getDistanceFromPrevious();
 						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
-						Double timeFromPrevious = trackpoint
-								.getTimeFromPrevious()
-								+ nextTrakp.getTimeFromPrevious();
+						Double timeFromPrevious = trackpoint.getTimeFromPrevious() + nextTrakp.getTimeFromPrevious();
 						nextTrakp.setTimeFromPrevious(timeFromPrevious);
 						Trackpoint temp = trackpoints.get(n - 2);
-						Double speed = (nextTrakp.getDistance() - temp
-								.getDistance())
-								/ (nextTrakp.getTimeFromPrevious()
-										+ trackpoint.getTimeFromPrevious() + prevTrakp
-											.getTimeFromPrevious());
+						Double speed = (nextTrakp.getDistance() - temp.getDistance()) / (nextTrakp.getTimeFromPrevious()
+								+ trackpoint.getTimeFromPrevious() + prevTrakp.getTimeFromPrevious());
 						prevTrakp.setSpeed(speed);
 						temp = trackpoints.get(n + 2);
-						speed = (temp.getDistance() - prevTrakp.getDistance())
-								/ (temp.getTimeFromPrevious()
-										+ nextTrakp.getTimeFromPrevious() + trackpoint
-											.getTimeFromPrevious());
+						speed = (temp.getDistance() - prevTrakp.getDistance()) / (temp.getTimeFromPrevious()
+								+ nextTrakp.getTimeFromPrevious() + trackpoint.getTimeFromPrevious());
 						nextTrakp.setSpeed(speed);
 					}
 				}
 				course.remove(trackpoint);// 58406
 
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -1327,8 +1234,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				publish(course);
 
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -1354,8 +1260,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					if (resultCourse != null) {
 						resultCourse.setParent(masterDocument);
 						resultCourse.publishUpdateEvent(null);
-						EventManager.getInstance().publish(null,
-								Event.TRACKPOINT_HIGHLIGHTED, null);
+						EventManager.getInstance().publish(null, Event.TRACKPOINT_HIGHLIGHTED, null);
 					}
 					/* Undo */
 					String name = UndoableActionType.REMOVE_TRACKPOINT.toString();
@@ -1364,14 +1269,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 					courseIds.add(resultCourse.getId());
 					Trackpoint savePoint = trackpoint.clone();
 					savePoint.setId(trackpoint.getId());
-					UndoItem item = new UndoItem.UndoItemBuilder(name,
-								courseIds, documentId).trackpoint(savePoint).trackpointIndex(index).build();
-						undoManager.addUndo(item);
-						TrackIt.getApplicationPanel().forceRefresh();
-						
-						
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
+							.trackpointIndex(index).build();
+					undoManager.addUndo(item);
+					TrackIt.getApplicationPanel().forceRefresh();
+
 					/* end undo */
-					
+
 				} catch (InterruptedException | ExecutionException ignore) {
 				}
 
@@ -1393,14 +1297,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.removePauses");
+				return Messages.getMessage("documentManager.message.removePauses");
 			}
 
 			@Override
 			public Object execute() throws TrackItException {
-				RemovePausesOperation removePausesOperation = new RemovePausesOperation(
-						course);
+				RemovePausesOperation removePausesOperation = new RemovePausesOperation(course);
 				removePausesOperation.execute();
 				return null;
 			}
@@ -1412,18 +1314,16 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void appendRoute(final MapProvider mapProvider,
-			final Map<String, Object> routingOptions, final Course course,
-			final Location location) throws TrackItException {
+	public void appendRoute(final MapProvider mapProvider, final Map<String, Object> routingOptions,
+			final Course course, final Location location) throws TrackItException {
 		Objects.requireNonNull(mapProvider);
 		Objects.requireNonNull(routingOptions);
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(location);
 
 		if (!mapProvider.hasRoutingSupport()) {
-			throw new TrackItException(String.format(
-					"%s provider does not have routing support!",
-					mapProvider.getName()));
+			throw new TrackItException(
+					String.format("%s provider does not have routing support!", mapProvider.getName()));
 		}
 
 		final GPSDocument masterDocument = course.getParent();
@@ -1431,33 +1331,36 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.appendRoute");
+				return Messages.getMessage("documentManager.message.appendRoute");
 			}
 
 			@Override
 			public Object execute() throws TrackItException {
 				Trackpoint startTrackpoint = course.getLastTrackpoint();
-				Location startLocation = new Location(startTrackpoint
-						.getLongitude(), startTrackpoint.getLatitude());
+				Location startLocation = new Location(startTrackpoint.getLongitude(), startTrackpoint.getLatitude());
 				Location endLocation = location;
-				Course route = mapProvider.getRoute(startLocation, endLocation,
-						routingOptions);
+				Course route = mapProvider.getRoute(startLocation, endLocation, routingOptions);
 				route.getTrackpoints().remove(0);
-				
 
 				Map<String, Object> options = new HashMap<>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(route);
 				new ConsolidationOperation(options).process(document);
 				route = document.getCourses().get(0);
 				route.setParent(masterDocument);
 
-				GPSDocument document2 = new GPSDocument(course.getParent()
-						.getFileName());
+				final Map<String, Object> paceOptions = new HashMap<String, Object>();
+				
+				Double targetSpeed = course.getAverageMovingSpeed();
+				
+				paceOptions.put(Constants.SetPaceOperation.METHOD, SetPaceMethod.TARGET_SPEED);
+				paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
+				paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
+				
+				setPace(route, paceOptions);
+				
+				GPSDocument document2 = new GPSDocument(course.getParent().getFileName());
 				document2.addCourses(Arrays.asList(course, route));
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, false);
 				new JoiningOperation(options).process(document2);
@@ -1473,7 +1376,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			public void done(Object result) {
 				Course newCourse = (Course) result;
-				
+
 				/* undo */
 				String name = UndoableActionType.APPEND.toString();
 				List<Long> courseIds = new ArrayList<Long>();
@@ -1481,13 +1384,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				newCourse.setId(course.getId());
 				courseIds.add(newCourse.getId());
 				Trackpoint lastPoint = course.getLastTrackpoint().clone();
-				UndoItem item = new UndoItem.UndoItemBuilder(name,
-							courseIds, documentId).trackpoint(lastPoint).mapProvider(mapProvider)
-						.routingOptions(routingOptions).location(location).trackpointIndex(course.getTrackpoints().size()-1).build();
-					undoManager.addUndo(item);
-					TrackIt.getApplicationPanel().forceRefresh();
+				UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(lastPoint)
+						.mapProvider(mapProvider).routingOptions(routingOptions).location(location)
+						.trackpointIndex(course.getTrackpoints().size() - 1).build();
+				undoManager.addUndo(item);
+				TrackIt.getApplicationPanel().forceRefresh();
 				/* end undo */
-					
+
 				newCourse.getTrackpoints().get(item.getTrackpointIndex()).setId(item.getTrackpoint().getId());
 				newCourse.setName(course.getName());
 				newCourse.setFilepath(course.getFilepath());
@@ -1521,8 +1424,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	@Override
-	public void process(Event event, DocumentItem parent,
-			List<? extends DocumentItem> items) {
+	public void process(Event event, DocumentItem parent, List<? extends DocumentItem> items) {
 		selectedItem = parent;
 
 		while (parent != null && !(parent instanceof GPSDocument)) {
@@ -1575,8 +1477,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + getOuterType().hashCode();
-			result = prime * result
-					+ (int) (document.getId() ^ (document.getId() >>> 32));
+			result = prime * result + (int) (document.getId() ^ (document.getId() >>> 32));
 			return result;
 		}
 
@@ -1612,22 +1513,18 @@ public class DocumentManager implements EventPublisher, EventListener {
 					readAfterOpen(f);
 				} else {
 					database.delete(f.getAbsolutePath());
-					logger.error("The file " + f.getAbsolutePath()
-							+ " does not exist. Skipping file.");
+					logger.error("The file " + f.getAbsolutePath() + " does not exist. Skipping file.");
 					continue;
 				}
 			} catch (Exception e1) {
 				logger.error(e1.getClass().getName() + ": " + e1.getMessage());
-				logger.error("Something went wrong while reading file "
-						+ filepathList.get(i) + ".");
+				logger.error("Something went wrong while reading file " + filepathList.get(i) + ".");
 				e1.printStackTrace();
 				try {
 					readAfterOpen(new File(filepathList.get(i)));
 				} catch (Exception e2) {
-					logger.error(e2.getClass().getName() + ": "
-							+ e2.getMessage());
-					logger.error("Something went wrong AGAIN while reading file "
-							+ filepathList.get(i) + ".");
+					logger.error(e2.getClass().getName() + ": " + e2.getMessage());
+					logger.error("Something went wrong AGAIN while reading file " + filepathList.get(i) + ".");
 					e2.printStackTrace();
 				}
 				continue;
@@ -1646,8 +1543,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	private void readAfterOpen(File file) throws ReaderException {
 		InputStream inputStream = null;
 		Reader reader;
-		GPSDocument folderDocument = new GPSDocument(
-				Messages.getMessage("gpsDocument.label"));
+		GPSDocument folderDocument = new GPSDocument(Messages.getMessage("gpsDocument.label"));
 		GPSDocument document = null;
 
 		if (file.exists()) {
@@ -1667,18 +1563,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 			showAndLogErrorMessage(e.getMessage());
 		}
 		if (!document.getActivities().isEmpty()) {
-			document.getActivities().get(0)
-					.publishSelectionEvent(DocumentManager.this);
+			document.getActivities().get(0).publishSelectionEvent(DocumentManager.this);
 		} else if (!document.getCourses().isEmpty()) {
-			document.getCourses().get(0)
-					.publishSelectionEvent(DocumentManager.this);
+			document.getCourses().get(0).publishSelectionEvent(DocumentManager.this);
 		} else if (!document.getWaypoints().isEmpty()) {
-			document.getWaypoints().get(0)
-					.publishSelectionEvent(DocumentManager.this);
+			document.getWaypoints().get(0).publishSelectionEvent(DocumentManager.this);
 		}
 
-		ArrayList<String> picFileList = database.getPicturesFromDB(document
-				.getFileName());
+		ArrayList<String> picFileList = database.getPicturesFromDB(document.getFileName());
 		String photoPath, parentName;
 		for (String pic : picFileList) {
 
@@ -1706,8 +1598,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 	}
 
-	private Object processDocumentAfterOpen(final GPSDocument document)
-			throws TrackItException {
+	private Object processDocumentAfterOpen(final GPSDocument document) throws TrackItException {
 		new ConsolidationOperation().process(document);
 		return document;
 	}
@@ -1724,8 +1615,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			database.deleteFromDB(c);
 		}
 		documents.remove(document.getId());// 58406
-		EventManager.getInstance().publish(this, Event.DOCUMENT_DISCARDED,
-				document);
+		EventManager.getInstance().publish(this, Event.DOCUMENT_DISCARDED, document);
 	}
 
 	public void remove(Activity activity) {
@@ -1734,8 +1624,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				if (document.getActivities().contains(activity)) {
 					document.remove(activity);
 					database.deleteFromDB(activity);
-					EventManager.getInstance().publish(this,
-							Event.ACTIVITY_REMOVED, activity);
+					EventManager.getInstance().publish(this, Event.ACTIVITY_REMOVED, activity);
 					return;
 				}
 			}
@@ -1748,8 +1637,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				if (document.getCourses().contains(course)) {
 					document.remove(course);
 					database.deleteFromDB(course);
-					EventManager.getInstance().publish(this,
-							Event.COURSE_REMOVED, course);
+					EventManager.getInstance().publish(this, Event.COURSE_REMOVED, course);
 					return;
 				}
 			}
@@ -1770,11 +1658,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 			return false;
 		}
 		List<Long> coursesIds = new ArrayList<Long>();
-		
-		if(item.getOperationType().equals(UndoableActionType.JOIN.toString())){
-			coursesIds.add(item.getCoursesIds().get(item.getCoursesIds().size()-1));
-		}
-		else{
+
+		if (item.getOperationType().equals(UndoableActionType.JOIN.toString())) {
+			coursesIds.add(item.getCoursesIds().get(item.getCoursesIds().size() - 1));
+		} else {
 			coursesIds = item.getCoursesIds();
 		}
 		for (long id : coursesIds) {
@@ -1789,8 +1676,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	public void undo() {
 		final UndoItem item = undoManager.getUndoableItem();
 		final String operationType = item.getOperationType();
-		final UndoableActionType undoableAction = UndoableActionType
-				.lookup(operationType);
+		final UndoableActionType undoableAction = UndoableActionType.lookup(operationType);
 		if (isUndoPossible(item)) {
 
 			switch (undoableAction) {
@@ -1831,11 +1717,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		} else {
 			undoManager.deleteUndo();
-			JOptionPane
-					.showMessageDialog(
-							TrackIt.getApplicationFrame(),
-							"One or more elements of the undo operation no longer exist.",
-							"Can't Undo", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
+					"One or more elements of the undo operation no longer exist.", "Can't Undo",
+					JOptionPane.ERROR_MESSAGE);
 		}
 
 	}
@@ -1843,8 +1727,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	public void redo() {
 		final UndoItem item = undoManager.getRedoableItem();
 		final String operationType = item.getOperationType();
-		final UndoableActionType undoableAction = UndoableActionType
-				.lookup(operationType);
+		final UndoableActionType undoableAction = UndoableActionType.lookup(operationType);
 
 		if (isUndoPossible(item)) {
 
@@ -1885,25 +1768,23 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		} else {
 			undoManager.deleteRedo();
-			JOptionPane
-					.showMessageDialog(
-							TrackIt.getApplicationFrame(),
-							"One or more elements of the redo operation no longer exist.",
-							"Can't Redo", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
+					"One or more elements of the redo operation no longer exist.", "Can't Redo",
+					JOptionPane.ERROR_MESSAGE);
 		}
 
 	}
-	
-	public void undoAppendSetup(final UndoItem item, final String undoMode){
+
+	public void undoAppendSetup(final UndoItem item, final String undoMode) {
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
 		Course appendCourse = getCourse(document, item.getCourseIdAt(0));
 		Trackpoint trackpoint = appendCourse.getTrackpoints().get(item.getTrackpointIndex());
 		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-			
+
 			undoAppend(appendCourse, trackpoint);
 		}
-		if(undoMode.equals(Constants.UndoOperation.REDO)){
+		if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			MapProvider mapProvider = item.getMapProvider();
 			Map<String, Object> routingOptions = item.getRoutingOptions();
 			Location location = item.getLocation();
@@ -1915,65 +1796,62 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}
 	}
-	
-	public void undoAddTrackpointSetup(final UndoItem item, final String undoMode){
+
+	public void undoAddTrackpointSetup(final UndoItem item, final String undoMode) {
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
 		Course course = getCourse(document, item.getCourseIdAt(0));
 		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
 			redoRemoveTrackpoint(course, item.getTrackpoint());
 		}
-		if(undoMode.equals(Constants.UndoOperation.REDO)){
+		if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
 		}
 	}
-	
-	public void undoRemoveTrackpointSetup(final UndoItem item, final String undoMode){
-		
+
+	public void undoRemoveTrackpointSetup(final UndoItem item, final String undoMode) {
+
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
 		Course course = getCourse(document, item.getCourseIdAt(0));
 		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
 			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
 		}
-		if(undoMode.equals(Constants.UndoOperation.REDO)){
+		if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			redoRemoveTrackpoint(course, item.getTrackpoint());
 		}
-		
+
 	}
-	
+
 	public void undoJoinSetup(final UndoItem item, final String undoMode) {
 		List<Long> courses = new ArrayList<Long>();
-				
+
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
 		final List<Long> merge = item.getDuplicatePointIds();
 		for (long id : item.getCoursesIds()) {
 			courses.add(id);
 		}
-		
+
 		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-			courses.remove(courses.size()-1);
-			Course joinedCourse = getCourse(document, item.getCoursesIds().get(item.getCoursesIds().size()-1));
-			for(Long course : courses){
+			courses.remove(courses.size() - 1);
+			Course joinedCourse = getCourse(document, item.getCoursesIds().get(item.getCoursesIds().size() - 1));
+			for (Long course : courses) {
 				Trackpoint trackpoint = getTrackpoint(joinedCourse, item.getConnectingPointsIds().get(course));
 				undoJoin(joinedCourse, trackpoint, course, merge);
 			}
-			
-			
+
 		}
 		if (undoMode.equals(Constants.UndoOperation.REDO)) {
 			List<Course> coursesToJoin = new ArrayList<Course>();
-			for(Long course : courses){
+			for (Long course : courses) {
 				coursesToJoin.add(getCourse(document, course));
 			}
 			Collections.reverse(coursesToJoin);
 			redoJoin(coursesToJoin);
-			
-			
+
 		}
-		
-		
+
 	}
 
 	public void undoSplit(final UndoItem item, final String undoMode) {
@@ -1993,8 +1871,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			if (splitSpeed != null) {
 				int lastIndex = courses.get(0).getTrackpoints().size() - 1;
-				courses.get(0).getTrackpoints().get(lastIndex)
-						.setSpeed(splitSpeed);
+				courses.get(0).getTrackpoints().get(lastIndex).setSpeed(splitSpeed);
 				courses.get(1).getTrackpoints().get(0).setSpeed(splitSpeed);
 			}
 			undoSplit(courses);
@@ -2003,8 +1880,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 			if (splitSpeed != null) {
 				keepSpeed = false;
 			}
-			redoSplit(courses.get(0), item.getTrackpoint(),
-					keepSpeed, undo);
+			redoSplit(courses.get(0), item.getTrackpoint(), keepSpeed, undo);
 
 		}
 	}
@@ -2035,8 +1911,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Course courseCopy = null;
 
 				courseOriginal = getCourse(masterDocument, coursesIds.get(0));
-				GPSDocument document = new GPSDocument(courseOriginal
-						.getParent().getFileName());
+				GPSDocument document = new GPSDocument(courseOriginal.getParent().getFileName());
 				document.add(courseOriginal);
 				// add the second course if it was copied
 				if (reverseMode.equals(Constants.ReverseOperation.RETURN_NEW)) {
@@ -2045,13 +1920,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 				}
 
 				Map<String, Object> reverseOptions = new HashMap<String, Object>();
-				reverseOptions.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				reverseOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 
-				ReverseOperation reverseOperation = new ReverseOperation(
-						reverseOptions);
-				ConsolidationOperation consolidationOP = new ConsolidationOperation(
-						reverseOptions);
+				ReverseOperation reverseOperation = new ReverseOperation(reverseOptions);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(reverseOptions);
 
 				try {
 					if (undoMode.equals(Constants.UndoOperation.UNDO)) {
@@ -2093,8 +1965,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 
-	public void undoAppend(final Course course,
-			final Trackpoint trackpoint) {
+	public void undoAppend(final Course course, final Trackpoint trackpoint) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
 		final GPSDocument masterDocument = course.getParent();
@@ -2103,8 +1974,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.splitingCourse");
+				return Messages.getMessage("documentManager.message.splitingCourse");
 			}
 
 			@Override
@@ -2112,17 +1982,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return splitCourse(course, trackpoint);
 			}
 
-			private List<Course> splitCourse(Course course,
-					Trackpoint trackpoint) {
+			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
 				Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
-				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
-						trackpoint);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
 
-				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
-						options);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 
 				try {
@@ -2131,6 +1997,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					logger.error(e.getMessage());
 					return null;
 				}
+				
 
 				return document.getCourses();
 			}
@@ -2139,7 +2006,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			public void done(Object result) {
 				List<Course> courses = (List<Course>) result;
-				
 
 				for (Course course : courses) {
 					course.setParent(masterDocument);
@@ -2148,15 +2014,15 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
+				
 				masterDocument.remove(courses.get(1));
 				masterDocument.publishUpdateEvent(null);
 				courses.get(0).publishSelectionEvent(null);
 			}
 		}).execute();
 	}
-	
-	public void redoAppend(final MapProvider mapProvider,
-			final Map<String, Object> routingOptions, final Course course,
+
+	public void redoAppend(final MapProvider mapProvider, final Map<String, Object> routingOptions, final Course course,
 			final Location location) throws TrackItException {
 		Objects.requireNonNull(mapProvider);
 		Objects.requireNonNull(routingOptions);
@@ -2164,9 +2030,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		Objects.requireNonNull(location);
 
 		if (!mapProvider.hasRoutingSupport()) {
-			throw new TrackItException(String.format(
-					"%s provider does not have routing support!",
-					mapProvider.getName()));
+			throw new TrackItException(
+					String.format("%s provider does not have routing support!", mapProvider.getName()));
 		}
 
 		final GPSDocument masterDocument = course.getParent();
@@ -2174,32 +2039,36 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.appendRoute");
+				return Messages.getMessage("documentManager.message.appendRoute");
 			}
 
 			@Override
 			public Object execute() throws TrackItException {
 				Trackpoint startTrackpoint = course.getLastTrackpoint();
-				Location startLocation = new Location(startTrackpoint
-						.getLongitude(), startTrackpoint.getLatitude());
+				Location startLocation = new Location(startTrackpoint.getLongitude(), startTrackpoint.getLatitude());
 				Location endLocation = location;
-				Course route = mapProvider.getRoute(startLocation, endLocation,
-						routingOptions);
+				Course route = mapProvider.getRoute(startLocation, endLocation, routingOptions);
 				route.getTrackpoints().remove(0);
 
 				Map<String, Object> options = new HashMap<>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(route);
 				new ConsolidationOperation(options).process(document);
 				route = document.getCourses().get(0);
 				route.setParent(masterDocument);
+				
+				final Map<String, Object> paceOptions = new HashMap<String, Object>();
+				
+				Double targetSpeed = course.getAverageMovingSpeed();
+				
+				paceOptions.put(Constants.SetPaceOperation.METHOD, SetPaceMethod.TARGET_SPEED);
+				paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
+				paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
+				
+				setPace(route, paceOptions);
 
-				GPSDocument document2 = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document2 = new GPSDocument(course.getParent().getFileName());
 				document2.addCourses(Arrays.asList(course, route));
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, false);
 				new JoiningOperation(options).process(document2);
@@ -2214,20 +2083,19 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public void done(Object result) {
-				Course newCourse = (Course) result;				
+				Course newCourse = (Course) result;
 				newCourse.setName(course.getName());
-				
+
 				newCourse.setId(course.getId());
-				
+
 				newCourse.setFilepath(course.getFilepath());
 				masterDocument.publishUpdateEvent(null);
 				newCourse.publishSelectionEvent(null);
 			}
 		}).execute();
 	}
-	
-	public void redoSplit(final Course course,
-			final Trackpoint trackpoint, final boolean keepSpeed,
+
+	public void redoSplit(final Course course, final Trackpoint trackpoint, final boolean keepSpeed,
 			final boolean undo) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
@@ -2242,8 +2110,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.splitingCourse");
+				return Messages.getMessage("documentManager.message.splitingCourse");
 			}
 
 			@Override
@@ -2251,17 +2118,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return splitCourse(course, trackpoint);
 			}
 
-			private List<Course> splitCourse(Course course,
-					Trackpoint trackpoint) {
+			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
 				Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
-				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
-						trackpoint);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
 
-				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
-						options);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 
 				try {
@@ -2287,14 +2150,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 				UndoItem item = undoManager.getUndoableItem();
 				courses.get(1).setId(item.getDeletedCourseId());
 
-								List<Long> newIds = new ArrayList<Long>();
+				List<Long> newIds = new ArrayList<Long>();
 				newIds.add(courses.get(0).getId());
 				newIds.add(courses.get(1).getId());
 				// UndoItem item = undoManager.getUndoableItem();
-				UndoItem newItem = new UndoItem.UndoItemBuilder(item
-						.getOperationType(), newIds, item.getDocumentId())
-						.trackpoint(item.getTrackpoint())
-						.splitSpeed(item.getSplitSpeed()).build();
+				UndoItem newItem = new UndoItem.UndoItemBuilder(item.getOperationType(), newIds, item.getDocumentId())
+						.trackpoint(item.getTrackpoint()).splitSpeed(item.getSplitSpeed()).build();
 				undoManager.deleteUndo();
 				undoManager.pushUndo(newItem);
 
@@ -2308,11 +2169,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 		}).execute();
 	}
-	
+
 	public void redoJoin(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
-			throw new IllegalArgumentException(
-					"Join only applies to two or more courses!");
+			throw new IllegalArgumentException("Join only applies to two or more courses!");
 		}
 
 		final GPSDocument masterDocument = courses.get(0).getParent();
@@ -2320,8 +2180,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		new Task(new Action() {
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.joiningCourses");
+				return Messages.getMessage("documentManager.message.joiningCourses");
 			}
 
 			@Override
@@ -2329,25 +2188,22 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return joinCourses(courses);
 			}
 
-			private Course joinCourses(final List<Course> courses)
-					throws TrackItException {
+			private Course joinCourses(final List<Course> courses) throws TrackItException {
 				Map<String, Object> options = new HashMap<>();
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, true);
 				JoiningOperation operation = new JoiningOperation(options);
-				GPSDocument document = new GPSDocument(courses.get(0)
-						.getParent().getFileName());
+				GPSDocument document = new GPSDocument(courses.get(0).getParent().getFileName());
 				document.addCourses(courses);
 
 				try {
 					operation.process(document);
-					} catch (TrackItException e) {
+				} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
 				}
 
 				if (document.getCourses().size() != 1) {
-					throw new TrackItException(
-							"Join operation resulted in more than one course!");
+					throw new TrackItException("Join operation resulted in more than one course!");
 				}
 				return document.getCourses().get(0);
 			}
@@ -2359,29 +2215,25 @@ public class DocumentManager implements EventPublisher, EventListener {
 				for (Course course : courses) {
 					masterDocument.remove(course);
 				}
-				
+
 				jointCourse.setParent(masterDocument);
 				masterDocument.add(jointCourse);
 
 				masterDocument.publishUpdateEvent(null);
 				jointCourse.publishSelectionEvent(null);
-				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM,
-						jointCourse);
+				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, jointCourse);
 			}
 		}).execute();
 	}
-	
 
-	public void undoJoin(final Course course,
-			final Trackpoint trackpoint, final long newId, final List<Long> ids){
+	public void undoJoin(final Course course, final Trackpoint trackpoint, final long newId, final List<Long> ids) {
 		Objects.requireNonNull(course);
 		Objects.requireNonNull(trackpoint);
 		final GPSDocument masterDocument = course.getParent();
 		new Task(new Action() {
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.splitingCourse");
+				return Messages.getMessage("documentManager.message.splitingCourse");
 			}
 
 			@Override
@@ -2389,17 +2241,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return splitCourse(course, trackpoint);
 			}
 
-			private List<Course> splitCourse(Course course,
-					Trackpoint trackpoint) {
+			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
 				Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
-				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT,
-						trackpoint);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
 
-				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(
-						options);
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 
 				try {
@@ -2421,16 +2269,16 @@ public class DocumentManager implements EventPublisher, EventListener {
 					course.setUnsavedTrue();
 				}
 				courses.get(1).setId(newId);
-				
+
 				List<Long> allPointIds = new ArrayList<Long>();
-				
-				for (Course course : courses){
-					if(!ids.contains(course.getLastTrackpoint().getId())){
-						course.getTrackpoints().remove(course.getTrackpoints().size()-1);
+
+				for (Course course : courses) {
+					if (!ids.contains(course.getLastTrackpoint().getId())) {
+						course.getTrackpoints().remove(course.getTrackpoints().size() - 1);
 						course.getLaps().remove(course.getLastLap());
 					}
 				}
-				
+
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
 
@@ -2442,8 +2290,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	public void undoSplit(final List<Course> courses) {
 		if (courses == null || courses.size() < 2) {
-			throw new IllegalArgumentException(
-					"Join only applies to two or more courses!");
+			throw new IllegalArgumentException("Join only applies to two or more courses!");
 		}
 
 		final GPSDocument masterDocument = courses.get(0).getParent();
@@ -2451,8 +2298,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		new Task(new Action() {
 			@Override
 			public String getMessage() {
-				return Messages
-						.getMessage("documentManager.message.joiningCourses");
+				return Messages.getMessage("documentManager.message.joiningCourses");
 			}
 
 			@Override
@@ -2460,25 +2306,22 @@ public class DocumentManager implements EventPublisher, EventListener {
 				return joinCourses(courses);
 			}
 
-			private Course joinCourses(final List<Course> courses)
-					throws TrackItException {
+			private Course joinCourses(final List<Course> courses) throws TrackItException {
 				Map<String, Object> options = new HashMap<>();
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, true);
 				JoiningOperation operation = new JoiningOperation(options);
-				GPSDocument document = new GPSDocument(courses.get(0)
-						.getParent().getFileName());
+				GPSDocument document = new GPSDocument(courses.get(0).getParent().getFileName());
 				document.addCourses(courses);
 
 				try {
 					operation.undoSplit(document);
-									} catch (TrackItException e) {
+				} catch (TrackItException e) {
 					logger.error(e.getMessage());
 					return null;
 				}
 
 				if (document.getCourses().size() != 1) {
-					throw new TrackItException(
-							"Join operation resulted in more than one course!");
+					throw new TrackItException("Join operation resulted in more than one course!");
 				}
 				return document.getCourses().get(0);
 			}
@@ -2494,17 +2337,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Long> newIds = new ArrayList<Long>();
 				newIds.add(jointCourse.getId());
 
-				
 				long deletedId = courses.get(1).getId();
 				UndoItem item = undoManager.getRedoableItem();
-				
-				
-				
-				UndoItem newItem = new UndoItem.UndoItemBuilder(item
-						.getOperationType(), newIds, item.getDocumentId())
-						.trackpoint(item.getTrackpoint())
-						.splitSpeed(item.getSplitSpeed())
-						.deletedCourseId(deletedId).build();
+
+				UndoItem newItem = new UndoItem.UndoItemBuilder(item.getOperationType(), newIds, item.getDocumentId())
+						.trackpoint(item.getTrackpoint()).splitSpeed(item.getSplitSpeed()).deletedCourseId(deletedId)
+						.build();
 				undoManager.deleteRedo();
 				undoManager.pushRedo(newItem);
 
@@ -2513,15 +2351,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				masterDocument.publishUpdateEvent(null);
 				jointCourse.publishSelectionEvent(null);
-				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM,
-						jointCourse);
+				EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, jointCourse);
 			}
 		}).execute();
 	}
-	
 
-	public void undoRemoveTrackpoint(final Course course, final Trackpoint trackpoint,
-			final int index) {
+	public void undoRemoveTrackpoint(final Course course, final Trackpoint trackpoint, final int index) {
 		final GPSDocument masterDocument = course.getParent();
 		final String courseName = course.getName();// 58406
 		final String filepath = course.getFilepath();
@@ -2532,12 +2367,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 				trackpoint.setParent(course);
 				course.getTrackpoints().add(index, trackpoint);
 
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -2546,8 +2379,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				publish(document.getCourses().get(0));
 
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -2582,21 +2414,15 @@ public class DocumentManager implements EventPublisher, EventListener {
 		worker.execute();
 
 	}
-	
-	public void redoRemoveTrackpoint(final Course course,
-			final Trackpoint trackpoint) {
+
+	public void redoRemoveTrackpoint(final Course course, final Trackpoint trackpoint) {
 		final GPSDocument masterDocument = course.getParent();
 		final int index = course.getTrackpoints().indexOf(trackpoint);
 		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
 			@Override
 			protected Course doInBackground() {
-				boolean keepTimes = TrackIt
-						.getPreferences()
-						.getBooleanPreference(
-								Constants.PrefsCategories.EDITION,
-								null,
-								Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL,
-								true);
+				boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
+						null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
 				if (keepTimes) {
 					List<Trackpoint> trackpoints = course.getTrackpoints();
 					int n = trackpoints.indexOf(trackpoint);
@@ -2611,37 +2437,27 @@ public class DocumentManager implements EventPublisher, EventListener {
 					} else {
 						Trackpoint prevTrakp = trackpoints.get(n - 1);
 						Trackpoint nextTrakp = trackpoints.get(n + 1);
-						Double distanceFromPrevious = trackpoint
-								.getDistanceFromPrevious()
+						Double distanceFromPrevious = trackpoint.getDistanceFromPrevious()
 								+ nextTrakp.getDistanceFromPrevious();
 						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
-						Double timeFromPrevious = trackpoint
-								.getTimeFromPrevious()
-								+ nextTrakp.getTimeFromPrevious();
+						Double timeFromPrevious = trackpoint.getTimeFromPrevious() + nextTrakp.getTimeFromPrevious();
 						nextTrakp.setTimeFromPrevious(timeFromPrevious);
 						Trackpoint temp = trackpoints.get(n - 2);
-						Double speed = (nextTrakp.getDistance() - temp
-								.getDistance())
-								/ (nextTrakp.getTimeFromPrevious()
-										+ trackpoint.getTimeFromPrevious() + prevTrakp
-											.getTimeFromPrevious());
+						Double speed = (nextTrakp.getDistance() - temp.getDistance()) / (nextTrakp.getTimeFromPrevious()
+								+ trackpoint.getTimeFromPrevious() + prevTrakp.getTimeFromPrevious());
 						prevTrakp.setSpeed(speed);
 						temp = trackpoints.get(n + 2);
-						speed = (temp.getDistance() - prevTrakp.getDistance())
-								/ (temp.getTimeFromPrevious()
-										+ nextTrakp.getTimeFromPrevious() + trackpoint
-											.getTimeFromPrevious());
+						speed = (temp.getDistance() - prevTrakp.getDistance()) / (temp.getTimeFromPrevious()
+								+ nextTrakp.getTimeFromPrevious() + trackpoint.getTimeFromPrevious());
 						nextTrakp.setSpeed(speed);
 					}
 				}
 				course.remove(trackpoint);// 58406
 
-				GPSDocument document = new GPSDocument(course.getParent()
-						.getFileName());
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
 				document.add(course);
 				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.SUMMARY);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -2650,8 +2466,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				publish(course);
 
-				options.put(Constants.ConsolidationOperation.LEVEL,
-						ConsolidationLevel.RECALCULATION);
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
 				try {
 					new ConsolidationOperation(options).process(document);
 				} catch (TrackItException e) {
@@ -2677,10 +2492,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 					if (resultCourse != null) {
 						resultCourse.setParent(masterDocument);
 						resultCourse.publishUpdateEvent(null);
-						EventManager.getInstance().publish(null,
-								Event.TRACKPOINT_HIGHLIGHTED, null);
+						EventManager.getInstance().publish(null, Event.TRACKPOINT_HIGHLIGHTED, null);
 					}
-					
+
 				} catch (InterruptedException | ExecutionException ignore) {
 				}
 

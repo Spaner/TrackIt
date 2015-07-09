@@ -100,13 +100,14 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 		
 		startIndex = 0;
 		endIndex = course.getTrackpoints().indexOf(trackpoint) + 1;
+		consolidateCoursePoints(course, newCourse);
 		course.setTrackpoints(course.getTrackpoints().subList(startIndex, endIndex));
 		
 		return newCourse;
 	}
 	
 	private void consolidate(Course oldCourse, Course newCourse) {
-		consolidateCoursePoints(oldCourse, newCourse);
+		//consolidateCoursePoints(oldCourse, newCourse);
 		consolidateTrackpoints(newCourse);
 		consolidateSegments(oldCourse, newCourse);
 		consolidateLaps(oldCourse, newCourse);
