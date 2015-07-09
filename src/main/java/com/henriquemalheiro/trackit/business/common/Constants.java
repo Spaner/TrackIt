@@ -130,6 +130,8 @@ public class Constants {
 		public static final String MINIMUM_DISTANCE = "Minimum Distance";
 		public static final String WARN_DISTANCE_BELOW = "Warn Distance Below";
 		public static final String JOIN_OPTIONS = "Join Speed Options";
+		public static final String JOIN_SPEED = "Join Speed Value";
+		public static final String JOIN_TIME = "Join Time Value";
 	}
 
 	/* Reader Options */

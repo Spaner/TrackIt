@@ -86,6 +86,7 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayer;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.RoutingType;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.TransportMode;
+import com.miguelpernas.trackit.business.common.JoinOptions;
 import com.miguelpernas.trackit.business.operation.CopyOperation;
 import com.miguelpernas.trackit.business.operation.UndoItem;
 import com.miguelpernas.trackit.business.operation.UndoManagerCustom;
@@ -975,8 +976,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 					joiningCourses.get(i + 1).getFirstTrackpoint().getLatitude());
 
 			if (distance > minimumDistance) {
-				newJoiningCourses.add(
-						createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i), location));
+				Course route = createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i), location);
+				joinAppendSetPaceSetup(joiningCourses.get(i), route, joiningCourses.get(i+1));
+				newJoiningCourses.add(route);
 			}
 
 		}
@@ -1350,16 +1352,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				route = document.getCourses().get(0);
 				route.setParent(masterDocument);
 
-				final Map<String, Object> paceOptions = new HashMap<String, Object>();
-				
-				Double targetSpeed = course.getAverageMovingSpeed();
-				
-				paceOptions.put(Constants.SetPaceOperation.METHOD, SetPaceMethod.TARGET_SPEED);
-				paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
-				paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
-				
-				setPace(route, paceOptions);
-				
+				appendSetPaceSetup(course, route);
+
 				GPSDocument document2 = new GPSDocument(course.getParent().getFileName());
 				document2.addCourses(Arrays.asList(course, route));
 				options.put(Constants.JoinOperation.ADD_LAP_MARKER, false);
@@ -1369,7 +1363,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				masterDocument.remove(course);
 				masterDocument.add(newCourse);
-
 				return newCourse;
 			}
 
@@ -1398,6 +1391,104 @@ public class DocumentManager implements EventPublisher, EventListener {
 				newCourse.publishSelectionEvent(null);
 			}
 		}).execute();
+	}
+
+	private void appendSetPaceSetup(final Course course, Course route) throws TrackItException {
+		final Map<String, Object> paceOptions = new HashMap<String, Object>();
+
+		Double targetSpeed = course.getAverageMovingSpeed();
+
+		paceOptions.put(Constants.SetPaceOperation.METHOD, SetPaceMethod.TARGET_SPEED);
+		paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
+		paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
+
+		setPace(route, paceOptions);
+	}
+
+	private String getJoinAppendOption() {
+		return TrackIt.getPreferences().getPreference(Constants.PrefsCategories.JOIN, null,
+				Constants.JoinPreferences.JOIN_OPTIONS, null);
+	}
+	
+	private Double getJoinAppendSpeed() {
+		return TrackIt.getPreferences().getDoublePreference(Constants.PrefsCategories.JOIN, null,
+				Constants.JoinPreferences.JOIN_SPEED, 0);
+	}
+	
+	private Double getJoinAppendTime() {
+		return TrackIt.getPreferences().getDoublePreference(Constants.PrefsCategories.JOIN, null,
+				Constants.JoinPreferences.JOIN_TIME, 0);
+	}
+
+	private void joinAppendSetPaceSetup(final Course firstCourse, Course route, final Course secondCourse) throws TrackItException {
+		final Map<String, Object> paceOptions = new HashMap<String, Object>();
+
+		String option = getJoinAppendOption();
+		SetPaceMethod method = SetPaceMethod.CONSTANT_TARGET_SPEED;
+		Double targetSpeed = 0.0;
+		Double targetTime = 0.0;
+		
+		// constant default
+		if (option.equals(JoinOptions.getAvailableOptions().get(0))) {
+			method = SetPaceMethod.CONSTANT_TARGET_SPEED;
+			//targetSpeed = activity speed
+		}
+		// constant user set
+		if (option.equals(JoinOptions.getAvailableOptions().get(1))) {
+			method = SetPaceMethod.CONSTANT_TARGET_SPEED;
+			targetSpeed = getJoinAppendSpeed();
+		}
+		// first avg
+		if (option.equals(JoinOptions.getAvailableOptions().get(2))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = firstCourse.getAverageMovingSpeed();
+		}
+		// first end
+		if (option.equals(JoinOptions.getAvailableOptions().get(3))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = firstCourse.getLastTrackpoint().getSpeed();
+		}
+		// second avg
+		if (option.equals(JoinOptions.getAvailableOptions().get(4))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = secondCourse.getAverageMovingSpeed();
+		}
+		// second start
+		if (option.equals(JoinOptions.getAvailableOptions().get(5))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = secondCourse.getFirstTrackpoint().getSpeed();
+		}
+		// avg both
+		if (option.equals(JoinOptions.getAvailableOptions().get(6))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = (firstCourse.getAverageMovingSpeed() + secondCourse.getAverageMovingSpeed())/2;
+		}
+		// avg connecting
+		if (option.equals(JoinOptions.getAvailableOptions().get(7))) {
+			method = SetPaceMethod.TARGET_SPEED;
+			targetSpeed = (firstCourse.getLastTrackpoint().getSpeed() + secondCourse.getFirstTrackpoint().getSpeed())/2;
+		}
+		// keep time stamps
+		if (option.equals(JoinOptions.getAvailableOptions().get(8))) {
+			
+		}
+		// user set time
+		if (option.equals(JoinOptions.getAvailableOptions().get(9))) {
+			method = SetPaceMethod.TARGET_TIME;
+			
+			targetTime = getJoinAppendTime() * 60;
+		}
+
+		paceOptions.put(Constants.SetPaceOperation.METHOD, method);
+		paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
+		if(method.equals(SetPaceMethod.TARGET_TIME)){
+			paceOptions.put(Constants.SetPaceOperation.TIME, targetTime);
+		}
+		else{
+			paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
+		}
+
+		setPace(route, paceOptions);
 	}
 
 	/* Event Listener interface implementation */
@@ -1997,7 +2088,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 					logger.error(e.getMessage());
 					return null;
 				}
-				
 
 				return document.getCourses();
 			}
@@ -2014,7 +2104,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
-				
+
 				masterDocument.remove(courses.get(1));
 				masterDocument.publishUpdateEvent(null);
 				courses.get(0).publishSelectionEvent(null);
@@ -2057,16 +2147,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				new ConsolidationOperation(options).process(document);
 				route = document.getCourses().get(0);
 				route.setParent(masterDocument);
-				
-				final Map<String, Object> paceOptions = new HashMap<String, Object>();
-				
-				Double targetSpeed = course.getAverageMovingSpeed();
-				
-				paceOptions.put(Constants.SetPaceOperation.METHOD, SetPaceMethod.TARGET_SPEED);
-				paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
-				paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
-				
-				setPace(route, paceOptions);
+
+				appendSetPaceSetup(course, route);
 
 				GPSDocument document2 = new GPSDocument(course.getParent().getFileName());
 				document2.addCourses(Arrays.asList(course, route));

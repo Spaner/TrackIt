@@ -23,7 +23,7 @@ public enum Unit {
 	NONE("NONE"), KILOMETER("KILOMETER"), METER("METER"), SECOND("SECOND"), KILOMETER_PER_HOUR("KILOMETER_PER_HOUR"), DEGREE(
 	        "DEGREE"), RPM("RPM"), BPM("BPM"), CALORIES("CALORIES"), DEGREES_CELSIUS("DEGREES_CELSIUS"), DATE_TIME(
 	        "DATE_TIME"), PERCENTAGE("PERCENTAGE"), STROKES_PER_LAP("STROKES_PER_LAP"), WATT("WATT"), METERS_PER_SECOND(
-	        "METERS_PER_SECOND"), JOULE("JOULE"), VOLT("VOLT"), TRACKPOINT_PER_METER("TRACKPOINT_PER_METER");
+	        "METERS_PER_SECOND"), JOULE("JOULE"), VOLT("VOLT"), TRACKPOINT_PER_METER("TRACKPOINT_PER_METER"), MINUTE("MINUTE");
 
 	private String name;
 
@@ -38,7 +38,7 @@ public enum Unit {
 	private static final String[] messageCodes = { "unit.none", "unit.kilometer", "unit.meter", "unit.second",
 	        "unit.kilometerPerHour", "unit.degree", "unit.rpm", "unit.bpm", "unit.calories", "unit.degreesCelsius",
 	        "unit.dateTime", "unit.percentage", "unit.strokesPerLap", "unit.watt", "unit.metersPerSecond",
-	        "unit.joule", "unit.volt", "unit.trackpointPerMeter" };
+	        "unit.joule", "unit.volt", "unit.trackpointPerMeter", "unit.minute" };
 
 	public static Unit lookup(String unitName) {
 		for (Unit unit : values()) {

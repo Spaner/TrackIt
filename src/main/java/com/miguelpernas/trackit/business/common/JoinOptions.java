@@ -46,6 +46,8 @@ public class JoinOptions {
 		initAvailableOptions();
 	}
 	
+	
+	
 	public static String getOption() {
 		return currentOption;
 	}
