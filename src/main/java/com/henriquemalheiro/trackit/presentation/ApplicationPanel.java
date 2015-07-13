@@ -760,13 +760,13 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		applicationMenu.refreshUndo(documentManager.getUndoManager());
 	}
 
-	private void undo() {
+	private void undo() throws TrackItException {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.undo();
 		applicationMenu.refreshUndo(documentManager.getUndoManager());
 	}
 
-	private void redo() {
+	private void redo() throws TrackItException {
 		DocumentManager documentManager = DocumentManager.getInstance();
 		documentManager.redo();
 		applicationMenu.refreshUndo(documentManager.getUndoManager());

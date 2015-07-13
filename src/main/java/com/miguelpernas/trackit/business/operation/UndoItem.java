@@ -1,5 +1,6 @@
 package com.miguelpernas.trackit.business.operation;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ public class UndoItem {
 	private final MapProvider mapProvider;
 	private final Map<String, Object> routingOptions;
 	private final Location location;
+	private final List<Long> routeIds;
+	private final Map<Long, Date[]> startTimes;
 	
 	private UndoItem(UndoItemBuilder builder) {
 		this.operationType = builder.operationType;
@@ -44,6 +47,8 @@ public class UndoItem {
 		this.mapProvider = builder.mapProvider;
 		this.routingOptions = builder.routingOptions;
 		this.location = builder.location;
+		this.routeIds = builder.routeIds;
+		this.startTimes = builder.startTimes;
 	}
 
 	public String getOperationType() {
@@ -114,6 +119,14 @@ public class UndoItem {
 	public Location getLocation(){
 		return location;
 	}
+	
+	public List<Long> getRouteIds(){
+		return routeIds;
+	}
+	
+	public Map<Long, Date[]> getStartTimes(){
+		return startTimes;
+	}
 
 	public static class UndoItemBuilder {
 		private final String operationType;
@@ -131,6 +144,8 @@ public class UndoItem {
 		private MapProvider mapProvider;
 		private Map<String, Object> routingOptions;
 		private Location location;
+		private List<Long> routeIds;
+		private Map<Long, Date[]> startTimes;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -196,6 +211,16 @@ public class UndoItem {
 		
 		public UndoItemBuilder location(Location location){
 			this.location = location;
+			return this;
+		}
+		
+		public UndoItemBuilder routeIds(List<Long> routeIds){
+			this.routeIds = routeIds;
+			return this;
+		}
+		
+		public UndoItemBuilder startTimes(Map<Long, Date[]> startTimes){
+			this.startTimes = startTimes;
 			return this;
 		}
 

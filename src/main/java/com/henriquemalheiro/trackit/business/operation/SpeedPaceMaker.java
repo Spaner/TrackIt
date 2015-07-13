@@ -55,7 +55,8 @@ class SpeedPaceMaker implements PaceMaker {
 		double weight;
 		double speed;
 		// 57421
-		boolean previousIsInsidePause, currentIsInsidePause = false;
+		boolean previousIsInsidePause = course.isInsidePause(course.getFirstTrackpoint().getTimestamp().getTime());
+		boolean currentIsInsidePause = previousIsInsidePause;
 		if (!includePauses) {
 			new PauseDetectionPicCaseOperation().process(course);
 			currentIsInsidePause = course.isInsidePause(currentTimeMS);
@@ -63,7 +64,7 @@ class SpeedPaceMaker implements PaceMaker {
 		for (Trackpoint trackpoint : course.getTrackpoints()) {
 			// weight = calculateWeight(trackpoint);
 			weight = course.getDistance() / targetSpeed / getCourseTime(course);
-
+			
 			// timeFromPrevious = trackpoint.getTimeFromPrevious() +
 			// (targetTimeDiff * weight);
 			timeFromPrevious = trackpoint.getTimeFromPrevious();
