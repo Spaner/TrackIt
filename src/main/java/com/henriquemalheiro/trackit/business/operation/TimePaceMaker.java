@@ -25,11 +25,13 @@ import java.util.Map;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.pg58406.trackit.business.operation.PauseDetectionPicCaseOperation;
 
 class TimePaceMaker implements PaceMaker {
 	private Course course;
 	private double targetTime;
 	private boolean includePauses;
+	private double weight;
 	
 	TimePaceMaker(Course course, Map<String, Object> options) {
 		if (!options.containsKey(Constants.SetPaceOperation.TIME)) {
@@ -43,6 +45,14 @@ class TimePaceMaker implements PaceMaker {
 		this.course = course;
 		this.targetTime = (Double) options.get(Constants.SetPaceOperation.TIME);
 		this.includePauses = (Boolean) options.get(Constants.SetPaceOperation.INCLUDE_PAUSES);
+		if(options.get(Constants.SetPaceOperation.WEIGHT) == null){
+			this.weight = targetTime / getCourseTime();
+			options.put(Constants.SetPaceOperation.WEIGHT, 1/weight);
+		}
+		else{
+			this.weight = (Double)options.get(Constants.SetPaceOperation.WEIGHT);
+			options.put(Constants.SetPaceOperation.WEIGHT, 1/weight);
+		}
 	}
 
 	@Override
@@ -53,9 +63,29 @@ class TimePaceMaker implements PaceMaker {
 		double weight;
 		double speed;
 		
+		//57421
+		boolean previousIsInsidePause = course.isInsidePause(course.getFirstTrackpoint().getTimestamp().getTime());
+		boolean currentIsInsidePause = previousIsInsidePause;
+		if (!includePauses) {
+			new PauseDetectionPicCaseOperation().process(course);
+			currentIsInsidePause = course.isInsidePause(currentTimeMS);
+		}
+		
 		for (Trackpoint trackpoint : course.getTrackpoints()) {
-			weight = calculateWeight(trackpoint);
-			timeFromPrevious = trackpoint.getTimeFromPrevious() + (targetTimeDiff * weight);
+			//weight = calculateWeight(trackpoint);
+			//timeFromPrevious = trackpoint.getTimeFromPrevious() + (targetTimeDiff * weight);
+			//weight = targetTime / getCourseTime();
+			timeFromPrevious = trackpoint.getTimeFromPrevious();
+			if (!includePauses) {
+				previousIsInsidePause = currentIsInsidePause;
+				currentIsInsidePause = course.isInsidePause(trackpoint.getTimestamp().getTime());
+
+				if (!previousIsInsidePause || !currentIsInsidePause) {
+					timeFromPrevious *= this.weight;
+				}
+			} else {
+				timeFromPrevious *= this.weight;
+			}
 			currentTimeMS += (long) (timeFromPrevious * 1000);
 			speed = (timeFromPrevious > 0 ? trackpoint.getDistanceFromPrevious() / timeFromPrevious : 0.0);
 			
@@ -74,6 +104,6 @@ class TimePaceMaker implements PaceMaker {
 	}
 
 	private double getCourseTime() {
-		return (includePauses ? course.getElapsedTime() : course.getTimerTime());
+		return (includePauses ? course.getElapsedTime() : course.getMovingTime());
 	}
 }

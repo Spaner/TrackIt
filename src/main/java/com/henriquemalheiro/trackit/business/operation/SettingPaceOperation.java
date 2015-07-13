@@ -48,7 +48,7 @@ public class SettingPaceOperation extends OperationBase implements Operation {
 	
 	public SettingPaceOperation(Map<String, Object> options) {
 		this();
-		this.options.putAll(options);
+		this.options = options;
 		setUp();
 	}
 

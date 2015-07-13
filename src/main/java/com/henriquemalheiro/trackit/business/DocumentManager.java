@@ -106,7 +106,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	private Long selectedDocumentId;
 	private Folder selectedFolder;
 	private Database database;
-	private int threadCounter; 
+	private int threadCounter;
 
 	private UndoManagerCustom undoManager; // 57421
 
@@ -825,7 +825,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		EventManager.getInstance().publish(this, Event.COURSE_UPDATED, course);
 	}
 
-	public Course setPace(Course course, Map<String, Object> options) throws TrackItException {
+	public Course setPace(Course course, Map<String, Object> options, boolean addToUndoManager) throws TrackItException {
 		GPSDocument document = new GPSDocument(course.getParent().getFileName());
 		document.add(course);
 
@@ -834,6 +834,20 @@ public class DocumentManager implements EventPublisher, EventListener {
 		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 		new ConsolidationOperation(options).process(document);
 		course.setUnsavedTrue();
+
+		/* undo */
+		if (addToUndoManager) {
+			String name = UndoableActionType.SET_PACE.toString();
+			List<Long> courseIds = new ArrayList<Long>();
+			long documentId = course.getParent().getId();
+			courseIds.add(course.getId());
+			UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).paceOptions(options).build();
+			undoManager.addUndo(item);
+		}
+
+		/* end undo */
+		course.publishSelectionEvent(null);
+		EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, course);
 		return document.getCourses().get(0);
 	}
 
@@ -989,7 +1003,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Date[] times = new Date[2];
 				times[0] = joiningCourses.get(i + 1).getFirstTrackpoint().getTimestamp();
 				times[1] = joiningCourses.get(i + 1).getLastTrackpoint().getTimestamp();
-				startTimes.put(joiningCourses.get(i + 1).getId(),times);
+				startTimes.put(joiningCourses.get(i + 1).getId(), times);
 				joinAppendSetPaceSetup(joiningCourses.get(i), route, joiningCourses.get(i + 1));
 				newJoiningCourses.add(route);
 			}
@@ -1416,7 +1430,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
 		paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
 
-		setPace(route, paceOptions);
+		setPace(route, paceOptions, false);
 	}
 
 	private String getJoinAppendOption() {
@@ -1505,13 +1519,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 		paceOptions.put(Constants.SetPaceOperation.INCLUDE_PAUSES, true);
 		if (method.equals(SetPaceMethod.TARGET_TIME)) {
 			paceOptions.put(Constants.SetPaceOperation.TIME, targetTime);
-			
+
 		} else {
 			paceOptions.put(Constants.SetPaceOperation.SPEED, targetSpeed);
-			
+
 		}
 
-		setPace(route, paceOptions);
+		setPace(route, paceOptions, false);
 	}
 
 	/* Event Listener interface implementation */
@@ -1823,6 +1837,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case REMOVE_PAUSE:
 				break;
 			case SET_PACE:
+				undoSetPaceSetup(item, Constants.UndoOperation.UNDO);
+				undoManager.popUndo();
 				break;
 			case COPY:
 				break;
@@ -1874,6 +1890,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			case REMOVE_PAUSE:
 				break;
 			case SET_PACE:
+				undoSetPaceSetup(item, Constants.UndoOperation.REDO);
+				undoManager.popRedo();
 				break;
 			case COPY:
 				break;
@@ -1887,6 +1905,20 @@ public class DocumentManager implements EventPublisher, EventListener {
 					JOptionPane.ERROR_MESSAGE);
 		}
 
+	}
+
+	public void undoSetPaceSetup(final UndoItem item, final String undoMode) throws TrackItException {
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
+			boolean addToUndoManager = false;
+			setPace(course, item.getPaceOptions(), addToUndoManager);
+		}
+		if (undoMode.equals(Constants.UndoOperation.REDO)) {
+			boolean addToUndoManager = false;
+			setPace(course, item.getPaceOptions(), addToUndoManager);
+		}
 	}
 
 	public void undoAppendSetup(final UndoItem item, final String undoMode) {
@@ -1951,20 +1983,20 @@ public class DocumentManager implements EventPublisher, EventListener {
 		SwingWorker<List<Course>, Course> worker = new SwingWorker<List<Course>, Course>() {
 			@Override
 			protected List<Course> doInBackground() throws TrackItException, InterruptedException {
-								
+
 				if (undoMode.equals(Constants.UndoOperation.UNDO)) {
 					courses.remove(courses.size() - 1);
 					Course joinedCourse = getCourse(masterDocument,
 							item.getCoursesIds().get(item.getCoursesIds().size() - 1));
 					for (Long course : courses) {
 						Trackpoint trackpoint = getTrackpoint(joinedCourse, item.getConnectingPointsIds().get(course));
-						threadCounter+=1;
+						threadCounter += 1;
 						undoJoin(joinedCourse, trackpoint, course, merge);
 						TimeUnit.SECONDS.sleep(1);
-						
+
 					}
-					while(true){
-						if(threadCounter==0){
+					while (true) {
+						if (threadCounter == 0) {
 							break;
 						}
 					}
@@ -1975,14 +2007,14 @@ public class DocumentManager implements EventPublisher, EventListener {
 						}
 						for (Long id : startTimes.keySet()) {
 							Course course = getCourse(masterDocument, id);
-							
+
 							GPSDocument document = new GPSDocument(course.getParent().getFileName());
 							document.add(course);
 							Date startTime = startTimes.get(id)[0];
 							Date endTime = startTimes.get(id)[1];
 							course.getFirstTrackpoint().setTimestamp(startTime);
 							course.getLastTrackpoint().setTimestamp(endTime);
-							
+
 							Map<String, Object> options = new HashMap<String, Object>();
 							options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 							try {
@@ -2002,8 +2034,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 						}
 					}
-					
-					
+
 				}
 				if (undoMode.equals(Constants.UndoOperation.REDO)) {
 					List<Course> coursesToJoin = new ArrayList<Course>();
@@ -2014,37 +2045,36 @@ public class DocumentManager implements EventPublisher, EventListener {
 					redoJoin(coursesToJoin);
 
 				}
-				
+
 				return masterDocument.getCourses();
 			}
-		
-		@Override
-		protected void process(List<Course> courses) {
-			if (!courses.isEmpty()) {
-				courses.get(0).setParent(masterDocument);
-				courses.get(0).publishUpdateEvent(null);
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+
 			}
-			
-		}
-		@Override
-		protected void done() {
-			try {
-				List<Course> resultCourses = get();
-				if (!resultCourses.isEmpty()) {
-					for(Course course : resultCourses){
-						course.setParent(masterDocument);
-						course.publishUpdateEvent(null);
+
+			@Override
+			protected void done() {
+				try {
+					List<Course> resultCourses = get();
+					if (!resultCourses.isEmpty()) {
+						for (Course course : resultCourses) {
+							course.setParent(masterDocument);
+							course.publishUpdateEvent(null);
+						}
+					}
+
+				} catch (InterruptedException | ExecutionException ignore) {
 				}
-				}
-			
-				
-			} catch (InterruptedException | ExecutionException ignore) {
-			} 
-			
-			
-		}
-	};
-	worker.execute();
+
+			}
+		};
+		worker.execute();
 
 	}
 
@@ -2416,7 +2446,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		Objects.requireNonNull(trackpoint);
 		final GPSDocument masterDocument = course.getParent();
 		new Task(new Action() {
-			
+
 			@Override
 			public String getMessage() {
 				return Messages.getMessage("documentManager.message.splitingCourse");
@@ -2442,7 +2472,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					logger.error(e.getMessage());
 					return null;
 				}
-				threadCounter -=1;
+				threadCounter -= 1;
 				return document.getCourses();
 			}
 
@@ -2465,13 +2495,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 						course.getLaps().remove(course.getLastLap());
 					}
 				}
-				
+
 				masterDocument.remove(course);
 				masterDocument.addCourses(courses);
-				
+
 				masterDocument.publishUpdateEvent(null);
 				courses.get(0).publishSelectionEvent(null);
-				
+
 			}
 		}).execute();
 	}

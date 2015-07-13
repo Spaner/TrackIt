@@ -288,6 +288,7 @@ public class Constants {
 		public static final String TIME = "Time";
 		public static final String PERCENTAGE = "Percentage";
 		public static final String INCLUDE_PAUSES = "IncludePauses";
+		public static final String WEIGHT = "Weight";
 	}
 
 	/* Sandbox Operation Options */

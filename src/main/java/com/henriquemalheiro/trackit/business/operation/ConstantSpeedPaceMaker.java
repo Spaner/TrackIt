@@ -25,6 +25,7 @@ import java.util.Map;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
+import com.pg58406.trackit.business.operation.PauseDetectionPicCaseOperation;
 
 class ConstantSpeedPaceMaker implements PaceMaker {
 	private Course course;
@@ -52,8 +53,26 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 		double timeFromPrevious;
 		double speed;
 		
+		// 57421
+		boolean previousIsInsidePause = course.isInsidePause(course.getFirstTrackpoint().getTimestamp().getTime());
+		boolean currentIsInsidePause = previousIsInsidePause;
+		if (!includePauses) {
+			new PauseDetectionPicCaseOperation().process(course);
+			currentIsInsidePause = course.isInsidePause(currentTimeMS);
+		}
+		
 		for (Trackpoint trackpoint : course.getTrackpoints()) {
-			timeFromPrevious = trackpoint.getDistanceFromPrevious() / targetSpeed;
+			timeFromPrevious = trackpoint.getTimeFromPrevious();
+			if (!includePauses) {
+				previousIsInsidePause = currentIsInsidePause;
+				currentIsInsidePause = course.isInsidePause(trackpoint.getTimestamp().getTime());
+
+				if (!previousIsInsidePause || !currentIsInsidePause) {
+					timeFromPrevious = trackpoint.getDistanceFromPrevious()/ targetSpeed;
+				}
+			} else {
+				timeFromPrevious = trackpoint.getDistanceFromPrevious()/ targetSpeed;
+			}
 			currentTimeMS += (long) (timeFromPrevious * 1000);
 			speed = (timeFromPrevious > 0 ? trackpoint.getDistanceFromPrevious() / timeFromPrevious : 0.0);
 			
@@ -64,7 +83,7 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 	}
 	
 	protected double getCourseTime() {
-		return (includePauses ? course.getElapsedTime() : course.getTimerTime());
+		return (includePauses ? course.getElapsedTime() : course.getMovingTime());
 	}
 	
 	protected Course getCourse() {

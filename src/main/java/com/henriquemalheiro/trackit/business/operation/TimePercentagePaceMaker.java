@@ -47,6 +47,6 @@ class TimePercentagePaceMaker extends TimePaceMaker implements PaceMaker {
 	}
 	
 	private static double getCourseTime(Course course, boolean pauses) {
-		return (pauses ? course.getElapsedTime() : course.getTimerTime());
+		return (pauses ? course.getElapsedTime() : course.getMovingTime());
 	}
 }

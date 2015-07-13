@@ -214,7 +214,8 @@ class SetPaceDialog extends JDialog {
 					}
 					@Override
 					public Object execute() throws TrackItException {
-						return DocumentManager.getInstance().setPace(course, options);
+						boolean addToUndoManager = true;
+						return DocumentManager.getInstance().setPace(course, options, addToUndoManager);
 					}
 					@Override
 					public void done(Object result) {
