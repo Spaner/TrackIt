@@ -31,6 +31,7 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 	private Course course;
 	private double targetSpeed;
 	private boolean includePauses;
+	private Map<String, Object> options;
 	
 	ConstantSpeedPaceMaker(Course course, Map<String, Object> options) {
 		if (!options.containsKey(Constants.SetPaceOperation.SPEED)) {
@@ -43,8 +44,17 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 		
 		this.course = course;
 		double speed = (Double) options.get(Constants.SetPaceOperation.SPEED);
-		this.targetSpeed = speed * 1000.0 / 3600.0;
+		//this.targetSpeed = speed * 1000.0 / 3600.0;
 		this.includePauses = (Boolean) options.get(Constants.SetPaceOperation.INCLUDE_PAUSES);
+		if(options.get(Constants.SetPaceOperation.WEIGHT) == null){
+			this.targetSpeed = speed * 1000.0 / 3600.0;
+			options.put(Constants.SetPaceOperation.WEIGHT, 1/targetSpeed);
+		}
+		else{
+			this.targetSpeed = (Double)options.get(Constants.SetPaceOperation.WEIGHT);
+			options.put(Constants.SetPaceOperation.WEIGHT, 1/targetSpeed);
+		}
+		this.options = options;
 	}
 
 	@Override
@@ -52,7 +62,7 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 		long currentTimeMS = course.getFirstTrackpoint().getTimestamp().getTime();
 		double timeFromPrevious;
 		double speed;
-		
+		double distanceFromPrevious;
 		// 57421
 		boolean previousIsInsidePause = course.isInsidePause(course.getFirstTrackpoint().getTimestamp().getTime());
 		boolean currentIsInsidePause = previousIsInsidePause;
@@ -63,15 +73,16 @@ class ConstantSpeedPaceMaker implements PaceMaker {
 		
 		for (Trackpoint trackpoint : course.getTrackpoints()) {
 			timeFromPrevious = trackpoint.getTimeFromPrevious();
+			distanceFromPrevious = trackpoint.getDistanceFromPrevious();
 			if (!includePauses) {
 				previousIsInsidePause = currentIsInsidePause;
 				currentIsInsidePause = course.isInsidePause(trackpoint.getTimestamp().getTime());
-
+				
 				if (!previousIsInsidePause || !currentIsInsidePause) {
-					timeFromPrevious = trackpoint.getDistanceFromPrevious()/ targetSpeed;
+					timeFromPrevious = options.get(Constants.SetPaceOperation.WEIGHT) == null ? distanceFromPrevious / targetSpeed : timeFromPrevious / targetSpeed;			
 				}
 			} else {
-				timeFromPrevious = trackpoint.getDistanceFromPrevious()/ targetSpeed;
+				timeFromPrevious = options.get(Constants.SetPaceOperation.WEIGHT) == null ? distanceFromPrevious / targetSpeed : timeFromPrevious / targetSpeed;
 			}
 			currentTimeMS += (long) (timeFromPrevious * 1000);
 			speed = (timeFromPrevious > 0 ? trackpoint.getDistanceFromPrevious() / timeFromPrevious : 0.0);
