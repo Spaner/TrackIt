@@ -72,9 +72,10 @@ public class OperationsFactory {
 	public List<Operation> getSupportedOperations(GPSDocument document) {
 		List<Operation> operations = new ArrayList<Operation>();
 
-		operations.add(createFileExportOperation(document));
 		operations.add(createDiscardOperation(document));
 		operations.add(createRemoveFromDatabaseOperation(document));// 58406
+		
+//		operations.add(createFileExportOperation(document));  // 12335
 
 		return operations;
 	}
