@@ -67,6 +67,7 @@ public class Constants {
 		public static final String SHOW_DATA = "Show Data";
 		public static final String SHOW_LOG = "Show Log";
 		public static final String LAST_IMPORT_DIRECTORY = "Last Import Directory";
+		public static final String LAST_EXPORT_DIRECTORY = "Last Export Directory";
 		public static final String LAST_PICTURE_DIRECTORY = "Last Picture Directory";
 	}
 

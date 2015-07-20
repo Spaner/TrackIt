@@ -274,6 +274,9 @@ public class GPXFileWriter extends WriterTemplate implements Writer {
 		gpxElement.appendChild(metadataElement);
 		
 		Element linkElement = document.createElement(LINK);
+		
+		metadataElement.appendChild(createTextElement(document, NAME, gpsDocument.getName())); //12335
+
 		Attr hrefAttribute = document.createAttribute(HREF);
 		hrefAttribute.setValue((String) getOptions().get(Constants.GPX.APP_LINK));
 		linkElement.setAttributeNode(hrefAttribute);
@@ -283,7 +286,7 @@ public class GPXFileWriter extends WriterTemplate implements Writer {
 		
 		Date now = new Date(System.currentTimeMillis());
 		metadataElement.appendChild(createDateTimeElement(document, TIME, now));
-		
+				
 		return gpxElement;
 	}
 

@@ -604,11 +604,20 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void updateInitialDirectory(File file) {
+		updateInitialImportExportDirectory(file, Constants.GlobalPreferences.LAST_IMPORT_DIRECTORY);
+	}
+	
+	public void updateInitialExportDirectory( File file) {
+		updateInitialImportExportDirectory(file, Constants.GlobalPreferences.LAST_EXPORT_DIRECTORY);
+	}
+	
+	private void updateInitialImportExportDirectory( File file, String id) {
 		TrackIt.getPreferences().setPreference(
 				Constants.PrefsCategories.GLOBAL, null,
-				Constants.GlobalPreferences.LAST_IMPORT_DIRECTORY,
+				id,
 				file.getParent());
 	}
+
 
 	private void setFileFilters(final JFileChooser fileChooser) {
 		FileFilter[] filters = FileFilterFactory.getInstance().getFilters();
@@ -620,10 +629,18 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void setInitialDirectory(final JFileChooser fileChooser) {
+		setInitialImportExportDirectory(fileChooser, Constants.GlobalPreferences.LAST_IMPORT_DIRECTORY);
+	}
+
+	public void setInitialExportDirectory(final JFileChooser fileChooser) {
+		setInitialImportExportDirectory(fileChooser, Constants.GlobalPreferences.LAST_EXPORT_DIRECTORY);
+	}
+
+	private void setInitialImportExportDirectory(final JFileChooser fileChooser, String id) {
 		TrackItPreferences prefs = TrackIt.getPreferences();
 		String initialDirectory = prefs.getPreference(
 				Constants.PrefsCategories.GLOBAL, null,
-				Constants.GlobalPreferences.LAST_IMPORT_DIRECTORY,
+				id,
 				System.getProperty("user.home"));
 		File currentDirectory = new File(initialDirectory);
 		fileChooser.setCurrentDirectory(currentDirectory);
