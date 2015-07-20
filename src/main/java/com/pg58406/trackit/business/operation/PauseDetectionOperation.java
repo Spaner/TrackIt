@@ -28,6 +28,8 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
+import org.apache.derby.tools.sysinfo;
+
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Messages;
@@ -121,7 +123,8 @@ public class PauseDetectionOperation extends OperationBase implements Operation 
 			Map<String, Object> operationOptions = new HashMap<String, Object>();
 			operationOptions
 					.put(com.henriquemalheiro.trackit.business.common.Constants.ConsolidationOperation.LEVEL,
-							ConsolidationLevel.RECALCULATION);
+//							ConsolidationLevel.RECALCULATION);
+							ConsolidationLevel.SUMMARY);         // 12335 : 2015-07-18
 			if (item instanceof Activity) {
 				Activity a = (Activity) item;
 
@@ -154,14 +157,19 @@ public class PauseDetectionOperation extends OperationBase implements Operation 
 			if (item instanceof Course) {
 				Course c = (Course) item;
 				c.setPauses(pauses);
+				for(int ii=0;ii<trackLength;ii++)
+					System.out.println(ii + " $ " + trackpoints.get(ii).getTimeFromPrevious());			
 				try {
+					boolean unsaved = c.getUnsavedChanges();               // 12335 : 2015-07-18
 					new ConsolidationOperation(operationOptions).process(c);
+					c.setUnsavedChanges( unsaved);                         // 12335 : 2015-07-18
 				} catch (TrackItException e) {
 					e.printStackTrace();
 				}
+				for(int ii=0;ii<trackLength;ii++)
+					System.out.println(ii + " - " + trackpoints.get(ii).getTimeFromPrevious());
 
 			}
-			
 			
 			File logFile = new File("Pauses Log.txt");
 			String logPath = logFile.getAbsolutePath();
