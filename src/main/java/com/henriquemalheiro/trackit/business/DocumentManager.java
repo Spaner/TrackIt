@@ -1216,11 +1216,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 	public void removeTrackpoint(final Course course, final Trackpoint trackpoint) {
 		final GPSDocument masterDocument = course.getParent();
 		final int index = course.getTrackpoints().indexOf(trackpoint);
+		final boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
+				null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
 		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
 			@Override
 			protected Course doInBackground() {
-				boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
-						null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
+			//	boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
+					//	null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
 				if (keepTimes) {
 					List<Trackpoint> trackpoints = course.getTrackpoints();
 					int n = trackpoints.indexOf(trackpoint);
@@ -1300,7 +1302,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					Trackpoint savePoint = trackpoint.clone();
 					savePoint.setId(trackpoint.getId());
 					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
-							.trackpointIndex(index).build();
+							.trackpointIndex(index).keepTimes(keepTimes).build();
 					undoManager.addUndo(item);
 					TrackIt.getApplicationPanel().forceRefresh();
 

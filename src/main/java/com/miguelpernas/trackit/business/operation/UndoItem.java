@@ -32,6 +32,7 @@ public class UndoItem {
 	private final Map<Long, Date[]> startTimes;
 	
 	private final Map<String, Object> paceOptions;
+	private final boolean keepTimes;
 	
 	private UndoItem(UndoItemBuilder builder) {
 		this.operationType = builder.operationType;
@@ -52,6 +53,7 @@ public class UndoItem {
 		this.routeIds = builder.routeIds;
 		this.startTimes = builder.startTimes;
 		this.paceOptions = builder.paceOptions;
+		this.keepTimes = builder.keepTimes;
 	}
 
 	public String getOperationType() {
@@ -135,6 +137,10 @@ public class UndoItem {
 		return paceOptions;
 	}
 
+	public boolean getKeepTimes(){
+		return keepTimes;
+	}
+	
 	public static class UndoItemBuilder {
 		private final String operationType;
 		private final List<Long> changedCoursesIds;
@@ -154,6 +160,7 @@ public class UndoItem {
 		private List<Long> routeIds;
 		private Map<Long, Date[]> startTimes;
 		private Map<String, Object> paceOptions;
+		private boolean keepTimes;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -234,6 +241,11 @@ public class UndoItem {
 		
 		public UndoItemBuilder paceOptions(Map<String, Object> paceOptions){
 			this.paceOptions = paceOptions;
+			return this;
+		}
+		
+		public UndoItemBuilder keepTimes(boolean keepTimes){
+			this.keepTimes = keepTimes;
 			return this;
 		}
 

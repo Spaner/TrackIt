@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.henriquemalheiro.trackit.business.common.Formatters;
 import com.henriquemalheiro.trackit.business.common.Messages;
@@ -90,6 +91,12 @@ public class Trackpoint extends TrackItBaseType implements Comparable<Trackpoint
 	public Double getTimeFromPrevious() {
 		return timeFromPrevious;
 	}
+	
+	/*public Double getTimeFromPrevious() {
+		long time = Math.round(timeFromPrevious);
+		Double returnTime = new Double(TimeUnit.MILLISECONDS.toSeconds(time));
+		return returnTime;
+	}*/
 
 	public void setTimeFromPrevious(Double timeFromPrevious) {
 		this.timeFromPrevious = timeFromPrevious;

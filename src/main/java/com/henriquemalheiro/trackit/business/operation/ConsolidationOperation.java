@@ -637,16 +637,19 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 			 * DEFAULT_SPEED_MS;
 			 */
 			double timeFromPrevious = trackpoint.getDistanceFromPrevious()
-					/ prevSpeed;
+					/ prevSpeed * 1000;
 
 			// double timeFromPrevious = trackpoint.getDistanceFromPrevious() /
 			// speed;
 
 			Calendar calendar = Calendar.getInstance();
 			calendar.setTime(previousTrackpoint.getTimestamp());
-			calendar.add(Calendar.SECOND, (int) timeFromPrevious);
+			double time = calendar.getTimeInMillis() + timeFromPrevious;
+			
+			/*calendar.add(Calendar.SECOND, (int) timeFromPrevious);
 			calendar.add(Calendar.MILLISECOND,
-					(int) Math.round((timeFromPrevious % 1) / 1000.0));
+					(int) Math.round((timeFromPrevious % 1) / 1000.0));*/
+			calendar.setTimeInMillis((long) time);
 			trackpoint.setTimestamp(calendar.getTime());
 		} else {
 			// DO NOTHING???
