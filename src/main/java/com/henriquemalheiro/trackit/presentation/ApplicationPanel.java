@@ -723,6 +723,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 	private void returnCourse() {
 		Object[] options = { "Yes", "No", "Cancel" };
+		boolean addToUndoManager = true;
+		String undoRedoMode = null;
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
@@ -741,13 +743,13 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 
 				DocumentManager documentManager = DocumentManager.getInstance();
 				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course, Constants.ReverseOperation.RETURN);
+				documentManager.reverse(course, Constants.ReverseOperation.RETURN, addToUndoManager, undoRedoMode);
 			}
 			if (returnCourseOption == JOptionPane.YES_OPTION) {
 
 				DocumentManager documentManager = DocumentManager.getInstance();
 				Course course = (Course) selectedItems.get(0);
-				documentManager.reverse(course, Constants.ReverseOperation.RETURN_NEW);
+				documentManager.reverse(course, Constants.ReverseOperation.RETURN_NEW, addToUndoManager, undoRedoMode);
 			}
 		}
 		
@@ -756,7 +758,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	}
 
 	private void reverse() {
-
+		boolean addToUndoManager = true;
+		String undoRedoMode = null;
 		int option = JOptionPane.showConfirmDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.reverse.effects"),
@@ -766,7 +769,7 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		if (option == JOptionPane.YES_OPTION) {
 			DocumentManager documentManager = DocumentManager.getInstance();
 			Course course = (Course) selectedItems.get(0);
-			documentManager.reverse(course, Constants.ReverseOperation.NORMAL);
+			documentManager.reverse(course, Constants.ReverseOperation.NORMAL, addToUndoManager, undoRedoMode);
 
 
 		}

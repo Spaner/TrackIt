@@ -91,7 +91,7 @@ public class EditionLayer extends MapLayer implements EventPublisher {
 	@Override
 	public List<Operation> getSupportedOperations(Location location) {
 		List<Operation> supportedOperations = new ArrayList<Operation>();
-		
+		final boolean addToUndoManager = true;
 		if (!map.getMapMode().equals(MapMode.EDITION)) {
 			return supportedOperations;
 		}
@@ -114,7 +114,7 @@ public class EditionLayer extends MapLayer implements EventPublisher {
 						new Runnable() {
 							@Override
 							public void run() {
-								DocumentManager.getInstance().removeTrackpoint((Course) trackpoint.getParent(), trackpoint);
+								DocumentManager.getInstance().removeTrackpoint((Course) trackpoint.getParent(), trackpoint, addToUndoManager);
 							}
 						});
 				supportedOperations.add(deleteCoursePointOperation);
@@ -284,15 +284,15 @@ public class EditionLayer extends MapLayer implements EventPublisher {
 		
 		private void addTrackpoint(MouseEvent event, Course course, Location location) {
 			List<Trackpoint> trackpoints = course.getTrackpoints();
-			
+			boolean addToUndoManager = true;
 			Trackpoint trackpoint = new Trackpoint(course);
 			trackpoint.setLongitude(location.getLongitude());
 			trackpoint.setLatitude(location.getLatitude());
 			
 			if (shiftClick(event)) {
-				DocumentManager.getInstance().addTrackpoint(course, trackpoint, calculateTrackpointIndex(trackpoints, trackpoint));
+				DocumentManager.getInstance().addTrackpoint(course, trackpoint, calculateTrackpointIndex(trackpoints, trackpoint), addToUndoManager);
 			} else {
-				DocumentManager.getInstance().addTrackpoint(course, trackpoint);
+				DocumentManager.getInstance().addTrackpoint(course, trackpoint, addToUndoManager);
 			}
 		}
 

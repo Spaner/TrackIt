@@ -450,179 +450,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		EventManager.getInstance().publish(DocumentManager.this, Event.COURSE_SELECTED, course);
 	}
 
-	public void splitAtSelected(final Course course, final Trackpoint trackpoint, final boolean keepSpeed) {
-		Objects.requireNonNull(course);
-		Objects.requireNonNull(trackpoint);
-		final Double tempSpeed = trackpoint.getSpeed();
-		if (!keepSpeed) {
-			Double speed = 0.0;
-			trackpoint.setSpeed(speed);
-		}
-
-		final GPSDocument masterDocument = course.getParent();
-
-		new Task(new Action() {
-
-			@Override
-			public String getMessage() {
-				return Messages.getMessage("documentManager.message.splitingCourse");
-			}
-
-			@Override
-			public Object execute() throws TrackItException {
-				return splitCourse(course, trackpoint);
-			}
-
-			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
-				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
-				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
-
-				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-
-				try {
-					splittingOperation.process(document);
-				} catch (TrackItException e) {
-					logger.error(e.getMessage());
-					return null;
-				}
-
-				return document.getCourses();
-			}
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public void done(Object result) {
-				List<Course> courses = (List<Course>) result;
-				for (Course course : courses) {
-					course.setParent(masterDocument);
-					course.setUnsavedTrue();
-				}
-
-				/* undo */
-				String name = UndoableActionType.SPLIT.toString();
-				List<Long> courseIds = new ArrayList<Long>();
-				long documentId = masterDocument.getId();
-
-				for (Course course : courses) {
-					courseIds.add(course.getId());
-				}
-
-				if (!keepSpeed) {
-					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
-							.splitSpeed(tempSpeed).build();
-					undoManager.addUndo(item);
-				}
-				if (keepSpeed) {
-					Double speed = null;
-					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
-							.splitSpeed(speed).build();
-					undoManager.addUndo(item);
-
-				}
-
-				/* end undo */
-
-				masterDocument.remove(course);
-				masterDocument.addCourses(courses);
-
-				masterDocument.publishUpdateEvent(null);
-				courses.get(0).publishSelectionEvent(null);
-			}
-		}).execute();
-	}
-
-	public void reverse(final Course course, final String mode) {
-
-		Objects.requireNonNull(course);
-		final GPSDocument masterDocument = course.getParent();
-
-		new Task(new Action() {
-
-			@Override
-			public String getMessage() {
-				return Messages.getMessage("documentManager.message.reverse");
-			}
-
-			@Override
-			public Object execute() throws TrackItException {
-				return reverse(course);
-			}
-
-			private List<Course> reverse(Course course) {
-				Map<String, Object> copyOptions = new HashMap<String, Object>();
-				copyOptions.put(Constants.CopyOperation.COURSE, course);
-
-				CopyOperation copyOperation = new CopyOperation(copyOptions);
-
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-				if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
-					try {
-						copyOperation.process(document);
-						copyOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
-						new ConsolidationOperation(copyOptions).process(document);
-
-					} catch (TrackItException e) {
-						logger.error(e.getMessage());
-						return null;
-					}
-				}
-
-				Map<String, Object> reverseOptions = new HashMap<String, Object>();
-				reverseOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-
-				ReverseOperation reverseOperation = new ReverseOperation(reverseOptions);
-				ConsolidationOperation consolidationOP = new ConsolidationOperation(reverseOptions);
-
-				try {
-					reverseOperation.process(document, mode);
-					consolidationOP.process(document);
-				} catch (TrackItException e) {
-					logger.error(e.getMessage());
-					return null;
-				}
-
-				return document.getCourses();
-			}
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public void done(Object result) {
-				List<Course> courses = (List<Course>) result;
-				for (Course course : courses) {
-					course.setParent(masterDocument);
-					course.setUnsavedTrue();
-				}
-
-				/* undo */
-				String name = UndoableActionType.REVERSE.toString();
-				List<Long> courseIds = new ArrayList<Long>();
-				long documentId = masterDocument.getId();
-
-				courseIds.add(courses.get(0).getId());
-				if (mode.equals(Constants.ReverseOperation.RETURN_NEW)) {
-					courseIds.add(courses.get(1).getId());
-				}
-				if (mode.equals(Constants.ReverseOperation.RETURN) || mode.equals(Constants.ReverseOperation.NORMAL)) {
-					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).reverseMode(mode).build();
-					undoManager.addUndo(item);
-				}
-				/* end undo */
-				masterDocument.remove(course);
-				masterDocument.addCourses(courses);
-
-				masterDocument.publishUpdateEvent(null);
-				courses.get(0).publishSelectionEvent(null);
-
-			}
-
-		}).execute();
-
-	}
-
+	
 	// 57421
 	public void copy(final Course course) {
 
@@ -824,32 +652,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		course.setName(newName);
 		EventManager.getInstance().publish(this, Event.COURSE_UPDATED, course);
 	}
-
-	public Course setPace(Course course, Map<String, Object> options, boolean addToUndoManager) throws TrackItException {
-		GPSDocument document = new GPSDocument(course.getParent().getFileName());
-		document.add(course);
-
-		new SettingPaceOperation(options).process(document);
-
-		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-		new ConsolidationOperation(options).process(document);
-		course.setUnsavedTrue();
-
-		/* undo */
-		if (addToUndoManager) {
-			String name = UndoableActionType.SET_PACE.toString();
-			List<Long> courseIds = new ArrayList<Long>();
-			long documentId = course.getParent().getId();
-			courseIds.add(course.getId());
-			UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).paceOptions(options).build();
-			undoManager.addUndo(item);
-		}
-
-		/* end undo */
-		course.publishSelectionEvent(null);
-		EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, course);
-		return document.getCourses().get(0);
-	}
+	
+	
 
 	public void consolidate(final Course course, final Map<String, Object> options) {
 		final GPSDocument masterDocument = course.getParent();
@@ -941,6 +745,386 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}
 	}
 
+	
+
+	public void addTrackpoint(final Course course, final Trackpoint trackpoint, final boolean addToUndoManager) {
+		addTrackpoint(course, trackpoint, course.getTrackpoints().size(), addToUndoManager);
+	}
+
+	public void addTrackpoint(final Course course, final Trackpoint trackpoint, final int index,
+			final boolean addToUndoManager) {
+		final GPSDocument masterDocument = course.getParent();
+		final String courseName = course.getName();// 58406
+		final String filepath = course.getFilepath();
+
+		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
+			@Override
+			protected Course doInBackground() {
+				trackpoint.setParent(course);
+				course.getTrackpoints().add(index, trackpoint);
+
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
+				document.add(course);
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				publish(document.getCourses().get(0));
+
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+				return document.getCourses().get(0);
+			}
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+			}
+
+			@Override
+			protected void done() {
+				try {
+					Course resultCourse = get();
+					if (resultCourse != null) {
+						resultCourse.setParent(masterDocument);
+						resultCourse.publishUpdateEvent(null);
+					}
+				} catch (InterruptedException | ExecutionException ignore) {
+				}
+				course.setName(courseName);
+				course.setFilepath(filepath);
+
+				/* Undo */
+				if (addToUndoManager) {
+					String name = UndoableActionType.ADD_TRACKPOINT.toString();
+					List<Long> courseIds = new ArrayList<Long>();
+					long documentId = masterDocument.getId();
+					courseIds.add(course.getId());
+					Trackpoint savePoint = trackpoint.clone();
+					savePoint.setId(trackpoint.getId());
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
+							.trackpointIndex(index).build();
+					undoManager.addUndo(item);
+					TrackIt.getApplicationPanel().forceRefresh();
+				}
+
+				/* end undo */
+
+			}
+		};
+		worker.execute();
+
+	}
+
+	public void removeTrackpoint(final Course course, final Trackpoint trackpoint, final boolean addToUndoManager) {
+		final GPSDocument masterDocument = course.getParent();
+		final int index = course.getTrackpoints().indexOf(trackpoint);
+		final boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION, null,
+				Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
+		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
+			@Override
+			protected Course doInBackground() {
+				// boolean keepTimes =
+				// TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
+				// null,
+				// Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL,
+				// true);
+				if (keepTimes) {
+					List<Trackpoint> trackpoints = course.getTrackpoints();
+					int n = trackpoints.indexOf(trackpoint);
+					if (n == 0) {
+						Trackpoint trkp = trackpoints.get(1);
+						trkp.setDistance(0.0);
+						trkp.setDistanceFromPrevious(0.0);
+						trkp.setTimeFromPrevious(0.0);
+						trkp.setSpeed(0.0);
+					} else if (n == trackpoints.size() - 1) {
+						// DO NOTHING
+					} else {
+						Trackpoint prevTrakp = trackpoints.get(n - 1);
+						Trackpoint nextTrakp = trackpoints.get(n + 1);
+						Double distanceFromPrevious = trackpoint.getDistanceFromPrevious()
+								+ nextTrakp.getDistanceFromPrevious();
+						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
+						Double timeFromPrevious = trackpoint.getTimeFromPrevious() + nextTrakp.getTimeFromPrevious();
+						nextTrakp.setTimeFromPrevious(timeFromPrevious);
+						Trackpoint temp = trackpoints.get(n - 2);
+						Double speed = (nextTrakp.getDistance() - temp.getDistance()) / (nextTrakp.getTimeFromPrevious()
+								+ trackpoint.getTimeFromPrevious() + prevTrakp.getTimeFromPrevious());
+						prevTrakp.setSpeed(speed);
+						temp = trackpoints.get(n + 2);
+						speed = (temp.getDistance() - prevTrakp.getDistance()) / (temp.getTimeFromPrevious()
+								+ nextTrakp.getTimeFromPrevious() + trackpoint.getTimeFromPrevious());
+						nextTrakp.setSpeed(speed);
+					}
+				}
+				course.remove(trackpoint);// 58406
+
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
+				document.add(course);
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				publish(course);
+
+				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
+				try {
+					new ConsolidationOperation(options).process(document);
+				} catch (TrackItException e) {
+					return null;
+				}
+
+				return course;
+
+			}
+
+			@Override
+			protected void process(List<Course> courses) {
+				if (!courses.isEmpty()) {
+					courses.get(0).setParent(masterDocument);
+					courses.get(0).publishUpdateEvent(null);
+				}
+			}
+
+			@Override
+			protected void done() {
+				try {
+					Course resultCourse = get();
+					if (resultCourse != null) {
+						resultCourse.setParent(masterDocument);
+						resultCourse.publishUpdateEvent(null);
+						EventManager.getInstance().publish(null, Event.TRACKPOINT_HIGHLIGHTED, null);
+					}
+					/* Undo */
+					if (addToUndoManager) {
+						String name = UndoableActionType.REMOVE_TRACKPOINT.toString();
+						List<Long> courseIds = new ArrayList<Long>();
+						long documentId = masterDocument.getId();
+						courseIds.add(resultCourse.getId());
+						Trackpoint savePoint = trackpoint.clone();
+						savePoint.setId(trackpoint.getId());
+						UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
+								.trackpointIndex(index).keepTimes(keepTimes).build();
+						undoManager.addUndo(item);
+						TrackIt.getApplicationPanel().forceRefresh();
+					}
+
+					/* end undo */
+
+				} catch (InterruptedException | ExecutionException ignore) {
+				}
+
+			}
+		};
+		worker.execute();
+
+	}
+	public void reverse(final Course course, final String reverseMode, final boolean addToUndoManager,
+			final String undoRedoMode) {
+
+		Objects.requireNonNull(course);
+		final GPSDocument masterDocument = course.getParent();
+
+		final String returnNewMode = Constants.ReverseOperation.RETURN_NEW;
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.reverse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return reverse(course);
+			}
+
+			private List<Course> reverse(Course course) {
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
+				document.add(course);
+				if (reverseMode.equals(returnNewMode)) {
+					Map<String, Object> copyOptions = new HashMap<String, Object>();
+					copyOptions.put(Constants.CopyOperation.COURSE, course);
+					CopyOperation copyOperation = new CopyOperation(copyOptions);
+					
+
+					try {
+						copyOperation.process(document);
+						copyOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
+						new ConsolidationOperation(copyOptions).process(document);
+
+					} catch (TrackItException e) {
+						logger.error(e.getMessage());
+						return null;
+					}
+
+				}
+
+				Map<String, Object> reverseOptions = new HashMap<String, Object>();
+				reverseOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
+
+				ReverseOperation reverseOperation = new ReverseOperation(reverseOptions);
+				ConsolidationOperation consolidationOP = new ConsolidationOperation(reverseOptions);
+
+				try {
+					if (addToUndoManager) {
+						reverseOperation.process(document, reverseMode);
+					}
+					if (!addToUndoManager && undoRedoMode.equals(undoMode)) {
+						reverseOperation.undoOperation(document, reverseMode);
+
+					}
+					if (!addToUndoManager && undoRedoMode.equals(redoMode)) {
+						reverseOperation.redoOperation(document, reverseMode);
+					}
+					consolidationOP.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void done(Object result) {
+				List<Course> courses = (List<Course>) result;
+				for (Course course : courses) {
+					course.setParent(masterDocument);
+					course.setUnsavedTrue();
+				}
+
+				/* undo */
+				if (addToUndoManager) {
+					String name = UndoableActionType.REVERSE.toString();
+					List<Long> courseIds = new ArrayList<Long>();
+					long documentId = masterDocument.getId();
+
+					courseIds.add(courses.get(0).getId());
+					if (reverseMode.equals(Constants.ReverseOperation.RETURN_NEW)) {
+						courseIds.add(courses.get(1).getId());
+					}
+					if (reverseMode.equals(Constants.ReverseOperation.RETURN)
+							|| reverseMode.equals(Constants.ReverseOperation.NORMAL)) {
+						UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId)
+								.reverseMode(reverseMode).build();
+						undoManager.addUndo(item);
+					}
+				}
+				/* end undo */
+				masterDocument.remove(course);
+				masterDocument.addCourses(courses);
+
+				masterDocument.publishUpdateEvent(null);
+				courses.get(0).publishSelectionEvent(null);
+
+			}
+
+		}).execute();
+
+	}
+	
+	public void splitAtSelected(final Course course, final Trackpoint trackpoint, final boolean keepSpeed) {
+		Objects.requireNonNull(course);
+		Objects.requireNonNull(trackpoint);
+		final Double tempSpeed = trackpoint.getSpeed();
+		if (!keepSpeed) {
+			Double speed = 0.0;
+			trackpoint.setSpeed(speed);
+		}
+
+		final GPSDocument masterDocument = course.getParent();
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.splitingCourse");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				return splitCourse(course, trackpoint);
+			}
+
+			private List<Course> splitCourse(Course course, Trackpoint trackpoint) {
+				Map<String, Object> options = new HashMap<String, Object>();
+				options.put(Constants.SplitAtSelectedOperation.COURSE, course);
+				options.put(Constants.SplitAtSelectedOperation.TRACKPOINT, trackpoint);
+
+				TrackSplittingOperation splittingOperation = new TrackSplittingOperation(options);
+				GPSDocument document = new GPSDocument(course.getParent().getFileName());
+				document.add(course);
+
+				try {
+					splittingOperation.process(document);
+				} catch (TrackItException e) {
+					logger.error(e.getMessage());
+					return null;
+				}
+
+				return document.getCourses();
+			}
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void done(Object result) {
+				List<Course> courses = (List<Course>) result;
+				for (Course course : courses) {
+					course.setParent(masterDocument);
+					course.setUnsavedTrue();
+				}
+
+				/* undo */
+				String name = UndoableActionType.SPLIT.toString();
+				List<Long> courseIds = new ArrayList<Long>();
+				long documentId = masterDocument.getId();
+
+				for (Course course : courses) {
+					courseIds.add(course.getId());
+				}
+
+				if (!keepSpeed) {
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
+							.splitSpeed(tempSpeed).build();
+					undoManager.addUndo(item);
+				}
+				if (keepSpeed) {
+					Double speed = null;
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(trackpoint)
+							.splitSpeed(speed).build();
+					undoManager.addUndo(item);
+
+				}
+
+				/* end undo */
+
+				masterDocument.remove(course);
+				masterDocument.addCourses(courses);
+
+				masterDocument.publishUpdateEvent(null);
+				courses.get(0).publishSelectionEvent(null);
+			}
+		}).execute();
+	}
+	
 	public void join(final List<Course> courses, final boolean merge, final Double minimumDistance)
 			throws TrackItException {
 		List<Long> routeIds = new ArrayList<Long>();
@@ -997,7 +1181,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 					joiningCourses.get(i + 1).getFirstTrackpoint().getLatitude());
 
 			if (distance > minimumDistance) {
-				Course route = createInnerJoinCourse(MapLayer.getInstance(), routingOptions, joiningCourses.get(i),
+				Course route = createInnerCourseJoin(MapLayer.getInstance(), routingOptions, joiningCourses.get(i),
 						location);
 				routeIds.add(route.getId());
 				Date[] times = new Date[2];
@@ -1014,7 +1198,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		return newJoiningCourses;
 	}
 
-	private Course createInnerJoinCourse(final MapProvider mapProvider, final Map<String, Object> routingOptions,
+	private Course createInnerCourseJoin(final MapProvider mapProvider, final Map<String, Object> routingOptions,
 			final Course course, final Location location) throws TrackItException {
 		Objects.requireNonNull(mapProvider);
 		Objects.requireNonNull(routingOptions);
@@ -1136,185 +1320,31 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void addTrackpoint(final Course course, final Trackpoint trackpoint) {
-		addTrackpoint(course, trackpoint, course.getTrackpoints().size());
-	}
+	public Course setPace(Course course, Map<String, Object> options, boolean addToUndoManager)
+			throws TrackItException {
+		GPSDocument document = new GPSDocument(course.getParent().getFileName());
+		document.add(course);
 
-	public void addTrackpoint(final Course course, final Trackpoint trackpoint, final int index) {
-		final GPSDocument masterDocument = course.getParent();
-		final String courseName = course.getName();// 58406
-		final String filepath = course.getFilepath();
+		new SettingPaceOperation(options).process(document);
 
-		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
-			@Override
-			protected Course doInBackground() {
-				trackpoint.setParent(course);
-				course.getTrackpoints().add(index, trackpoint);
+		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
+		new ConsolidationOperation(options).process(document);
+		course.setUnsavedTrue();
 
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
+		/* undo */
+		if (addToUndoManager) {
+			String name = UndoableActionType.SET_PACE.toString();
+			List<Long> courseIds = new ArrayList<Long>();
+			long documentId = course.getParent().getId();
+			courseIds.add(course.getId());
+			UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).paceOptions(options).build();
+			undoManager.addUndo(item);
+		}
 
-				publish(document.getCourses().get(0));
-
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-				return document.getCourses().get(0);
-			}
-
-			@Override
-			protected void process(List<Course> courses) {
-				if (!courses.isEmpty()) {
-					courses.get(0).setParent(masterDocument);
-					courses.get(0).publishUpdateEvent(null);
-				}
-			}
-
-			@Override
-			protected void done() {
-				try {
-					Course resultCourse = get();
-					if (resultCourse != null) {
-						resultCourse.setParent(masterDocument);
-						resultCourse.publishUpdateEvent(null);
-					}
-				} catch (InterruptedException | ExecutionException ignore) {
-				}
-				course.setName(courseName);
-				course.setFilepath(filepath);
-
-				/* Undo */
-				String name = UndoableActionType.ADD_TRACKPOINT.toString();
-				List<Long> courseIds = new ArrayList<Long>();
-				long documentId = masterDocument.getId();
-				courseIds.add(course.getId());
-				Trackpoint savePoint = trackpoint.clone();
-				savePoint.setId(trackpoint.getId());
-				UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
-						.trackpointIndex(index).build();
-				undoManager.addUndo(item);
-				TrackIt.getApplicationPanel().forceRefresh();
-
-				/* end undo */
-
-			}
-		};
-		worker.execute();
-
-	}
-
-	public void removeTrackpoint(final Course course, final Trackpoint trackpoint) {
-		final GPSDocument masterDocument = course.getParent();
-		final int index = course.getTrackpoints().indexOf(trackpoint);
-		final boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
-				null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
-		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
-			@Override
-			protected Course doInBackground() {
-			//	boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
-					//	null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
-				if (keepTimes) {
-					List<Trackpoint> trackpoints = course.getTrackpoints();
-					int n = trackpoints.indexOf(trackpoint);
-					if (n == 0) {
-						Trackpoint trkp = trackpoints.get(1);
-						trkp.setDistance(0.0);
-						trkp.setDistanceFromPrevious(0.0);
-						trkp.setTimeFromPrevious(0.0);
-						trkp.setSpeed(0.0);
-					} else if (n == trackpoints.size() - 1) {
-						// DO NOTHING
-					} else {
-						Trackpoint prevTrakp = trackpoints.get(n - 1);
-						Trackpoint nextTrakp = trackpoints.get(n + 1);
-						Double distanceFromPrevious = trackpoint.getDistanceFromPrevious()
-								+ nextTrakp.getDistanceFromPrevious();
-						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
-						Double timeFromPrevious = trackpoint.getTimeFromPrevious() + nextTrakp.getTimeFromPrevious();
-						nextTrakp.setTimeFromPrevious(timeFromPrevious);
-						Trackpoint temp = trackpoints.get(n - 2);
-						Double speed = (nextTrakp.getDistance() - temp.getDistance()) / (nextTrakp.getTimeFromPrevious()
-								+ trackpoint.getTimeFromPrevious() + prevTrakp.getTimeFromPrevious());
-						prevTrakp.setSpeed(speed);
-						temp = trackpoints.get(n + 2);
-						speed = (temp.getDistance() - prevTrakp.getDistance()) / (temp.getTimeFromPrevious()
-								+ nextTrakp.getTimeFromPrevious() + trackpoint.getTimeFromPrevious());
-						nextTrakp.setSpeed(speed);
-					}
-				}
-				course.remove(trackpoint);// 58406
-
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-
-				publish(course);
-
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-
-				return course;
-
-			}
-
-			@Override
-			protected void process(List<Course> courses) {
-				if (!courses.isEmpty()) {
-					courses.get(0).setParent(masterDocument);
-					courses.get(0).publishUpdateEvent(null);
-				}
-			}
-
-			@Override
-			protected void done() {
-				try {
-					Course resultCourse = get();
-					if (resultCourse != null) {
-						resultCourse.setParent(masterDocument);
-						resultCourse.publishUpdateEvent(null);
-						EventManager.getInstance().publish(null, Event.TRACKPOINT_HIGHLIGHTED, null);
-					}
-					/* Undo */
-					String name = UndoableActionType.REMOVE_TRACKPOINT.toString();
-					List<Long> courseIds = new ArrayList<Long>();
-					long documentId = masterDocument.getId();
-					courseIds.add(resultCourse.getId());
-					Trackpoint savePoint = trackpoint.clone();
-					savePoint.setId(trackpoint.getId());
-					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
-							.trackpointIndex(index).keepTimes(keepTimes).build();
-					undoManager.addUndo(item);
-					TrackIt.getApplicationPanel().forceRefresh();
-
-					/* end undo */
-
-				} catch (InterruptedException | ExecutionException ignore) {
-				}
-
-			}
-		};
-		worker.execute();
-
+		/* end undo */
+		course.publishSelectionEvent(null);
+		EventManager.getInstance().publish(null, Event.ZOOM_TO_ITEM, course);
+		return document.getCourses().get(0);
 	}
 
 	public DocumentItem clearSegments(DocumentItem item) {
@@ -1778,7 +1808,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 	 * UNDO/REDO 57421
 	 */
 
-	public boolean isUndoPossible(UndoItem item) {
+	String undoMode = Constants.UndoOperation.UNDO;
+	String redoMode = Constants.UndoOperation.REDO;
+
+	private boolean isUndoPossible(UndoItem item) {
 		final DocumentEntry entry;
 		final GPSDocument document;
 		if (documents.containsKey(item.getDocumentId())) {
@@ -1804,49 +1837,69 @@ public class DocumentManager implements EventPublisher, EventListener {
 	}
 
 	public void undo() throws TrackItException {
-		final UndoItem item = undoManager.getUndoableItem();
+		boolean undo = true;
+		undoRedo(undo);
+
+	}
+
+	public void redo() throws TrackItException {
+		boolean undo = false;
+		undoRedo(undo);
+
+	}
+
+	private void undoRedo(boolean undo) throws TrackItException {
+		final UndoItem item;
+		String undoRedoMode = new String();
+
+		if (undo) {
+			undoRedoMode = this.undoMode;
+			item = undoManager.getUndoableItem();
+		} else {
+			undoRedoMode = this.redoMode;
+			item = undoManager.getRedoableItem();
+		}
 		final String operationType = item.getOperationType();
 		final UndoableActionType undoableAction = UndoableActionType.lookup(operationType);
 		if (isUndoPossible(item)) {
 
 			switch (undoableAction) {
 			case ADD_TRACKPOINT:
-				undoAddTrackpointSetup(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				addTrackpointSetup(item, undoRedoMode);
 				break;
 			case APPEND:
-				undoAppendSetup(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				undoAppendSetup(item, undoRedoMode);
 				break;
 			case REMOVE_TRACKPOINT:
-				undoRemoveTrackpointSetup(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				removeTrackpointSetup(item, undoRedoMode);
 				break;
 			case JOIN:
-				undoJoinSetup(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				undoJoinSetup(item, undoRedoMode);
 				break;
 			case SPLIT:
-				undoSplit(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				undoSplit(item, undoRedoMode);
 				break;
 			case REVERSE:
-				undoReverse(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				reverseSetup(item, undoRedoMode);
 				break;
 			case ADD_PAUSE:
 				break;
 			case REMOVE_PAUSE:
 				break;
 			case SET_PACE:
-				undoSetPaceSetup(item, Constants.UndoOperation.UNDO);
-				undoManager.popUndo();
+				setPaceSetup(item, undoRedoMode);
 				break;
 			case COPY:
 				break;
 			default:
 				// Do nothing
 			}
+			if (undo) {
+				undoManager.popUndo();
+			} else {
+				undoManager.popRedo();
+			}
+
 		} else {
 			undoManager.deleteUndo();
 			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
@@ -1856,83 +1909,68 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	}
 
-	public void redo() throws TrackItException {
-		final UndoItem item = undoManager.getRedoableItem();
-		final String operationType = item.getOperationType();
-		final UndoableActionType undoableAction = UndoableActionType.lookup(operationType);
-
-		if (isUndoPossible(item)) {
-
-			switch (undoableAction) {
-			case ADD_TRACKPOINT:
-				undoAddTrackpointSetup(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case APPEND:
-				undoAppendSetup(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case REMOVE_TRACKPOINT:
-				undoRemoveTrackpointSetup(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case JOIN:
-				undoJoinSetup(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case SPLIT:
-				undoSplit(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case REVERSE:
-				undoReverse(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-			case ADD_PAUSE:
-				break;
-			case REMOVE_PAUSE:
-				break;
-			case SET_PACE:
-				undoSetPaceSetup(item, Constants.UndoOperation.REDO);
-				undoManager.popRedo();
-				break;
-			case COPY:
-				break;
-			default:
-				// Do nothing
-			}
-		} else {
-			undoManager.deleteRedo();
-			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
-					"One or more elements of the redo operation no longer exist.", "Can't Redo",
-					JOptionPane.ERROR_MESSAGE);
-		}
-
-	}
-
-	public void undoSetPaceSetup(final UndoItem item, final String undoMode) throws TrackItException {
+	private void addTrackpointSetup(final UndoItem item, final String undoMode) {
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
+		final boolean addToUndoManager = false;
 		Course course = getCourse(document, item.getCourseIdAt(0));
-		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-			boolean addToUndoManager = false;
-			setPace(course, item.getPaceOptions(), addToUndoManager);
+		if (undoMode.equals(this.undoMode)) {
+			removeTrackpoint(course, item.getTrackpoint(), addToUndoManager);
 		}
-		if (undoMode.equals(Constants.UndoOperation.REDO)) {
-			boolean addToUndoManager = false;
+		if (undoMode.equals(this.redoMode)) {
+			addTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex(), addToUndoManager);
+		}
+	}
+
+	private void removeTrackpointSetup(final UndoItem item, final String undoMode) {
+
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		final boolean addToUndoManager = false;
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		if (undoMode.equals(this.undoMode)) {
+			addTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex(), addToUndoManager);
+		}
+		if (undoMode.equals(this.redoMode)) {
+			removeTrackpoint(course, item.getTrackpoint(), addToUndoManager);
+		}
+
+	}
+
+	private void setPaceSetup(final UndoItem item, final String undoMode) throws TrackItException {
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		boolean addToUndoManager = false;
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		if (undoMode.equals(this.undoMode) || (undoMode.equals(this.redoMode))) {
 			setPace(course, item.getPaceOptions(), addToUndoManager);
 		}
 	}
+
+	private void reverseSetup(final UndoItem item, final String undoMode) {
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		final boolean addToUndoManager = false;
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		final String reverseMode = item.getReverseMode();
+		if (undoMode.equals(this.undoMode) || (undoMode.equals(this.redoMode))) {
+			reverse(course, reverseMode, addToUndoManager, undoMode);
+		}
+	}
+
+
+
 
 	public void undoAppendSetup(final UndoItem item, final String undoMode) {
 		final DocumentEntry entry = documents.get(item.getDocumentId());
 		final GPSDocument document = entry.getDocument();
 		Course appendCourse = getCourse(document, item.getCourseIdAt(0));
 		Trackpoint trackpoint = appendCourse.getTrackpoints().get(item.getTrackpointIndex());
-		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
+		if (undoMode.equals(this.undoMode)) {
 
 			undoAppend(appendCourse, trackpoint);
 		}
-		if (undoMode.equals(Constants.UndoOperation.REDO)) {
+		if (undoMode.equals(this.redoMode)) {
 			MapProvider mapProvider = item.getMapProvider();
 			Map<String, Object> routingOptions = item.getRoutingOptions();
 			Location location = item.getLocation();
@@ -1943,32 +1981,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	public void undoAddTrackpointSetup(final UndoItem item, final String undoMode) {
-		final DocumentEntry entry = documents.get(item.getDocumentId());
-		final GPSDocument document = entry.getDocument();
-		Course course = getCourse(document, item.getCourseIdAt(0));
-		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-			redoRemoveTrackpoint(course, item.getTrackpoint());
-		}
-		if (undoMode.equals(Constants.UndoOperation.REDO)) {
-			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
-		}
-	}
-
-	public void undoRemoveTrackpointSetup(final UndoItem item, final String undoMode) {
-
-		final DocumentEntry entry = documents.get(item.getDocumentId());
-		final GPSDocument document = entry.getDocument();
-		Course course = getCourse(document, item.getCourseIdAt(0));
-		if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-			undoRemoveTrackpoint(course, item.getTrackpoint(), item.getTrackpointIndex());
-		}
-		if (undoMode.equals(Constants.UndoOperation.REDO)) {
-			redoRemoveTrackpoint(course, item.getTrackpoint());
-		}
-
 	}
 
 	public void undoJoinSetup(final UndoItem item, final String undoMode) throws TrackItException {
@@ -2109,86 +2121,6 @@ public class DocumentManager implements EventPublisher, EventListener {
 			redoSplit(courses.get(0), item.getTrackpoint(), keepSpeed, undo);
 
 		}
-	}
-
-	public void undoReverse(final UndoItem item, final String undoMode) {
-		Objects.requireNonNull(item);
-
-		DocumentEntry entry = documents.get(item.getDocumentId());
-		final GPSDocument masterDocument = entry.getDocument();
-
-		final List<Long> coursesIds = item.getCoursesIds();
-		final String reverseMode = item.getReverseMode();
-
-		new Task(new Action() {
-
-			@Override
-			public String getMessage() {
-				return Messages.getMessage("documentManager.message.undo");
-			}
-
-			@Override
-			public Object execute() throws TrackItException {
-				return undoReverse(coursesIds);
-			}
-
-			private List<Course> undoReverse(List<Long> coursesIds) {
-				Course courseOriginal = null;
-				Course courseCopy = null;
-
-				courseOriginal = getCourse(masterDocument, coursesIds.get(0));
-				GPSDocument document = new GPSDocument(courseOriginal.getParent().getFileName());
-				document.add(courseOriginal);
-				// add the second course if it was copied
-				if (reverseMode.equals(Constants.ReverseOperation.RETURN_NEW)) {
-					courseCopy = getCourse(masterDocument, coursesIds.get(1));
-					document.add(courseCopy);
-				}
-
-				Map<String, Object> reverseOptions = new HashMap<String, Object>();
-				reverseOptions.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-
-				ReverseOperation reverseOperation = new ReverseOperation(reverseOptions);
-				ConsolidationOperation consolidationOP = new ConsolidationOperation(reverseOptions);
-
-				try {
-					if (undoMode.equals(Constants.UndoOperation.UNDO)) {
-						reverseOperation.undoOperation(document, reverseMode);
-
-					}
-					if (undoMode.equals(Constants.UndoOperation.REDO)) {
-						reverseOperation.redoOperation(document, reverseMode);
-					}
-					consolidationOP.process(document);
-				} catch (TrackItException e) {
-					logger.error(e.getMessage());
-					return null;
-				}
-
-				return document.getCourses();
-			}
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public void done(Object result) {
-				List<Course> courses = (List<Course>) result;
-				for (Course course : courses) {
-					course.setParent(masterDocument);
-					course.setUnsavedTrue();
-				}
-
-				for (long id : coursesIds) {
-					masterDocument.remove(getCourse(masterDocument, id));
-				}
-
-				masterDocument.addCourses(courses);
-
-				masterDocument.publishUpdateEvent(null);
-				courses.get(0).publishSelectionEvent(null);
-			}
-
-		}).execute();
-
 	}
 
 	public void undoAppend(final Course course, final Trackpoint trackpoint) {
@@ -2576,151 +2508,4 @@ public class DocumentManager implements EventPublisher, EventListener {
 		}).execute();
 	}
 
-	public void undoRemoveTrackpoint(final Course course, final Trackpoint trackpoint, final int index) {
-		final GPSDocument masterDocument = course.getParent();
-		final String courseName = course.getName();// 58406
-		final String filepath = course.getFilepath();
-
-		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
-			@Override
-			protected Course doInBackground() {
-				trackpoint.setParent(course);
-				course.getTrackpoints().add(index, trackpoint);
-
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-
-				publish(document.getCourses().get(0));
-
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-				return document.getCourses().get(0);
-			}
-
-			@Override
-			protected void process(List<Course> courses) {
-				if (!courses.isEmpty()) {
-					courses.get(0).setParent(masterDocument);
-					courses.get(0).publishUpdateEvent(null);
-				}
-			}
-
-			@Override
-			protected void done() {
-				try {
-					Course course = get();
-					if (course != null) {
-						course.setParent(masterDocument);
-						course.publishUpdateEvent(null);
-					}
-				} catch (InterruptedException | ExecutionException ignore) {
-				}
-				course.setName(courseName);
-				course.setFilepath(filepath);
-
-			}
-		};
-		worker.execute();
-
-	}
-
-	public void redoRemoveTrackpoint(final Course course, final Trackpoint trackpoint) {
-		final GPSDocument masterDocument = course.getParent();
-		final int index = course.getTrackpoints().indexOf(trackpoint);
-		SwingWorker<Course, Course> worker = new SwingWorker<Course, Course>() {
-			@Override
-			protected Course doInBackground() {
-				boolean keepTimes = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.EDITION,
-						null, Constants.EditionPreferences.KEEP_ORIGINAL_TIMES_AT_POINT_REMOVAL, true);
-				if (keepTimes) {
-					List<Trackpoint> trackpoints = course.getTrackpoints();
-					int n = trackpoints.indexOf(trackpoint);
-					if (n == 0) {
-						Trackpoint trkp = trackpoints.get(1);
-						trkp.setDistance(0.0);
-						trkp.setDistanceFromPrevious(0.0);
-						trkp.setTimeFromPrevious(0.0);
-						trkp.setSpeed(0.0);
-					} else if (n == trackpoints.size() - 1) {
-						// DO NOTHING
-					} else {
-						Trackpoint prevTrakp = trackpoints.get(n - 1);
-						Trackpoint nextTrakp = trackpoints.get(n + 1);
-						Double distanceFromPrevious = trackpoint.getDistanceFromPrevious()
-								+ nextTrakp.getDistanceFromPrevious();
-						nextTrakp.setDistanceFromPrevious(distanceFromPrevious);
-						Double timeFromPrevious = trackpoint.getTimeFromPrevious() + nextTrakp.getTimeFromPrevious();
-						nextTrakp.setTimeFromPrevious(timeFromPrevious);
-						Trackpoint temp = trackpoints.get(n - 2);
-						Double speed = (nextTrakp.getDistance() - temp.getDistance()) / (nextTrakp.getTimeFromPrevious()
-								+ trackpoint.getTimeFromPrevious() + prevTrakp.getTimeFromPrevious());
-						prevTrakp.setSpeed(speed);
-						temp = trackpoints.get(n + 2);
-						speed = (temp.getDistance() - prevTrakp.getDistance()) / (temp.getTimeFromPrevious()
-								+ nextTrakp.getTimeFromPrevious() + trackpoint.getTimeFromPrevious());
-						nextTrakp.setSpeed(speed);
-					}
-				}
-				course.remove(trackpoint);// 58406
-
-				GPSDocument document = new GPSDocument(course.getParent().getFileName());
-				document.add(course);
-				Map<String, Object> options = new HashMap<String, Object>();
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-
-				publish(course);
-
-				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
-				try {
-					new ConsolidationOperation(options).process(document);
-				} catch (TrackItException e) {
-					return null;
-				}
-
-				return course;
-
-			}
-
-			@Override
-			protected void process(List<Course> courses) {
-				if (!courses.isEmpty()) {
-					courses.get(0).setParent(masterDocument);
-					courses.get(0).publishUpdateEvent(null);
-				}
-			}
-
-			@Override
-			protected void done() {
-				try {
-					Course resultCourse = get();
-					if (resultCourse != null) {
-						resultCourse.setParent(masterDocument);
-						resultCourse.publishUpdateEvent(null);
-						EventManager.getInstance().publish(null, Event.TRACKPOINT_HIGHLIGHTED, null);
-					}
-
-				} catch (InterruptedException | ExecutionException ignore) {
-				}
-
-			}
-		};
-		worker.execute();
-
-	}
 }
