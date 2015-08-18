@@ -39,12 +39,12 @@ import com.henriquemalheiro.trackit.business.exception.TrackItException;
 public class TrackSplittingOperation extends OperationBase implements Operation {
 	private Course course;
 	private Trackpoint trackpoint;
-	
+
 	public TrackSplittingOperation() {
 		super();
 		setUp();
 	}
-	
+
 	public TrackSplittingOperation(Map<String, Object> options) {
 		this();
 		this.options.putAll(options);
@@ -60,7 +60,7 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 	public String getName() {
 		return Constants.SplitAtSelectedOperation.NAME;
 	}
-	
+
 	@Override
 	public void process(List<GPSDocument> documents) throws TrackItException {
 		// Do nothing
@@ -77,19 +77,21 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 	private Course splitCourseAtSelectedTrackpoint(GPSDocument document) {
 		Course newCourse = new Course();
 		newCourse.setParent(document);
-		//String newCourseName = (course.getName().length() < 10 ? course.getName().concat("_2") : course.getName().substring(0, 9).concat("2"));
+		// String newCourseName = (course.getName().length() < 10 ?
+		// course.getName().concat("_2") : course.getName().substring(0,
+		// 9).concat("2"));
 		String newCourseName = course.getName().concat(" 2");
 		newCourse.setName(newCourseName);
-		
-		int startIndex = course.getTrackpoints().indexOf(trackpoint)/* + 1*/;//58406
+
+		int startIndex = course.getTrackpoints().indexOf(trackpoint)/* + 1 */;// 58406
 		int endIndex = course.getTrackpoints().size();
 		List<Trackpoint> copy = new ArrayList<Trackpoint>();
 		List<Trackpoint> temp = course.getTrackpoints().subList(startIndex, endIndex);
-		for (Trackpoint tp : temp){
+		for (Trackpoint tp : temp) {
 			copy.add(tp.clone());
 		}
 		int index = 0;
-		while(index < copy.size()){
+		while (index < copy.size()) {
 			copy.get(index).setId(temp.get(index).getId());
 			index++;
 		}
@@ -97,17 +99,17 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 		tp.setDistanceFromPrevious(0.);
 		tp.setTimeFromPrevious(0.);
 		newCourse.addTrackpoints(copy);
-		
+
 		startIndex = 0;
 		endIndex = course.getTrackpoints().indexOf(trackpoint) + 1;
 		consolidateCoursePoints(course, newCourse);
 		course.setTrackpoints(course.getTrackpoints().subList(startIndex, endIndex));
-		
+
 		return newCourse;
 	}
-	
+
 	private void consolidate(Course oldCourse, Course newCourse) {
-		//consolidateCoursePoints(oldCourse, newCourse);
+		// consolidateCoursePoints(oldCourse, newCourse);
 		consolidateTrackpoints(newCourse);
 		consolidateSegments(oldCourse, newCourse);
 		consolidateLaps(oldCourse, newCourse);
@@ -116,78 +118,84 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 
 	private void consolidateCoursePoints(Course oldCourse, Course newCourse) {
 		Iterator<CoursePoint> iterator = oldCourse.getCoursePoints().iterator();
-		
+
 		while (iterator.hasNext()) {
 			CoursePoint coursePoint = iterator.next();
-			
+
 			if (newCourse.getTrackpoints().contains(coursePoint.getTrackpoint())) {
 				newCourse.add(coursePoint);
 				iterator.remove();
 			}
 		}
 	}
-	
+
 	private void consolidateTrackpoints(Course newCourse) {
 		double offset = newCourse.getFirstTrackpoint().getDistance();
 		double distance;
-		
+
 		for (Trackpoint trackpoint : newCourse.getTrackpoints()) {
 			distance = trackpoint.getDistance() - offset;
 			trackpoint.setDistance(distance);
 			trackpoint.setParent(newCourse);
 		}
 	}
-	
+
 	private void consolidateSegments(Course oldCourse, Course newCourse) {
 		Iterator<TrackSegment> segmentIterator = oldCourse.getSegments().iterator();
-		
+
 		while (segmentIterator.hasNext()) {
 			TrackSegment segment = segmentIterator.next();
 			List<Trackpoint> trackpoints = segment.getTrackpoints();
-			
+
 			Trackpoint firstTrackpoint = trackpoints.get(0);
 			Trackpoint lastTrackpoint = trackpoints.get(trackpoints.size() - 1);
 
 			if (oldCourse.getTrackpoints().contains(firstTrackpoint)
 					&& newCourse.getTrackpoints().contains(lastTrackpoint)) {
-				
+
 				int firstIndex = trackpoints.indexOf(newCourse.getTrackpoints().get(0));
 				int lastIndex = trackpoints.size();
-				
+
 				TrackSegment newSegment = new TrackSegment(newCourse);
 				newSegment.setTrackpoints(trackpoints.subList(firstIndex, lastIndex));
 				newCourse.add(newSegment);
-				
+
 				lastIndex = firstIndex + 1;
 				firstIndex = 0;
 				segment.setTrackpoints(trackpoints.subList(firstIndex, lastIndex));
 			}
 		}
 	}
-	
+
 	private void consolidateLaps(Course oldCourse, Course newCourse) {
 		List<Lap> laps = oldCourse.getLaps();
-		
+
 		Date oldCourseLastTime = oldCourse.getLastTrackpoint().getTimestamp();
 		Lap intersectingLap = calculateIntersectingLap(laps, oldCourseLastTime);
 		int intersectingLapIndex = laps.indexOf(intersectingLap);
-		
+
 		CourseLap lap = new CourseLap(oldCourse);
 		lap.setStartTime(intersectingLap.getStartTime());
 		lap.setEndTime(oldCourse.getLastTrackpoint().getTimestamp());
-		laps.add(intersectingLapIndex, lap);
-		intersectingLapIndex++;
+		if (lap.getStartTime() != lap.getEndTime()) {
+			laps.add(intersectingLapIndex, lap);
+			intersectingLapIndex++;
+
+			intersectingLap.setStartTime(newCourse.getFirstTrackpoint().getTimestamp());
+			((CourseLap) intersectingLap).setParent(oldCourse);
+			oldCourse.setLaps(new ArrayList<>(laps.subList(0, intersectingLapIndex)));
+			newCourse.setLaps(new ArrayList<>(laps.subList(intersectingLapIndex, laps.size())));
+		}
+		else{
+			oldCourse.setLaps(new ArrayList<>(laps.subList(0, intersectingLapIndex)));
+			newCourse.setLaps(new ArrayList<>(laps.subList(intersectingLapIndex, laps.size())));
+		}
 		
-		intersectingLap.setStartTime(newCourse.getFirstTrackpoint().getTimestamp());
-		((CourseLap) intersectingLap).setParent(oldCourse);
-		
-		oldCourse.setLaps(new ArrayList<>(laps.subList(0, intersectingLapIndex)));
-		newCourse.setLaps(new ArrayList<>(laps.subList(intersectingLapIndex, laps.size())));
-		
+
 		for (Lap oldCourseLap : oldCourse.getLaps()) {
 			oldCourseLap.consolidate(ConsolidationLevel.SUMMARY);
 		}
-		
+
 		for (Lap newCourseLap : newCourse.getLaps()) {
 			((CourseLap) newCourseLap).setParent(newCourse);
 			newCourseLap.consolidate(ConsolidationLevel.SUMMARY);
@@ -202,7 +210,7 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 		}
 		throw new IllegalStateException("Split operation: intersecting lap not found!");
 	}
-	
+
 	private void consolidateCourses(Course oldCourse, Course newCourse) {
 		oldCourse.consolidate(ConsolidationLevel.SUMMARY);
 		oldCourse.setAttribute(Constants.PAINTING_ATTRIBUTES.COLOR_SCHEME, ColorScheme.getNextColorScheme());
@@ -213,22 +221,22 @@ public class TrackSplittingOperation extends OperationBase implements Operation 
 	@Override
 	public void undoOperation(GPSDocument document) throws TrackItException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void undoOperation(List<GPSDocument> document) throws TrackItException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void redoOperation(GPSDocument document) throws TrackItException {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public void redoOperation(List<GPSDocument> document) throws TrackItException {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 }

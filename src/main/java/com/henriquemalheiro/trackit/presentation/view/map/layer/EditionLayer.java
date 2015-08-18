@@ -264,7 +264,7 @@ public class EditionLayer extends MapLayer implements EventPublisher {
 						Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.AVOID_TOLL_ROADS, true);
 				boolean addDirectionCoursePoints = TrackIt.getPreferences().getBooleanPreference(
 						Constants.PrefsCategories.EDITION, null, Constants.EditionPreferences.ADD_COURSE_POINTS_AT_JUNCTIONS, true);
-				
+				final boolean addToUndoManager = true;
 				if (followRoads) {
 					java.util.Map<String, Object> routingOptions = new HashMap<>();
 					routingOptions.put(Constants.RoutingOptions.ROUTING_TYPE, routingType);
@@ -273,7 +273,7 @@ public class EditionLayer extends MapLayer implements EventPublisher {
 					routingOptions.put(Constants.RoutingOptions.AVOID_TOLL_ROADS, avoidTollRoads);
 					routingOptions.put(Constants.RoutingOptions.ADD_DIRECTION_COURSE_POINTS, addDirectionCoursePoints);
 					
-					DocumentManager.getInstance().appendRoute(getMapProvider(), routingOptions, course, location);
+					DocumentManager.getInstance().appendRoute(getMapProvider(), routingOptions, course, location, addToUndoManager);
 				} else {
 					addTrackpoint(event, course, location);
 				}

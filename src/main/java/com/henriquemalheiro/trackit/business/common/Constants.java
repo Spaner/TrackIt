@@ -356,4 +356,12 @@ public class Constants {
 		public static final String SPEED_THRESHOLD = "Speed Threshold";
 	}
 	
+	public static final class ExtraUndoOptions{
+		public static final String ADD_TO_MANAGER = "Add to Undo Manager";
+		public static final String SPLIT_UNDO = "Split Undo";
+		public static final String JOIN_UNDO = "Join Undo";
+		public static final String APPEND_UNDO = "Append Undo";
+		public static final String EXTRA_ID = "Extra ID";
+	}
+	
 }

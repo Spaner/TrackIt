@@ -671,6 +671,15 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 	private void splitAtSelected() {
 		Object[] options = { "Yes", "No", "Cancel" };
 		boolean keepSpeed;
+		final boolean addToUndoManager = true;
+		final boolean isUndo = false;
+		
+		final Map<String, Object> undoOptions = new HashMap<String, Object>();
+		undoOptions.put(Constants.ExtraUndoOptions.ADD_TO_MANAGER, new Boolean(true));
+		undoOptions.put(Constants.ExtraUndoOptions.SPLIT_UNDO, new Boolean(false));
+		undoOptions.put(Constants.ExtraUndoOptions.JOIN_UNDO, new Boolean(false));
+		undoOptions.put(Constants.ExtraUndoOptions.APPEND_UNDO, new Boolean(false));
+		
 		int keepSpeedDialog = JOptionPane.showOptionDialog(
 				TrackIt.getApplicationFrame(),
 				Messages.getMessage("applicationPanel.splitAtSelected.keepSpeed"),
@@ -684,11 +693,11 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		
 		if (keepSpeedDialog == JOptionPane.YES_OPTION) {
 			keepSpeed = true;
-			documentManager.splitAtSelected(course, trackpoint, keepSpeed);
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undoOptions);
 		}
 		if (keepSpeedDialog == JOptionPane.NO_OPTION) {
 			keepSpeed = false;
-			documentManager.splitAtSelected(course, trackpoint, keepSpeed);
+			documentManager.splitAtSelected(course, trackpoint, keepSpeed, undoOptions);
 		}
 		
 

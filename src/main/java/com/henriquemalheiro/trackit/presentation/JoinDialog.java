@@ -224,8 +224,17 @@ class JoinDialog extends JDialog {
 				final Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.JoinOperation.COURSES, joiningCourses);
 				boolean merge = mergeJoin(joiningCourses);
+				final boolean addToUndoManager = true;
+				
+				final Map<String, Object> undoOptions = new HashMap<String, Object>();
+				undoOptions.put(Constants.ExtraUndoOptions.ADD_TO_MANAGER, true);
+				undoOptions.put(Constants.ExtraUndoOptions.SPLIT_UNDO, false);
+				undoOptions.put(Constants.ExtraUndoOptions.JOIN_UNDO, false);
+				undoOptions.put(Constants.ExtraUndoOptions.APPEND_UNDO, false);
+				
+				
 				final double minimumDistance = getMinimumDistance();
-				DocumentManager.getInstance().join(joiningCourses, merge, minimumDistance);
+				DocumentManager.getInstance().join(joiningCourses, merge, minimumDistance, undoOptions);
 				
 				JoinDialog.this.dispose();
 			}
