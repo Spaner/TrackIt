@@ -34,7 +34,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.henriquemalheiro.trackit.business.domain.FieldMetadata;
 
 public class Formatters {
-	private static final String UTC = "UTC";
+	private static final String UTC = "Etc/GMT";
 
 	private static final String DEFAULT_DECIMAL_FORMAT_PATTERN = "0.00000000000000";
 

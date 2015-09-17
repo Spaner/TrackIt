@@ -72,7 +72,9 @@ class ApplicationMenu {
 	private JMenuItem redoMenu;//57421
 	private JMenuItem copyMenu;//57421
 	private JMenuItem returnCourseMenu;//57421
-	private JMenuItem removePausesMenu;	
+	private JMenuItem addPauseMenu;//57421
+	private JMenuItem removePauseMenu;//57421
+	private JMenuItem removePausesMenu;//57421
 	private static Map<ActionType, JMenuItem> menuActionMap;
 	private static Logger logger = Logger.getLogger(ApplicationMenu.class);
 	
@@ -103,6 +105,8 @@ class ApplicationMenu {
 		reverseMenu.setEnabled(singleItem && items.get(0).isCourse());
 		returnCourseMenu.setEnabled(singleItem && items.get(0).isCourse());
 		copyMenu.setEnabled(singleItem && items.get(0).isCourse());
+		addPauseMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
+		removePauseMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
 		
 			
 		boolean joinMenuEnabled = true;
@@ -140,6 +144,8 @@ class ApplicationMenu {
 		menuActionMap.put(ActionType.NEW_COURSE, newCourseMenu);
 		menuActionMap.put(ActionType.SIMPLIFICATION, simplificationMenu);
 		menuActionMap.put(ActionType.REMOVE_PAUSES, removePausesMenu);
+		//menuActionMap.put(ActionType.REMOVE_PAUSE, removePauseMenu);
+		//menuActionMap.put(ActionType.ADD_PAUSE, addPauseMenu);
 		menuActionMap.put(ActionType.IMPORT_PICTURE, pictureMenu);
 		menuActionMap.put(ActionType.DETECT_PAUSES, detectPausesMenu);
 		menuActionMap.put(ActionType.AUTO_LOCATE_PICTURES, autoLocatePicturesMenu);
@@ -483,6 +489,26 @@ class ApplicationMenu {
 		detectPausesMenu.setEnabled(false);
 		menu.add(detectPausesMenu);
 		
+		menu.addSeparator();
+		
+		addPauseMenu = new JMenuItem(getMessage("applicationPanel.menu.addPause"), KeyEvent.VK_A);
+		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_A, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
+		addPauseMenu.setAccelerator(keyStroke);
+		addPauseMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.addPause.description"));
+		addPauseMenu.setActionCommand(MenuActionType.ADD_PAUSE.name());
+		addPauseMenu.addActionListener(handler);
+		addPauseMenu.setEnabled(false);
+		menu.add(addPauseMenu);
+		
+		removePauseMenu = new JMenuItem(getMessage("applicationPanel.menu.removePause"), KeyEvent.VK_R);
+		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
+		removePauseMenu.setAccelerator(keyStroke);
+		removePauseMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.removePause.description"));
+		removePauseMenu.setActionCommand(MenuActionType.REMOVE_PAUSE.name());
+		removePauseMenu.addActionListener(handler);
+		removePauseMenu.setEnabled(false);
+		menu.add(removePauseMenu);
+		
 		removePausesMenu = new JMenuItem(getMessage("applicationPanel.menu.removePauses"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_P, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		removePausesMenu.setAccelerator(keyStroke);
@@ -491,6 +517,8 @@ class ApplicationMenu {
 		removePausesMenu.addActionListener(handler);
 		removePausesMenu.setEnabled(false);
 		menu.add(removePausesMenu);
+		
+		menu.addSeparator();
 		
 		autoLocatePicturesMenu = new JMenuItem(getMessage("applicationPanel.menu.autoLocatePictures"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_L, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);

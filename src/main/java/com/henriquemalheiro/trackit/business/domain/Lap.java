@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.swing.ImageIcon;
 
+import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
@@ -940,7 +941,7 @@ public abstract class Lap extends TrackItBaseType implements DocumentItem, Folde
 			
 			distance += trackpoint.getDistanceFromPrevious();
 			time += trackpoint.getTimeFromPrevious();
-			if ((trackpoint.getDistanceFromPrevious() - trackpoint.getTimeFromPrevious()) < Constants.PAUSE_SPEED_THRESHOLD) {
+			if ((trackpoint.getDistanceFromPrevious() - trackpoint.getTimeFromPrevious()) < getSpeedThreshold()) {
 				pausedTime += trackpoint.getTimeFromPrevious();
 			} else {
 				movingTime += trackpoint.getTimeFromPrevious();
@@ -1281,5 +1282,10 @@ public abstract class Lap extends TrackItBaseType implements DocumentItem, Folde
 	
 	public void addPause(Pause pause){
 		pauses.add(pause);
+	}
+	private Double getSpeedThreshold() {
+		return TrackIt.getPreferences().getDoublePreference(
+				Constants.PrefsCategories.PAUSE, null,
+				Constants.PausePreferences.SPEED_THRESHOLD, 0);
 	}
 }

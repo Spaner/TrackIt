@@ -364,4 +364,6 @@ public class Constants {
 		public static final String EXTRA_ID = "Extra ID";
 	}
 	
+	public static final double DEFAULT_SPEED_MS = 10 * 1000.0 / 3600.0;
+	
 }

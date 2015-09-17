@@ -78,7 +78,7 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 
 	@SuppressWarnings("unused")
 	// 58406
-	private static final double DEFAULT_SPEED_MS = 10 * 1000.0 / 3600.0;
+	
 	private ConsolidationLevel level;
 
 	public ConsolidationOperation() {
@@ -288,6 +288,9 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 		while (iter.hasNext()) {
 			currentTrackpoint = iter.next();
 			Double prevSpeed = previousTrackpoint.getSpeed();
+			if(prevSpeed == 0){
+				prevSpeed = Constants.DEFAULT_SPEED_MS;
+			}
 			process(previousTrackpoint, currentTrackpoint, prevSpeed);
 
 			if (currentTrackpoint.getSpeed().isInfinite()) {
@@ -326,7 +329,9 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 					Constants.PrefsCategories.PAUSE, null,
 					Constants.PausePreferences.SPEED_THRESHOLD, 1.5);
 			limit = limit / 3.6;
+			if(trackpoints.size() > 1){
 			updateSpeedWithPauseTime(trackpoints, limit);
+			}
 		}
 		// ########################################################################################
 	}

@@ -224,7 +224,6 @@ class JoinDialog extends JDialog {
 				final Map<String, Object> options = new HashMap<String, Object>();
 				options.put(Constants.JoinOperation.COURSES, joiningCourses);
 				boolean merge = mergeJoin(joiningCourses);
-				final boolean addToUndoManager = true;
 				
 				final Map<String, Object> undoOptions = new HashMap<String, Object>();
 				undoOptions.put(Constants.ExtraUndoOptions.ADD_TO_MANAGER, true);

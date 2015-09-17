@@ -87,7 +87,7 @@ public class Utilities {
 	 */
 	public static String getFormatedDate(long timestamp) {
 		Calendar calendar = Calendar.getInstance();
-		calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+		calendar.setTimeZone(TimeZone.getTimeZone("Etc/GMT"));
 		calendar.set(1989, 11, 31, 0, 0, 0);
 		
 		calendar.setTimeInMillis(calendar.getTimeInMillis() + (timestamp * 1000));

@@ -52,7 +52,9 @@ enum MenuActionType {
 	REMOVE_PAUSES,
 	UNDO,//57421
 	REDO,//57421
-	COPY;//57421
+	COPY,//57421
+	ADD_PAUSE,//57421
+	REMOVE_PAUSE;//57421
 	
 	static MenuActionType lookup(String menuAction) {
 		for (MenuActionType menuActionType : values()) {

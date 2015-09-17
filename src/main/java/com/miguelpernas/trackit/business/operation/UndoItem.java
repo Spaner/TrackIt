@@ -11,7 +11,41 @@ import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 
 public class UndoItem {
-
+	
+	public static class PauseInformation{
+		
+		private final Double firstTrackpointSpeed;
+		private final Double secondTrackpointSpeed;
+		private final long pausedTime;
+		private final long trackpointID;
+		
+		public PauseInformation(Double firstTrackpointSpeed, Double secondTrackpointSpeed, long pausedTime, long trackpointID){
+			this.firstTrackpointSpeed = firstTrackpointSpeed;
+			this.secondTrackpointSpeed = secondTrackpointSpeed;
+			this.pausedTime = pausedTime;
+			this.trackpointID = trackpointID;
+		}
+		
+		public Double getFirstTrackpointSpeed(){
+			return firstTrackpointSpeed;
+		}
+		
+		public Double getSecondTrackpointSpeed(){
+			return secondTrackpointSpeed;
+		}
+		
+		public long getPausedTime(){
+			return pausedTime;
+		}
+		
+		public long getTrackpointID(){
+			return trackpointID;
+		}
+		
+		
+	}
+	
+	
 	private final String operationType;
 	private final List<Long> changedCoursesIds;
 	private final List<Long> duplicatePointIds;
@@ -24,6 +58,10 @@ public class UndoItem {
 	private final Double splitSpeed; //split
 	private final long deletedCourseId; //split/join
 	private final int trackpointIndex;
+	private final long pausedTime;
+	//long[0] = trackpoint id, long[1] = pausedTime, Double[0] = speed at trackpoint, Double[1] = speeds at next trackpoint
+	//private final Map<Long[], Double[]> pausedSpeeds;
+	private final PauseInformation pauseInformation;
 	
 	private final MapProvider mapProvider;
 	private final Map<String, Object> routingOptions;
@@ -54,6 +92,9 @@ public class UndoItem {
 		this.startTimes = builder.startTimes;
 		this.paceOptions = builder.paceOptions;
 		this.keepTimes = builder.keepTimes;
+		this.pausedTime = builder.pausedTime;
+		//this.pausedSpeeds = builder.pausedSpeeds;
+		this.pauseInformation = builder.pauseInformation;
 	}
 
 	public String getOperationType() {
@@ -141,6 +182,18 @@ public class UndoItem {
 		return keepTimes;
 	}
 	
+	public long getPausedTime(){
+		return pausedTime;
+	}
+	
+	/*public Map<Long[], Double[]> getPausedSpeeds(){
+		return pausedSpeeds;
+	}*/
+	
+	public PauseInformation getPauseInformation(){
+		return pauseInformation;
+	}
+	
 	public static class UndoItemBuilder {
 		private final String operationType;
 		private final List<Long> changedCoursesIds;
@@ -161,6 +214,9 @@ public class UndoItem {
 		private Map<Long, Date[]> startTimes;
 		private Map<String, Object> paceOptions;
 		private boolean keepTimes;
+		private long pausedTime;
+		//private Map<Long[], Double[]> pausedSpeeds;
+		private PauseInformation pauseInformation;
 
 		public UndoItemBuilder(String operationType,
 				List<Long> changedCoursesIds, long documentId) {
@@ -248,10 +304,22 @@ public class UndoItem {
 			this.keepTimes = keepTimes;
 			return this;
 		}
+		
+		public UndoItemBuilder pausedTime(long pausedTime){
+			this.pausedTime = pausedTime;
+			return this;
+		}
+		
+		public UndoItemBuilder pauseInformation(Double firstTrackpointSpeed, Double secondTrackpointSpeed, long pausedTime, long trackpointID){
+			this.pauseInformation = new PauseInformation(firstTrackpointSpeed, secondTrackpointSpeed, pausedTime, trackpointID);
+			return this;
+		}
 
 		public UndoItem build() {
 			return new UndoItem(this);
 		}
+		
+	
 
 	}
 

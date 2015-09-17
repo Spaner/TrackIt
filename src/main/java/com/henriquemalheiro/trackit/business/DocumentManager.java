@@ -35,6 +35,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -739,6 +740,101 @@ public class DocumentManager implements EventPublisher, EventListener {
 			return document.getCourses().get(0);
 		}
 	}
+	
+	public void addPause(final Course course, final Trackpoint trackpoint, final long pausedTime, 
+			final boolean addToUndoManager, final Double firstTrackpointSpeed, final Double secondTrackpointSpeed){
+			Objects.requireNonNull(course);
+			Objects.requireNonNull(trackpoint);
+			final Double speed = trackpoint.getSpeed();
+			new Task(new Action() {
+
+				@Override
+				public String getMessage() {
+					return Messages.getMessage("documentManager.message.removePauses");
+				}
+
+				@Override
+				public Object execute() throws TrackItException {
+					RemovePausesOperation removePausesOperation = new RemovePausesOperation(course, trackpoint, pausedTime, firstTrackpointSpeed, secondTrackpointSpeed);
+					removePausesOperation.executeAddPause();
+					return null;
+				}
+
+				@Override
+				public void done(Object result) {
+					course.publishUpdateEvent(null);
+					/* Undo */
+					if (addToUndoManager) {
+						String name = UndoableActionType.ADD_PAUSE.toString();
+						List<Long> courseIds = new ArrayList<Long>();
+						long documentId = course.getParent().getId();
+						courseIds.add(course.getId());
+						Trackpoint savePoint = trackpoint;
+						
+						//savePoint.setId(trackpoint.getId());
+						int index = course.getTrackpoints().indexOf(trackpoint);
+						UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint).splitSpeed(speed)
+								.trackpointIndex(index).pausedTime(pausedTime).build();
+						undoManager.addUndo(item);
+						TrackIt.getApplicationPanel().forceRefresh();
+					}
+
+					/* end undo */
+				}
+			}).execute();
+		}
+
+	
+	
+	public void removePause(final Course course, final Trackpoint trackpoint, final boolean addToUndoManager, final Double pointSpeed){
+		Objects.requireNonNull(course);
+		Objects.requireNonNull(trackpoint);
+		int firstTrackpointIndex = course.getTrackpoints().indexOf(trackpoint);
+		int secondTrackpointIndex = firstTrackpointIndex+1;
+		Double timeFromPrevious = course.getTrackpoints().get(secondTrackpointIndex).getTimeFromPrevious();
+		final long pausedTime = (long)timeFromPrevious.doubleValue();
+		final Double firstPointSpeed = trackpoint.getSpeed();
+		final Double secondPointSpeed = course.getTrackpoints().get(secondTrackpointIndex).getSpeed();
+
+		new Task(new Action() {
+
+			@Override
+			public String getMessage() {
+				return Messages.getMessage("documentManager.message.removePauses");
+			}
+
+			@Override
+			public Object execute() throws TrackItException {
+				RemovePausesOperation removePausesOperation = new RemovePausesOperation(course, trackpoint, pointSpeed);
+				removePausesOperation.executeRemovePause();
+				return null;
+			}
+
+			@Override
+			public void done(Object result) {
+				course.publishUpdateEvent(null);
+				
+				/* Undo */
+				if (addToUndoManager) {
+					String name = UndoableActionType.REMOVE_PAUSE.toString();
+					List<Long> courseIds = new ArrayList<Long>();
+					long documentId = course.getParent().getId();
+					courseIds.add(course.getId());
+					Trackpoint savePoint = trackpoint;
+					
+					//savePoint.setId(trackpoint.getId());
+					int index = course.getTrackpoints().indexOf(trackpoint);
+					UndoItem item = new UndoItem.UndoItemBuilder(name, courseIds, documentId).trackpoint(savePoint)
+							.trackpointIndex(index).pausedTime(pausedTime).pauseInformation(firstPointSpeed, secondPointSpeed, pausedTime, trackpoint.getId()).build();
+					undoManager.addUndo(item);
+					TrackIt.getApplicationPanel().forceRefresh();
+				}
+
+				/* end undo */
+				
+			}
+		}).execute();
+	}
 
 	public void addTrackpoint(final Course course, final Trackpoint trackpoint, final boolean addToUndoManager) {
 		addTrackpoint(course, trackpoint, course.getTrackpoints().size(), addToUndoManager);
@@ -1247,6 +1343,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 		new ConsolidationOperation(options).process(document);
 		route = document.getCourses().get(0);
 		route.setParent(masterDocument);
+		
+
+
+		appendSetPaceSetup(course, route);
 
 		return route;
 	}
@@ -1286,6 +1386,12 @@ public class DocumentManager implements EventPublisher, EventListener {
 						operation.process(document);
 					} else {
 						operation.undoSplit(document);
+					}
+					options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
+					try {
+						new ConsolidationOperation(options).process(document);
+					} catch (TrackItException e) {
+						return null;
 					}
 				} catch (TrackItException e) {
 					logger.error(e.getMessage());
@@ -1443,6 +1549,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Location endLocation = location;
 				Course route = mapProvider.getRoute(startLocation, endLocation, routingOptions);
 				route.getTrackpoints().remove(0);
+				
+				
+				
 
 				Map<String, Object> options = new HashMap<>();
 				options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.RECALCULATION);
@@ -1460,7 +1569,9 @@ public class DocumentManager implements EventPublisher, EventListener {
 				new JoiningOperation(options).process(document2);
 				Course newCourse = document2.getCourses().get(0);
 				newCourse.setParent(masterDocument);
-
+				
+				addLap(newCourse, course.getLastTrackpoint());
+				
 				masterDocument.remove(course);
 				masterDocument.add(newCourse);
 				return newCourse;
@@ -1926,8 +2037,13 @@ public class DocumentManager implements EventPublisher, EventListener {
 				reverseSetup(item, undoRedoMode);
 				break;
 			case ADD_PAUSE:
+				addPauseSetup(item, undoRedoMode);
 				break;
 			case REMOVE_PAUSE:
+				removePauseSetup(item, undoRedoMode);
+				break;
+			case REMOVE_PAUSES:
+			//	removePausesSetup(item, undoRedoMode);
 				break;
 			case SET_PACE:
 				setPaceSetup(item, undoRedoMode);
@@ -1950,6 +2066,38 @@ public class DocumentManager implements EventPublisher, EventListener {
 					JOptionPane.ERROR_MESSAGE);
 		}
 
+	}
+	
+	private void addPauseSetup(final UndoItem item, final String undoMode) {
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		final boolean addToUndoManager = false;
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		Double pointSpeed = item.getSplitSpeed();
+		long pausedTime = item.getPausedTime();
+		if (undoMode.equals(this.undoMode)) {
+			removePause(course, item.getTrackpoint(), addToUndoManager, pointSpeed);
+		}
+		if (undoMode.equals(this.redoMode)) {
+			addPause(course, item.getTrackpoint(), pausedTime, addToUndoManager, null, null);
+		}
+	}
+	
+	private void removePauseSetup(final UndoItem item, final String undoMode) {
+		final DocumentEntry entry = documents.get(item.getDocumentId());
+		final GPSDocument document = entry.getDocument();
+		final boolean addToUndoManager = false;
+		Course course = getCourse(document, item.getCourseIdAt(0));
+		Double firstTrackpointSpeed = item.getPauseInformation().getFirstTrackpointSpeed();
+		Double secondTrackpointSpeed = item.getPauseInformation().getSecondTrackpointSpeed();
+		long pausedTime = item.getPauseInformation().getPausedTime()*1000;
+		
+		if (undoMode.equals(this.undoMode)) {
+			addPause(course, item.getTrackpoint(), pausedTime, addToUndoManager, firstTrackpointSpeed, secondTrackpointSpeed);
+		}
+		if (undoMode.equals(this.redoMode)) {
+			removePause(course, item.getTrackpoint(), addToUndoManager, null);
+		}
 	}
 
 	private void addTrackpointSetup(final UndoItem item, final String undoMode) {

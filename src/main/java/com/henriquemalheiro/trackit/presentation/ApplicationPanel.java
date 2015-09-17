@@ -29,8 +29,13 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -395,6 +400,17 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 					break;
 				case COPY:
 					copy();
+					break;
+				case ADD_PAUSE:
+					try {
+						addPause();
+					} catch (ParseException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					break;
+				case REMOVE_PAUSE:
+					removePause();
 					break;
 				// -------------------------------------------------------
 				default:
@@ -784,6 +800,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		}
 	}
 	
+	
+	
 	public void forceRefresh(){
 		DocumentManager documentManager = DocumentManager.getInstance();
 		applicationMenu.refreshUndo(documentManager.getUndoManager());
@@ -822,6 +840,73 @@ public class ApplicationPanel extends JPanel implements EventPublisher,
 		JDialog simplificationDialog = new SimplificationDialog(
 				selectedItems.get(0));
 		simplificationDialog.setVisible(true);
+	}
+	
+	private void addPause() throws ParseException{
+		boolean addToUndoManager = true;
+		long pausedTime;
+		int hours = Integer.parseInt((String)JOptionPane.showInputDialog(
+				TrackIt.getApplicationFrame(),
+				
+				Messages.getMessage("applicationPanel.addPause.hours"),
+				Messages.getMessage("applicationPanel.addPause.title"),
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				"0"));
+		int minutes = Integer.parseInt((String)JOptionPane.showInputDialog(
+				TrackIt.getApplicationFrame(),
+				
+				Messages.getMessage("applicationPanel.addPause.minutes"),
+				Messages.getMessage("applicationPanel.addPause.title"),
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				"0"));
+		int seconds = Integer.parseInt((String) JOptionPane.showInputDialog(
+				TrackIt.getApplicationFrame(),
+				
+				Messages.getMessage("applicationPanel.addPause.seconds"),
+				Messages.getMessage("applicationPanel.addPause.title"),
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				"0"));
+		
+		if(seconds > 59){
+			minutes += seconds/60;
+			seconds = seconds % 60;
+			
+			
+		}
+		
+		if(minutes > 59){
+			hours += minutes/60;
+			minutes = minutes % 60;
+		}
+		
+		String time = hours+":"+minutes+":"+seconds;
+		SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+		Date date = dateFormat.parse(time);
+		
+		Calendar calendar = GregorianCalendar.getInstance();
+		calendar.setTime(date);
+		pausedTime = calendar.getTime().getTime();
+		
+		DocumentManager documentManager = DocumentManager.getInstance();
+		Trackpoint trackpoint = (Trackpoint) selectedItems.get(0);
+		Course course = (Course) trackpoint.getParent();
+		documentManager.addPause(course, trackpoint, pausedTime, addToUndoManager, null, null);
+		
+	}
+	
+	private void removePause(){
+		boolean addToUndoManager = true;
+		DocumentManager documentManager = DocumentManager.getInstance();
+		Trackpoint trackpoint = (Trackpoint) selectedItems.get(0);
+		Course course = (Course) trackpoint.getParent();
+		documentManager.removePause(course, trackpoint, addToUndoManager, null);
+			
 	}
 
 	private void removePauses() {

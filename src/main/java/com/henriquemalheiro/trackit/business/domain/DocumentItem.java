@@ -39,6 +39,7 @@ public interface DocumentItem extends Publishable, Visitable, MapObject, DataVie
 	public boolean isActivity();
 	public boolean isCourse();
 	
+	
 	public DocumentItem getParent();
 
 	public List<Lap> getLaps();

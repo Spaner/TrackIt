@@ -30,6 +30,7 @@ public enum UndoableActionType {
 	REVERSE,
 	ADD_PAUSE,
 	REMOVE_PAUSE,
+	REMOVE_PAUSES,
 	SET_PACE,
 	COPY;
 	

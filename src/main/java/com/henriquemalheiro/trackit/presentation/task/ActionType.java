@@ -35,5 +35,7 @@ public enum ActionType {
 	IMPORT_PICTURE,//58406
 	//UNDO,//57421
 	//REDO,//57421
+	ADD_PAUSE,//57421
+	REMOVE_PAUSE,//57421
 	COPY;
 }
