@@ -1,0 +1,1 @@
+Pause detected between: [12:08:37] - [12:09:37]: 60.0 seconds
