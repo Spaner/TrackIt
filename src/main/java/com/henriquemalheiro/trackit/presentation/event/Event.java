@@ -63,7 +63,8 @@ public enum Event {
     MISCELANEOUS_SELECTION("MISCELANEOUS_SELECTION"),
     ACTIVITY_UPDATED("ACTIVITY_UPDATED"),//58406
     PICTURES_SELECTED("PICTURES_SELECTED"),//58406
-    PICTURE_SELECTED("PICTURE_SELECTED");//58406
+    PICTURE_SELECTED("PICTURE_SELECTED"),//58406
+	COORDINATES_TYPE_CHANGED("COORDINATES_TYPE_CHANGED");	//12335: 2016-07-18
 
     private String name;
 
@@ -83,7 +84,10 @@ public enum Event {
         "event.eventSelected", "event.devicesSelected", "event.deviceSelected", "event.animationMove", "event.waypointsSelected",
         "event.waypointSelected", "event.trackpointSelected", "event.trackpointHighlighted", "event.zoomToItem", "event.trackpointsRemoved",
         "event.segmentsSelected", "event.segmentSelected", "event.segmentsCreated", "event.courseUpdated", "event.folderSelected", "event.miscelaneousSelection",
-        "event.activityUpdated", "event.picturesSelected", "event.pictureSelected"};//58406
+        "event.activityUpdated",
+        "event.picturesSelected", "event.pictureSelected",  //58406
+        "event.coordinatesTypeChanged"						// 12335: 2016-07-18
+    };
 
     public static Event lookup(String eventName) {
         for (Event event : values()) {

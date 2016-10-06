@@ -632,6 +632,10 @@ public class GPXHandler extends DefaultHandler implements XMLFileHandler {
 	}
 	
 	private void processNameEnd() {
+		//12335: 2016-09-21 to get the name of the whole document
+		if ( inMetadata )
+			gpsDocument.setName(textData);
+		// end
 		if (readActivities || readCourses || readWaypoints) {
 			if (inWaypoint) {
 				waypoint.setName(textData);

@@ -165,7 +165,8 @@ public class CopyOperation extends OperationBase implements Operation {
 			c.setFilepath(tempFile.getAbsolutePath());
 			if (c.getTrackpoints().get(0).getSpeed() != null)
 				c.setNoSpeedInFile(false);
-			c.setUnsavedTrue();
+//			c.setUnsavedTrue();					// 12335 : 2016-10-03
+			c.setTrackStatusTo( true);
 		}
 		try {
 			//newDoc.getCourses().get(0).setFilepath(filename);

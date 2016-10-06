@@ -110,6 +110,9 @@ import com.henriquemalheiro.trackit.business.utility.Connection;
 import com.henriquemalheiro.trackit.business.utility.ConnectionProperties;
 import com.henriquemalheiro.trackit.business.utility.TrackItPreferences;
 import com.henriquemalheiro.trackit.business.utility.Utilities;
+import com.henriquemalheiro.trackit.presentation.event.Event;
+import com.henriquemalheiro.trackit.presentation.event.EventManager;
+import com.henriquemalheiro.trackit.presentation.event.EventPublisher;
 import com.henriquemalheiro.trackit.presentation.task.Action;
 import com.henriquemalheiro.trackit.presentation.task.Task;
 import com.henriquemalheiro.trackit.presentation.utilities.ImageUtilities;
@@ -125,7 +128,8 @@ import com.miguelpernas.trackit.business.common.JoinOptions;
 import com.miguelpernas.trackit.presentation.JoinSpeedOptions;
 import com.pg58406.trackit.business.db.Database;
 
-public class PreferencesDialog extends JDialog {
+public class PreferencesDialog extends JDialog implements EventPublisher {
+													// 12335: 2016-07-18: implements EventPublisher
 	private static final long serialVersionUID = -2244160308153565900L;
 
 	private static final String APPLICATION_PREFERENCES = "Application Preferences";
@@ -418,12 +422,20 @@ public class PreferencesDialog extends JDialog {
 				"preferencesDialog.applicationPreferences.utm"));
 		coordinatesFormat.add( btnUTM);
 		
+		final JRadioButton btnMGRS = new JRadioButton( getMessage( 
+				"preferencesDialog.applicationPreferences.mgrs"));
+		btnMGRS.setActionCommand(getMessage( 
+				"preferencesDialog.applicationPreferences.mgrs"));
+		coordinatesFormat.add( btnMGRS);
+		
 		if ( initialType == CoordinatesType.DECIMAL_DEGREES )
 			btnDecimalDegrees.setSelected( true);
 		else if ( initialType == CoordinatesType.UTM )
 			btnUTM.setSelected( true);
 		else if ( initialType == CoordinatesType.DEGREES_MINUTES_SECONDS )
 			btnDegreesMinutesSeconds.setSelected( true);
+		else if ( initialType == CoordinatesType.MGRS )
+			btnMGRS.setSelected( true);
 		else
 			btnDegreesDecimalMinutes.setSelected( true);
 		
@@ -471,6 +483,8 @@ public class PreferencesDialog extends JDialog {
 					selected = CoordinatesType.UTM;
 				else if ( btnDegreesDecimalMinutes.isSelected() )
 					selected = CoordinatesType.DEGREES_DECIMAL_MINUTES;
+				else if ( btnMGRS.isSelected() )
+					selected = CoordinatesType.MGRS;
 				else
 					selected = CoordinatesType.DEGREES_MINUTES_SECONDS;
 				preferencesToApply.add( new PreferenceTask() {
@@ -482,6 +496,8 @@ public class PreferencesDialog extends JDialog {
 								null,
 								Constants.GlobalPreferences.COORDINATES, 
 								selected.valueOf());
+						EventManager.getInstance().publish(
+								PreferencesDialog.this, Event.COORDINATES_TYPE_CHANGED, null);
 					}
 				});
 			}
@@ -490,6 +506,7 @@ public class PreferencesDialog extends JDialog {
 		btnDegreesDecimalMinutes.addFocusListener( adapter);
 		btnDegreesMinutesSeconds.addFocusListener( adapter);
 		btnUTM.addFocusListener( adapter);
+		btnMGRS.addFocusListener( adapter);
 		
 		JLabel lblCoordinatesLabel = new JLabel(
 				"<html><br>&nbsp;<br>" +
@@ -506,7 +523,8 @@ public class PreferencesDialog extends JDialog {
 				.addComponent( btnDecimalDegrees)
 				.addComponent( btnDegreesDecimalMinutes)
 				.addComponent( btnDegreesMinutesSeconds)
-				.addComponent( btnUTM));
+				.addComponent( btnUTM)
+				.addComponent( btnMGRS));
 
 		layout.setVerticalGroup(layout.createSequentialGroup()
 				.addComponent(lblTitle)
@@ -517,7 +535,8 @@ public class PreferencesDialog extends JDialog {
 				.addComponent( btnDecimalDegrees)
 				.addComponent( btnDegreesDecimalMinutes)
 				.addComponent( btnDegreesMinutesSeconds)
-				.addComponent( btnUTM));
+				.addComponent( btnUTM)
+				.addComponent( btnMGRS));
 
 		return panel;
 	}
@@ -973,6 +992,11 @@ public class PreferencesDialog extends JDialog {
 		});
 
 		return spinner;
+	}
+	
+	// 2016-09-14: 12335
+	public String toString() {
+		return Messages.getMessage( "preferencesDialog.title");
 	}
 
 	private JPanel createJoinPreferencesPanel() {

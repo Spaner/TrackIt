@@ -55,6 +55,7 @@ import com.miguelpernas.trackit.business.operation.UndoManagerCustom;
 import com.pg58406.trackit.business.utility.AboutDialog;
 
 class ApplicationMenu {
+	private JMenu    subMenuReverse;				//12335: 2016-07-26
 	private JMenuBar applicationMenu;
 	private JMenuItem importMenu;
 	private JMenuItem exportMenu;
@@ -110,6 +111,7 @@ class ApplicationMenu {
 		importMenu.setEnabled(singleItem);
 		exportMenu.setEnabled(singleItem && (items.get(0).isActivity() || items.get(0).isCourse() || items.get(0) instanceof GPSDocument));
 		splitAtSelectedMenu.setEnabled(singleItem && items.get(0) instanceof Trackpoint && items.get(0).getParent().isCourse());
+		subMenuReverse.setEnabled(singleItem && items.get(0).isCourse());	//12335:2016-07-26
 		reverseMenu.setEnabled(singleItem && items.get(0).isCourse());
 		returnCourseMenu.setEnabled(singleItem && items.get(0).isCourse());
 		splitIntoSegmentsMenu.setEnabled(singleItem && items.get(0).isCourse());
@@ -189,6 +191,7 @@ class ApplicationMenu {
 		JCheckBoxMenuItem chkMenuItem;
 		KeyStroke keyStroke;
 		int accelerator;
+		String tooltip;
 
 		applicationMenu = new JMenuBar();
 		setUp(applicationMenu);
@@ -200,63 +203,47 @@ class ApplicationMenu {
 		
 		menuItem = new JMenuItem(getMessage("applicationPanel.menu.newDocument"), KeyEvent.VK_N);
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.newDocumentAccelerator")).getKeyCode();
+		tooltip = getMessage("applicationPanel.menu.newDocumentDescription"); //12335: 2016-07-30
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		menuItem.setAccelerator(keyStroke);
-		menuItem.getAccessibleContext().setAccessibleDescription("Creates a new document.");
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		menuItem.setToolTipText( tooltip);									//12335: 2016-07-30
 		menuItem.setActionCommand(MenuActionType.NEW_DOCUMENT.name());
 		menuItem.addActionListener(handler);
 		menu.add(menuItem);
 		
 		menuItem = new JMenuItem(getMessage("applicationPanel.menu.openDocument"), KeyEvent.VK_O);
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.openDocumentAccelerator")).getKeyCode();
+		tooltip = getMessage("applicationPanel.menu.openDocumentDescription"); //12335: 2016-07-30
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		menuItem.setAccelerator(keyStroke);
-		menuItem.getAccessibleContext().setAccessibleDescription("Opens an existing document.");
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		menuItem.setToolTipText( tooltip);									//12335: 2016-07-30
 		menuItem.setActionCommand(MenuActionType.OPEN_DOCUMENT.name());
 		menuItem.addActionListener(handler);
 		menu.add(menuItem);
 		
 		menu.addSeparator();
-		
-		newCourseMenu = new JMenuItem(getMessage("applicationPanel.menu.newCourse"), KeyEvent.VK_N);
-		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.newCourseAccelerator")).getKeyCode();
-		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
-		newCourseMenu.setAccelerator(keyStroke);
-		newCourseMenu.getAccessibleContext().setAccessibleDescription("Adds a new course.");
-		newCourseMenu.setActionCommand(MenuActionType.NEW_COURSE.name());
-		newCourseMenu.addActionListener(handler);
-		newCourseMenu.setEnabled(false);
-		menu.add(newCourseMenu);
-		
-		menu.addSeparator();
-		//58406#############################################################################################
-		pictureMenu = new JMenuItem(getMessage("applicationPanel.menu.importPicture"), KeyEvent.VK_F);
-		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.importPictureAccelerator")).getKeyCode();
-		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
-		pictureMenu.setAccelerator(keyStroke);
-		pictureMenu.getAccessibleContext().setAccessibleDescription("Import photographs");
-		pictureMenu.setActionCommand(MenuActionType.IMPORT_PICTURE.name());
-		pictureMenu.addActionListener(handler);
-		pictureMenu.setEnabled(false);
-		menu.add(pictureMenu);
-		
-		menu.addSeparator();
 		//##################################################################################################
 		importMenu = new JMenuItem(getMessage("applicationPanel.menu.import"), KeyEvent.VK_I);
+		tooltip = getMessage("applicationPanel.menu.importDescription"); //12335: 2016-07-30
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.importAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		importMenu.setAccelerator(keyStroke);
-		importMenu.getAccessibleContext().setAccessibleDescription("Import a course or activity");
+		importMenu.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		importMenu.setToolTipText( tooltip);									//12335: 2016-07-30
 		importMenu.setActionCommand(MenuActionType.IMPORT_DOCUMENT.name());
 		importMenu.addActionListener(handler);
 		importMenu.setEnabled(false);
 		menu.add(importMenu);
 		//58406#############################################################################################
 		exportMenu = new JMenuItem(getMessage("applicationPanel.menu.export"), KeyEvent.VK_E);
+		tooltip = getMessage("applicationPanel.menu.exportDescription"); //12335: 2016-07-30
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.exportAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		exportMenu.setAccelerator(keyStroke);
-		exportMenu.getAccessibleContext().setAccessibleDescription("Import a course or activity");
+		exportMenu.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		exportMenu.setToolTipText( tooltip);									//12335: 2016-07-30
 		exportMenu.setActionCommand(MenuActionType.EXPORT_DOCUMENT.name());
 		exportMenu.addActionListener(handler);
 		exportMenu.setEnabled(false);
@@ -286,9 +273,69 @@ class ApplicationMenu {
 //		menuItem.add()
 
 		//58406#############################################################################################
+
 		menu.addSeparator();
+		
+		//12335: 2016-07-30
+		menuItem = new JMenuItem(getMessage("applicationPanel.menu.closeDocument"), KeyEvent.VK_C);
+		tooltip = getMessage("applicationPanel.menu.closeDocumentDescription");
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.closeDocumentAccelerator")).getKeyCode();
+		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		menuItem.setAccelerator(keyStroke);
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip);
+		menuItem.setToolTipText( tooltip);
+		menuItem.setActionCommand(MenuActionType.CLOSE_DOCUMENT.name());
+		menuItem.addActionListener(handler);
+		menu.add(menuItem);
+		
+		//12335: 2016-07-30
+		menuItem = new JMenuItem(getMessage("applicationPanel.menu.closeAllDocuments"), KeyEvent.VK_C);
+		tooltip = getMessage("applicationPanel.menu.closeAllDocumentsDescription");
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.closeAllDocumentsAccelerator")).getKeyCode();
+		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		menuItem.setAccelerator(keyStroke);
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip);
+		menuItem.setToolTipText( tooltip);
+		menuItem.setToolTipText(getMessage("applicationPanel.menu.closeAllDocumentsDescription"));
+		menuItem.setActionCommand(MenuActionType.CLOSE_ALL_DOCUMENTS.name());
+		menuItem.addActionListener(handler);
+		menu.add(menuItem);
+		
+		menu.addSeparator();
+		
+		newCourseMenu = new JMenuItem(getMessage("applicationPanel.menu.newCourse"), KeyEvent.VK_N);
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.newCourseAccelerator")).getKeyCode();
+		tooltip = getMessage("applicationPanel.menu.newCourseDescription"); //12335: 2016-07-30
+		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		newCourseMenu.setAccelerator(keyStroke);
+		newCourseMenu.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		newCourseMenu.setToolTipText( tooltip);									//12335: 2016-07-30
+		newCourseMenu.setActionCommand(MenuActionType.NEW_COURSE.name());
+		newCourseMenu.addActionListener(handler);
+		newCourseMenu.setEnabled(false);
+		menu.add(newCourseMenu);
+		
+		menu.addSeparator();
+		
+		//58406#############################################################################################
+		pictureMenu = new JMenuItem(getMessage("applicationPanel.menu.importPicture"), KeyEvent.VK_F);
+		tooltip = getMessage("applicationPanel.menu.importPictureDescription"); //12335: 2016-07-30
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.importPictureAccelerator")).getKeyCode();
+		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+		pictureMenu.setAccelerator(keyStroke);
+		pictureMenu.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		pictureMenu.setToolTipText( tooltip);									//12335: 2016-07-30
+		pictureMenu.setActionCommand(MenuActionType.IMPORT_PICTURE.name());
+		pictureMenu.addActionListener(handler);
+		pictureMenu.setEnabled(false);
+		menu.add(pictureMenu);
+		
+		menu.addSeparator();
+
 		menuItem = new JMenuItem(getMessage("applicationPanel.menu.restart"));
-		menuItem.getAccessibleContext().setAccessibleDescription("Restart the application");
+		tooltip = getMessage("applicationPanel.menu.restartDescription"); 	//12335: 2016-07-30
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip); //12335: 2016-07-30
+		menuItem.setToolTipText( tooltip);									//12335: 2016-07-30
 		menuItem.setActionCommand(MenuActionType.RESTART.name());
 		menuItem.addActionListener(handler);
 		menu.add(menuItem);	
@@ -315,20 +362,24 @@ class ApplicationMenu {
 		
 		//< ---------------------------------57421------------------------------------->
 		undoMenu = new JMenuItem(getMessage("applicationPanel.menu.undo"), KeyEvent.VK_U);
+		tooltip = getMessage( "applicationPanel.menu.undoDescription");	//12335: 2016-07-31
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.undoAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		undoMenu.setAccelerator(keyStroke);
-		undoMenu.getAccessibleContext().setAccessibleDescription("Undo the last performed operation.");
+		undoMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-07-31
+		undoMenu.setToolTipText( tooltip); 									//12335: 2016-07-31
 		undoMenu.setActionCommand(MenuActionType.UNDO.name());
 		undoMenu.addActionListener(handler);
 		undoMenu.setEnabled(false);
 		menu.add(undoMenu);
 		
 		redoMenu = new JMenuItem(getMessage("applicationPanel.menu.redo"), KeyEvent.VK_Y);
+		tooltip = getMessage( "applicationPanel.menu.redoDescription");	//12335: 2016-07-31
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.redoAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		redoMenu.setAccelerator(keyStroke);
-		redoMenu.getAccessibleContext().setAccessibleDescription("Redo the last undone operation.");
+		redoMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-07-31
+		redoMenu.setToolTipText( tooltip); 									//12335: 2016-07-31
 		redoMenu.setActionCommand(MenuActionType.REDO.name());
 		redoMenu.addActionListener(handler);
 		redoMenu.setEnabled(false);
@@ -348,10 +399,12 @@ class ApplicationMenu {
         menu.addSeparator();*/
 		
 		copyMenu = new JMenuItem(getMessage("applicationPanel.menu.copy"), KeyEvent.VK_C);
+		tooltip = getMessage( "applicationPanel.menu.copyDescription");	//12335: 2016-07-31
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.copyAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		copyMenu.setAccelerator(keyStroke);
-		copyMenu.getAccessibleContext().setAccessibleDescription("Copies the selected course.");
+		copyMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		copyMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		copyMenu.setActionCommand(MenuActionType.COPY.name());
 		copyMenu.addActionListener(handler);
 		copyMenu.setEnabled(false);
@@ -360,117 +413,164 @@ class ApplicationMenu {
 		menu.addSeparator();
 		
 		splitAtSelectedMenu = new JMenuItem(getMessage("applicationPanel.menu.splitAtSelected"), KeyEvent.VK_S);
+		tooltip = getMessage( "applicationPanel.menu.splitAtSelectedDescription");	//12335: 2016-07-31
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.splitAtSelectedAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		splitAtSelectedMenu.setAccelerator(keyStroke);
-		splitAtSelectedMenu.getAccessibleContext().setAccessibleDescription("Splits a course at the selected trackpoint.");
+		splitAtSelectedMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		splitAtSelectedMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		splitAtSelectedMenu.setActionCommand(MenuActionType.SPLIT_AT_SELECTED.name());
 		splitAtSelectedMenu.addActionListener(handler);
 		splitAtSelectedMenu.setEnabled(false);
 		menu.add(splitAtSelectedMenu);
 		
 		joinMenu = new JMenuItem(getMessage("applicationPanel.menu.join"), KeyEvent.VK_J);
+		tooltip = getMessage( "applicationPanel.menu.joinDescription");	//12335: 2016-07-31
 		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.joinAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		joinMenu.setAccelerator(keyStroke);
+		joinMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		joinMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		joinMenu.getAccessibleContext().setAccessibleDescription("Joins two or more courses.");
 		joinMenu.setActionCommand(MenuActionType.JOIN.name());
 		joinMenu.addActionListener(handler);
 		joinMenu.setEnabled(false);
 		menu.add(joinMenu);
 		
-		reverseMenu = new JMenuItem(getMessage("applicationPanel.menu.reverse"), KeyEvent.VK_R);
-		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.reverseAccelerator")).getKeyCode();
+		//12335: 2016-07-26
+		subMenuReverse = new JMenu(getMessage("applicationPanel.menu.reverse"));
+		menu.add( subMenuReverse);
+
+		
+		reverseMenu = new JMenuItem(getMessage("applicationPanel.menu.reverseCourse"), KeyEvent.VK_R);
+		tooltip = getMessage( "applicationPanel.menu.reverseCourseDescription");	//12335: 2016-07-31
+		accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.reverseCourseAccelerator")).getKeyCode();
 		keyStroke = KeyStroke.getKeyStroke(accelerator, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		reverseMenu.setAccelerator(keyStroke);
-		reverseMenu.getAccessibleContext().setAccessibleDescription("Reverses the track.");
+		reverseMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		reverseMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		reverseMenu.setActionCommand(MenuActionType.REVERSE.name());
 		reverseMenu.addActionListener(handler);
 		reverseMenu.setEnabled(false);
-		menu.add(reverseMenu);
+//		menu.add(reverseMenu);
+		subMenuReverse.add(reverseMenu);							//12335: 2016-07-26
 		
 		returnCourseMenu = new JMenuItem(getMessage("applicationPanel.menu.returnCourse"));
+		tooltip = getMessage( "applicationPanel.menu.returnCourseDescription");	//12335: 2016-07-31
 		//accelerator = KeyStroke.getKeyStroke(getMessage("applicationPanel.menu.reverseAccelerator")).getKeyCode();
 		//keyStroke = KeyStroke.getKeyStroke(null, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		//returnCourseMenu.setAccelerator(keyStroke);
-		returnCourseMenu.getAccessibleContext().setAccessibleDescription("Creates a return course.");
+		returnCourseMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		returnCourseMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		returnCourseMenu.setActionCommand(MenuActionType.RETURN.name());
 		returnCourseMenu.addActionListener(handler);
 		returnCourseMenu.setEnabled(false);
-		menu.add(returnCourseMenu);
+//		menu.add(returnCourseMenu);
+		subMenuReverse.add(returnCourseMenu);						//12335: 2016-07-26
 		
 		JMenu viewMenu = new JMenu(getMessage("applicationPanel.menu.view"));
+		tooltip = getMessage( "applicationPanel.menu.viewDescription");		//12335: 2016-08-02
 		viewMenu.setMnemonic(KeyEvent.VK_V);
-		viewMenu.getAccessibleContext().setAccessibleDescription("The view menu");
+		viewMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		viewMenu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		applicationMenu.add(viewMenu);
 		
 		menu = new JMenu(getMessage("applicationPanel.menu.showView"));
+		tooltip = getMessage( "applicationPanel.menu.showViewDescription");	//12335: 2016-08-02
 		menu.setMnemonic(KeyEvent.VK_S);
-		menu.getAccessibleContext().setAccessibleDescription("The show view submenu");
+		menu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		menu.setToolTipText( tooltip); 									//12335: 2016-08-02
 		viewMenu.add(menu);
 		
 		boolean showFolder = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_FOLDER, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showFolder"), showFolder);
+		tooltip = getMessage( "applicationPanel.menu.showFolderDescription");//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_F);
-		chkMenuItem.setActionCommand(MenuActionType.SHOW_FOLDER.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		boolean showSummary = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_SUMMARY, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showSummary"), showSummary);
+		tooltip = getMessage( "applicationPanel.menu.showSummaryDescription");	//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_S);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_SUMMARY.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		boolean showMap = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_MAP, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showMap"), showMap);
+		tooltip = getMessage( "applicationPanel.menu.showMapDescription");	//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_M);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_MAP.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		boolean showChart = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_CHART, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showChart"), showChart);
+		tooltip = getMessage( "applicationPanel.menu.showChartDescription");//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_G);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_CHART.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		boolean showTable = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_DATA, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showData"), showTable);
+		tooltip = getMessage( "applicationPanel.menu.showDataDescription");//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_T);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_TABLE.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		boolean showLog = TrackIt.getPreferences().getBooleanPreference(Constants.PrefsCategories.GLOBAL, null, Constants.GlobalPreferences.SHOW_LOG, true);
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showLog"), showLog);
+		tooltip = getMessage( "applicationPanel.menu.showLogDescription");//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_L);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_LOG.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		menu.add(chkMenuItem);
 		
 		viewMenu.addSeparator();
 		
 		chkMenuItem = new JCheckBoxMenuItem(getMessage("applicationPanel.menu.showGridlines"), false);
+		tooltip = getMessage( "applicationPanel.menu.showGridlinesDescription");//12335: 2016-08-02
 		chkMenuItem.setMnemonic(KeyEvent.VK_G);
 		chkMenuItem.setActionCommand(MenuActionType.SHOW_GRIDLINES.name());
+		chkMenuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-02
+		chkMenuItem.setToolTipText( tooltip); 									//12335: 2016-08-02
 		chkMenuItem.addActionListener(handler);
 		viewMenu.add(chkMenuItem);
 		
 		menu = new JMenu(getMessage("applicationPanel.menu.tools"));
 		menu.setMnemonic(KeyEvent.VK_T);
-		menu.getAccessibleContext().setAccessibleDescription("The tools menu");
+		tooltip = getMessage( "applicationPanel.menu.toolsDescription");//12335: 2016-08-03
+		menu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		menu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		applicationMenu.add(menu);
 		
-		subMenu = new JMenu( "Climbs & Descents");
+		subMenu = new JMenu( getMessage("applicationPanel.menu.climbsAndDescents"));
+		tooltip = getMessage( "applicationPanel.menu.climbsAndDescentsDescription");//12335: 2016-08-03
+		subMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		subMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		menu.add( subMenu);
 		
 		detectClimbsDescentsMenu = new JMenuItem(getMessage("applicationPanel.menu.detectClimbsAndDescents"), KeyEvent.VK_D);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_D, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		detectClimbsDescentsMenu.setAccelerator(keyStroke);
-		detectClimbsDescentsMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.detectClimbsAndDescents.description"));
+		tooltip = getMessage( "applicationPanel.menu.detectClimbsAndDescentsDescription");//12335: 2016-08-03
+		detectClimbsDescentsMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		detectClimbsDescentsMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		detectClimbsDescentsMenu.setActionCommand(MenuActionType.DETECT_CLIMBS_AND_DESCENTS.name());
 		detectClimbsDescentsMenu.addActionListener(handler);
 		detectClimbsDescentsMenu.setEnabled(false);
@@ -480,7 +580,9 @@ class ApplicationMenu {
 		markingMenu = new JMenuItem(getMessage("applicationPanel.menu.marking"), KeyEvent.VK_M);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_M, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		markingMenu.setAccelerator(keyStroke);
-		markingMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.marking.description"));
+		tooltip = getMessage( "applicationPanel.menu.markingDescription");//12335: 2016-08-03
+		markingMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		markingMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		markingMenu.setActionCommand(MenuActionType.MARKING.name());
 		markingMenu.addActionListener(handler);
 		markingMenu.setEnabled(false);
@@ -490,7 +592,9 @@ class ApplicationMenu {
 		colorGradingMenu = new JMenuItem(getMessage("applicationPanel.menu.colorGrading"), KeyEvent.VK_L);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_L, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		colorGradingMenu.setAccelerator(keyStroke);
-		colorGradingMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.colorGradingDescription"));
+		tooltip = getMessage( "applicationPanel.menu.colorGradingDescription");//12335: 2016-08-03
+		colorGradingMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		colorGradingMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		colorGradingMenu.setActionCommand(MenuActionType.COLOR_GRADING.name());
 		colorGradingMenu.addActionListener(handler);
 		colorGradingMenu.setEnabled(false);
@@ -500,7 +604,9 @@ class ApplicationMenu {
 		setPaceMenu = new JMenuItem(getMessage("applicationPanel.menu.setPace"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_P, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()+ KeyEvent.SHIFT_DOWN_MASK);
 		setPaceMenu.setAccelerator(keyStroke);
-		setPaceMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.markClimbsAndDescents.description"));
+		tooltip = getMessage( "applicationPanel.menu.setPaceDescription");//12335: 2016-08-03
+		setPaceMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		setPaceMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		setPaceMenu.setActionCommand(MenuActionType.SET_PACE.name());
 		setPaceMenu.addActionListener(handler);
 		setPaceMenu.setEnabled(false);
@@ -509,7 +615,9 @@ class ApplicationMenu {
 		consolidationMenu = new JMenuItem(getMessage("applicationPanel.menu.consolidation"), KeyEvent.VK_C);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_C, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		consolidationMenu.setAccelerator(keyStroke);
-		consolidationMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.consolidation.description"));
+		tooltip = getMessage( "applicationPanel.menu.consolidationDescription");//12335: 2016-08-03
+		consolidationMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		consolidationMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		consolidationMenu.setActionCommand(MenuActionType.CONSOLIDATION.name());
 		consolidationMenu.addActionListener(handler);
 		consolidationMenu.setEnabled(false);
@@ -518,19 +626,26 @@ class ApplicationMenu {
 		simplificationMenu = new JMenuItem(getMessage("applicationPanel.menu.simplification"), KeyEvent.VK_S);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		simplificationMenu.setAccelerator(keyStroke);
-		simplificationMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.simplification.description"));
+		tooltip = getMessage( "applicationPanel.menu.simplificationDescription");//12335: 2016-08-03
+		simplificationMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		simplificationMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		simplificationMenu.setActionCommand(MenuActionType.SIMPLIFICATION.name());
 		simplificationMenu.addActionListener(handler);
 		simplificationMenu.setEnabled(false);
 		menu.add(simplificationMenu);
 		
 		subMenu = new JMenu(getMessage("applicationPanel.menu.pauses"));
+		tooltip = getMessage( "applicationPanel.menu.pausesDescription");	//12335: 2016-08-03
+		subMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		subMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		menu.add( subMenu);
 		
 		detectPausesMenu = new JMenuItem(getMessage("applicationPanel.menu.detectPauses"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_D, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		detectPausesMenu.setAccelerator(keyStroke);
-		detectPausesMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.detectPauses.description"));
+		tooltip = getMessage( "applicationPanel.menu.detectPausesDescription");//12335: 2016-08-03
+		detectPausesMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		detectPausesMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		detectPausesMenu.setActionCommand(MenuActionType.DETECT_PAUSES.name());
 		detectPausesMenu.addActionListener(handler);
 		detectPausesMenu.setEnabled(false);
@@ -543,7 +658,9 @@ class ApplicationMenu {
 		addPauseMenu = new JMenuItem(getMessage("applicationPanel.menu.addPause"), KeyEvent.VK_A);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_A, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		addPauseMenu.setAccelerator(keyStroke);
-		addPauseMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.addPause.description"));
+		tooltip = getMessage( "applicationPanel.menu.addPauseDescription");//12335: 2016-08-03
+		addPauseMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		addPauseMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		addPauseMenu.setActionCommand(MenuActionType.ADD_PAUSE.name());
 		addPauseMenu.addActionListener(handler);
 		addPauseMenu.setEnabled(false);
@@ -553,7 +670,9 @@ class ApplicationMenu {
 		changePauseDurationMenu = new JMenuItem(getMessage("applicationPanel.menu.changePause"), KeyEvent.VK_C);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_A, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		changePauseDurationMenu.setAccelerator(keyStroke);
-		changePauseDurationMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.changePause.description"));
+		tooltip = getMessage( "applicationPanel.menu.changePauseDescription");//12335: 2016-08-03
+		changePauseDurationMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		changePauseDurationMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		changePauseDurationMenu.setActionCommand(MenuActionType.CHANGE_PAUSE_DURATION.name());
 		changePauseDurationMenu.addActionListener(handler);
 		changePauseDurationMenu.setEnabled(false);
@@ -563,7 +682,9 @@ class ApplicationMenu {
 		removePauseMenu = new JMenuItem(getMessage("applicationPanel.menu.removePause"), KeyEvent.VK_R);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		removePauseMenu.setAccelerator(keyStroke);
-		removePauseMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.removePause.description"));
+		tooltip = getMessage( "applicationPanel.menu.removePauseDescription");//12335: 2016-08-03
+		removePauseMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		removePauseMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		removePauseMenu.setActionCommand(MenuActionType.REMOVE_PAUSE.name());
 		removePauseMenu.addActionListener(handler);
 		removePauseMenu.setEnabled(false);
@@ -573,7 +694,9 @@ class ApplicationMenu {
 		removePausesMenu = new JMenuItem(getMessage("applicationPanel.menu.removePauses"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_P, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.ALT_DOWN_MASK);
 		removePausesMenu.setAccelerator(keyStroke);
-		removePausesMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.removePauses.description"));
+		tooltip = getMessage( "applicationPanel.menu.removePausesDescription");//12335: 2016-08-03
+		removePausesMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		removePausesMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		removePausesMenu.setActionCommand(MenuActionType.REMOVE_PAUSES.name());
 		removePausesMenu.addActionListener(handler);
 		removePausesMenu.setEnabled(false);
@@ -583,12 +706,17 @@ class ApplicationMenu {
 		menu.addSeparator();
 		
 		subMenu = new JMenu( getMessage( "applicationPanel.menu.segments"));
+		tooltip = getMessage( "applicationPanel.menu.segmentsDescription");//12335: 2016-08-03
+		subMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		subMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		menu.add( subMenu);
 		
 		createSegmentMenu = new JMenuItem(getMessage("applicationPanel.menu.createSegment"), KeyEvent.VK_G);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_G, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		createSegmentMenu.setAccelerator(keyStroke);
-		createSegmentMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.createSegmentDescription"));
+		tooltip = getMessage( "applicationPanel.menu.createSegmentDescription");//12335: 2016-08-03
+		createSegmentMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		createSegmentMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		createSegmentMenu.setActionCommand(MenuActionType.CREATE_SEGMENT.name());
 		createSegmentMenu.addActionListener(handler);
 		createSegmentMenu.setEnabled(false);
@@ -598,7 +726,9 @@ class ApplicationMenu {
 		splitIntoSegmentsMenu = new JMenuItem(getMessage("applicationPanel.menu.splitIntoSegments"), KeyEvent.VK_S);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		splitIntoSegmentsMenu.setAccelerator(keyStroke);
-		splitIntoSegmentsMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.splitIntoSegmentsDescription"));
+		tooltip = getMessage( "applicationPanel.menu.splitIntoSegmentsDescription");//12335: 2016-08-03
+		splitIntoSegmentsMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		splitIntoSegmentsMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		splitIntoSegmentsMenu.setActionCommand(MenuActionType.SPLIT_INTO_SEGMENTS.name());
 		splitIntoSegmentsMenu.addActionListener(handler);
 		splitIntoSegmentsMenu.setEnabled(false);
@@ -608,7 +738,9 @@ class ApplicationMenu {
 		compareSegmentsMenu = new JMenuItem(getMessage("applicationPanel.menu.compareSegments"), KeyEvent.VK_C);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_C, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		compareSegmentsMenu.setAccelerator(keyStroke);
-		compareSegmentsMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.compareSegmentsDescription"));
+		tooltip = getMessage( "applicationPanel.menu.compareSegmentsDescription");//12335: 2016-08-03
+		compareSegmentsMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		compareSegmentsMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		compareSegmentsMenu.setActionCommand(MenuActionType.COMPARE_SEGMENTS.name());
 		compareSegmentsMenu.addActionListener(handler);
 		compareSegmentsMenu.setEnabled(false);
@@ -617,10 +749,12 @@ class ApplicationMenu {
 		
 		menu.addSeparator();
 		
-		testMenu = new JMenuItem("Test", KeyEvent.VK_J);
+		testMenu = new JMenuItem( getMessage( "applicationPanel.menu.test"), KeyEvent.VK_J);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_J, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		testMenu.setAccelerator(keyStroke);
-		testMenu.getAccessibleContext().setAccessibleDescription("placeholder");
+		tooltip = getMessage( "applicationPanel.menu.testDescription");		//12335: 2016-08-03
+		testMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		testMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		testMenu.setActionCommand(MenuActionType.TEST.name());
 		testMenu.addActionListener(handler);
 		testMenu.setEnabled(false);
@@ -630,7 +764,9 @@ class ApplicationMenu {
 		autoLocatePicturesMenu = new JMenuItem(getMessage("applicationPanel.menu.autoLocatePictures"), KeyEvent.VK_P);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_L, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK);
 		autoLocatePicturesMenu.setAccelerator(keyStroke);
-		autoLocatePicturesMenu.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.autoLocatePictures.description"));
+		tooltip = getMessage( "applicationPanel.menu.autoLocatePicturesDescription");//12335: 2016-08-03
+		autoLocatePicturesMenu.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		autoLocatePicturesMenu.setToolTipText( tooltip); 									//12335: 2016-08-03
 		autoLocatePicturesMenu.setActionCommand(MenuActionType.AUTO_LOCATE_PICTURES.name());
 		autoLocatePicturesMenu.addActionListener(handler);
 		autoLocatePicturesMenu.setEnabled(false);
@@ -639,7 +775,9 @@ class ApplicationMenu {
 		menuItem = new JMenuItem(getMessage("applicationPanel.menu.altitudeSmoothing"), KeyEvent.VK_A);
 		keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_A, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 		menuItem.setAccelerator(keyStroke);
-		menuItem.getAccessibleContext().setAccessibleDescription(getMessage("applicationPanel.menu.altitudeSmoothing.description"));
+		tooltip = getMessage( "applicationPanel.menu.altitudeSmoothingDescription");//12335: 2016-08-03
+		menuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+		menuItem.setToolTipText( tooltip); 									//12335: 2016-08-03
 		menuItem.setActionCommand(MenuActionType.ALTITUDE_SMOOTHING.name());
 		menuItem.addActionListener(handler);
 		menuItem.setEnabled(false);
@@ -650,7 +788,9 @@ class ApplicationMenu {
 			menuItem = new JMenuItem(getMessage("applicationPanel.menu.preferences"), KeyEvent.VK_P);
 			keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_P, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
 			menuItem.setAccelerator(keyStroke);
-			menuItem.getAccessibleContext().setAccessibleDescription("Manage the user preferences");
+			tooltip = getMessage( "applicationPanel.menu.preferencesDescription");//12335: 2016-08-03
+			menuItem.getAccessibleContext().setAccessibleDescription( tooltip);	//12335: 2016-08-03
+			menuItem.setToolTipText( tooltip); 									//12335: 2016-08-03
 			menuItem.setActionCommand(MenuActionType.MENU_PREFERENCES.name());
 			menuItem.addActionListener(handler);
 			menu.add(menuItem);

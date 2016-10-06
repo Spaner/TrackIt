@@ -98,6 +98,7 @@ import com.pg58406.trackit.business.operation.PauseDetectionOperation;
 import com.pg58406.trackit.business.operation.PauseDetectionPicCaseOperation;
 import com.pg58406.trackit.business.utility.PhotoPlacer;
 import com.pg58406.trackit.business.utility.PhotoPlacerBreadthFirst;
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.jb12335.trackit.business.utilities.SaveTools;
 
 public class ApplicationPanel extends JPanel implements EventPublisher, EventListener {
@@ -652,8 +653,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher, EventLis
 	private void showPreferencesDialog() {
 		//int width = 644;
 		//int height = 368;
-		int width = 470;
-		int height = 470;
+		int width = 725;
+		int height = 500;
 		PreferencesDialog preferencesDialog;
 		if(selectedItems.get(0).isCourse()){
 			preferencesDialog = new PreferencesDialog(TrackIt.getApplicationFrame(), (Course) selectedItems.get(0));
@@ -1151,7 +1152,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher, EventLis
 				placer.EstimateLocation(a.getTrackpoints());
 			} else if (item.isCourse()) {
 				Course c = (Course) item;
-				boolean b = c.getUnsavedChanges();
+//				boolean b = c.getUnsavedChanges();			// 12335 : 2016-10-03
+				TrackStatus prevStatus = new TrackStatus( c.getStatus());
 				if (c.getPauses().isEmpty()) {
 					new PauseDetectionPicCaseOperation().process(c);
 					// HashMap<String, Object> options = new HashMap<String,
@@ -1166,7 +1168,8 @@ public class ApplicationPanel extends JPanel implements EventPublisher, EventLis
 				PhotoPlacer placer = new PhotoPlacerBreadthFirst(c.getPictures(), c.getPauses(),
 						c.getDocumentItemName());
 				placer.EstimateLocation(c.getTrackpoints());
-				c.setUnsavedChanges(b);
+//				c.setUnsavedChanges(b);						// 12335 : 2016-10-03
+				c.setStatus( prevStatus);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

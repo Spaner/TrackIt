@@ -23,6 +23,8 @@ package com.henriquemalheiro.trackit.presentation;
 enum MenuActionType {
 	NEW_DOCUMENT,
 	OPEN_DOCUMENT,
+	CLOSE_DOCUMENT,				// 12335: 2015-09-23
+	CLOSE_ALL_DOCUMENTS,		// 12335: 2015-09-23
 	IMPORT_DOCUMENT,
 	EXPORT_DOCUMENT,//58406
 	IMPORT_PICTURE,//58406

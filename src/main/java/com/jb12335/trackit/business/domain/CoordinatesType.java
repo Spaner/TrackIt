@@ -2,6 +2,9 @@
  * This file is part of Track It!.
  * Copyright (C) 2016 João Brisson Lopes
  * 
+ * Updated 2016-09-13 by J Brisson Lopes: 
+ *                  support for MGRS coordinates
+ * 
  * TrackIt! is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -24,7 +27,8 @@ public enum CoordinatesType {
 	DECIMAL_DEGREES         ((short) 0),
 	DEGREES_DECIMAL_MINUTES ((short) 1),
 	DEGREES_MINUTES_SECONDS ((short) 2),
-	UTM                     ((short) 3);
+	UTM                     ((short) 3),
+	MGRS                    ((short) 4);
 	
 	private short value;
 	
@@ -49,7 +53,8 @@ public enum CoordinatesType {
 		"coordinatesType.decimalDegrees",	
 		"coordinatesType.degreesDecimalMinutes",	
 		"coordinatesType.degreesMinutesSeconds",	
-		"coordinatesType.utm"	
+		"coordinatesType.utm",
+		"coordinatesType.mgrs"
 	};
 
 	@Override

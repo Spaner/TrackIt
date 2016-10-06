@@ -40,4 +40,35 @@ public class WGS84 {
 	 * computation.
 	 */
 	public static final double INVERSEFLATTENING = 298.257223563;
+	
+	// 12335: 2016-07-17
+	/**
+	 * First eccentricity
+	 */
+	
+	public static final double FIRSTECCENTRICITY2 = 0.006694380004260827;
+	
+	/**
+	 *  Second eccentricity
+	 */
+
+	public static final double SECONDECCENTRICITY2 = 0.006739496756586903;
+
+	/**
+	 * The UTM projection scale factor
+	 */
+	public static final double K0 = 0.9996;
+
+	/**
+	 * The UTM projection false easting and northing values.
+	 */
+	public static final double FALSEEASTING =         500000.;
+	public static final double FALSENORTHINGNORTH =        0.;
+	public static final double FALSENORTHINGSOUTH = 10000000.;
+	
+	/**
+	 * The UTM projection central latitude
+	 */
+	public static final double CENTRALLATITUDE = 0.;
+
 }

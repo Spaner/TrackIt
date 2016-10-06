@@ -58,6 +58,7 @@ import com.henriquemalheiro.trackit.business.domain.Waypoint;
 import com.henriquemalheiro.trackit.business.exception.TrackItException;
 import com.henriquemalheiro.trackit.business.utility.Utilities;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.bingmaps.elevation.Elevation;
+import com.jb12335.trackit.business.domain.TrackStatus;
 
 public class ConsolidationOperation extends OperationBase implements Operation {
 	private enum MissingDataField {
@@ -187,9 +188,11 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 	private void processCourses(List<Course> courses) throws TrackItException {
 		boolean unsaved;
 		for (Course course : courses) {
-			unsaved = course.getUnsavedChanges();
+//			unsaved = course.getUnsavedChanges();		// 12335 : 2016-10-03
+			TrackStatus status = new TrackStatus( course.getStatus());
 			process(course);
-			course.setUnsavedChanges(unsaved);
+//			course.setUnsavedChanges(unsaved);			// 12335 : 2016-10-03
+			course.setStatus( status);
 		}
 	}
 

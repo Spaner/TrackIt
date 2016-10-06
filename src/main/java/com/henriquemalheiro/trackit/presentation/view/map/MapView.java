@@ -368,7 +368,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
 		imageURL = MapView.class.getResource("/icons/selection_mode_16.png");
         selectButton = new JToggleButton();
         selectButton.setActionCommand("Selection Mode");
-        selectButton.setToolTipText("Selection Mode");
+        selectButton.setToolTipText( Messages.getMessage( "mapView.tooltip.selectionMode")); //12335: 2016-08-08
         selectButton.setFocusable(false);
         selectButton.setSelected(true);
         selectButton.addActionListener(new ActionListener() {
@@ -390,7 +390,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
 		imageURL = MapView.class.getResource("/icons/pencil.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("Edit Mode");
-        toggleButton.setToolTipText("Edit Mode");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.editMode"));	//12335: 2016-08-08
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -411,7 +411,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/animation_mode_16.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("Animation Mode");
-        toggleButton.setToolTipText("Animation Mode");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.animationMode"));	//12335: 2016-08-08
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent e) {
@@ -433,7 +433,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/global-search-icon.png");
         areaButton = new JToggleButton();
         areaButton.setActionCommand("Select Area Mode");
-        areaButton.setToolTipText("Select Area Mode");
+        areaButton.setToolTipText( Messages.getMessage( "mapView.tooltip.selectAreaMode"));	//12335: 2016-08-08
         areaButton.setFocusable(false);
         areaButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -455,7 +455,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/comparison_icon.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("View Multiple Tracks");
-        toggleButton.setToolTipText("View Multiple Tracks");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.simultaneousTracksDisplay"));	//12335: 2016-08-08
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -478,7 +478,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/mapLegend.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("Map Legend");
-        toggleButton.setToolTipText("Map Legend");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.showMapLegend")); //12335: 2016-08-08
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -502,7 +502,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/smooth_16.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("Simplification");
-        toggleButton.setToolTipText("Simplification");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.simplification"));	//12335: 2016-08-08
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -540,7 +540,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/zoom_reset.png");
         button = new JButton();
         button.setActionCommand("Zoom to Item");
-        button.setToolTipText( Messages.getMessage( "button.description.zoomToItem"));
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.zoomToItem"));	//12335: 2016-08-08 
         button.setFocusable( false);
         button.addActionListener(  new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -555,7 +555,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/zoom_out.png");
         button = new JButton();
         button.setActionCommand("ZoomOut");
-        button.setToolTipText("Zoom Out");
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.zoomOut"));	//12335: 2016-08-08
         button.setFocusable(false);
         button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -568,7 +568,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/custom_zoom.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("CustomZoom");
-        toggleButton.setToolTipText("Custom Zoom");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.customZoom"));	//12335: 2016-08-10
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -591,7 +591,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/arrow_left.png");
         button = new JButton();
         button.setActionCommand("PanLeft");
-        button.setToolTipText("Pan Left");
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.panLeft"));	//12335: 2016-08-10
         button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				map.pan(PanDirection.RIGHT, DEFAULT_PAN_AMOUNT);
@@ -607,7 +607,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/arrow_right.png");
         button = new JButton();
         button.setActionCommand("PanRight");
-        button.setToolTipText("Pan Right");
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.panRight"));	//12335: 2016-08-10
         button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				map.pan(PanDirection.LEFT, DEFAULT_PAN_AMOUNT);
@@ -623,7 +623,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/arrow_up.png");
         button = new JButton();
         button.setActionCommand("PanUp");
-        button.setToolTipText("Pan Up");
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.panUp"));	//12335: 2016-08-10
         button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				map.pan(PanDirection.UP, DEFAULT_PAN_AMOUNT);
@@ -639,7 +639,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/arrow_down.png");
         button = new JButton();
         button.setActionCommand("PanDown");
-        button.setToolTipText("Pan Down");
+        button.setToolTipText( Messages.getMessage( "mapView.tooltip.panDown"));	//12335: 2016-08-10
         button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				map.pan(PanDirection.DOWN, DEFAULT_PAN_AMOUNT);
@@ -736,7 +736,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
 		
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("ShowCoursePoints");
-        toggleButton.setToolTipText("Show Course Points");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.showCoursePoints"));	//12335: 2016-08-10
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -754,7 +754,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("ShowLapMarkers");
-        toggleButton.setToolTipText("Show Lap Markers");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.showLapMarkers"));	//12335: 2016-08-10
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -772,7 +772,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("ShowStartFinish");
-        toggleButton.setToolTipText("Show Start/Finish");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.showStartFinish"));	//12335: 2016-08-10
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -791,7 +791,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
         imageURL = MapView.class.getResource("/icons/pink_pin_24.png");
         toggleButton = new JToggleButton();
         toggleButton.setActionCommand("ShowWaypoints");
-        toggleButton.setToolTipText("Show Waypoints");
+        toggleButton.setToolTipText( Messages.getMessage( "mapView.tooltip.showWaypoints"));	//12335: 2016-08-10
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -900,7 +900,7 @@ public class MapView extends JPanel implements EventListener, EventPublisher {
 	
 	@Override
 	public String toString() {
-		return Messages.getMessage("view.map.name");
+		return Messages.getMessage("view.mapview.name");
 	}
 	
 	

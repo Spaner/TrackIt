@@ -110,7 +110,8 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayer;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.RoutingType;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.TransportMode;
-import com.jb12335.trackit.business.utilities.ChangesSemaphore;
+//import com.jb12335.trackit.business.utilities.ChangesSemaphore;		//12335: 2016-10-03
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.jb12335.trackit.presentation.utilities.SportSelectionDialog;
 import com.miguelpernas.trackit.business.common.JoinOptions;
 import com.miguelpernas.trackit.business.operation.ColorGradingOperation;
@@ -449,7 +450,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		GPSDocument document = null;
 		
 		if ( mode == ReadMode.OPEN)
-			ChangesSemaphore.Disable();
+//			ChangesSemaphore.Disable();		//12335: 2016-10-03
+			TrackStatus.disableChanges();
 		
 		for( File file: files ) {
 			String documentFilename = file.getAbsolutePath();
@@ -485,7 +487,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			for ( Activity a: document.getActivities() ) {
 				a.setFilepath(documentFilename);
 				if (mode == ReadMode.IMPORT ) {
-					a.setUnsavedTrue();
+//					a.setUnsavedTrue();			// 12335 : 2016-10-03
+					a.setTrackStatusTo( true);
 				}
 //				setSportsAtLoadTime( a);
 				if ( ! setSportAtLoadTime( a) )
@@ -501,7 +504,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				Course c = iterator.next();
 				c.setFilepath(documentFilename);
 				if ( mode == ReadMode.IMPORT )
-					c.setUnsavedTrue();
+//					c.setUnsavedTrue();				// 12335 : 2016-10-03
+					c.setTrackStatusTo( true);
 //				setSportsAtLoadTime( c);
 				if ( ! setSportAtLoadTime( c) )
 					tracksWithoutSport.put( c, false);
@@ -551,7 +555,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				
 		// Turn to green the changes semaphore 
 		if ( mode == ReadMode.OPEN )
-			ChangesSemaphore.Enable();
+//			ChangesSemaphore.Enable();		//12335:2016-10-03
+			TrackStatus.enableChanges();
 		
 		if ( targetFolder != getFolder(FOLDER_LIBRARY) ) {
 		selectDocumentsFirstItem(selectedDocument);
@@ -629,7 +634,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 	// So far, looks for documents with incomplete GPSFiles entries (IsActivity=-1)
 	// and fixes their entries	
 	private void correctAnomalies( GPSDocument document) {
-//		database.correctTracksWithInterimIsActivityValue(document);
+		database.correctTracksWithInterimIsActivityValue(document);
 	}
 
 
@@ -922,7 +927,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Course> courses = (List<Course>) result;
 				for (Course course : courses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();			// 12335 : 2016-10-03
+					course.setTrackStatusTo( true);
 				}
 
 				masterDocument.remove(course);
@@ -986,7 +992,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			@Override
 			public void done(Object result) {
 				course.publishUpdateEvent(null);
-				course.setUnsavedTrue();
+//				course.setUnsavedTrue();			// 12335 : 2016-10-03
+				course.setTrackStatusTo( true);
 			}
 		}).execute();
 	}
@@ -1696,7 +1703,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Course> courses = (List<Course>) result;
 				for (Course course : courses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();			// 12335 : 2016-10-03
+					course.setTrackStatusTo( true);
 				}
 
 				/* undo */
@@ -1777,7 +1785,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Course> courses = (List<Course>) result;
 				for (Course course : courses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();			// 12335 : 2016-10-03
+					course.setTrackStatusTo( true);
 				}
 
 				/* undo */
@@ -2125,7 +2134,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.SUMMARY);
 		new ConsolidationOperation(options).process(document);
-		course.setUnsavedTrue();
+//		course.setUnsavedTrue();			// 12335 : 2016-10-03
+		course.setTrackStatusTo( true);
 
 		/* undo */
 		if (addToUndoManager && !options.get(Constants.SetPaceOperation.METHOD).equals(SetPaceMethod.SMART_PACE)) {
@@ -2465,6 +2475,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	@Override
 	public void process(Event event, DocumentItem item) {
+		if ( event.equals(Event.COORDINATES_TYPE_CHANGED) )
+			return;
 		boolean differentCourses = false;
 		if (item instanceof Folder) {
 			selectedFolder = (Folder) item;
@@ -2845,7 +2857,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 		Objects.requireNonNull(course);
 		SportType sport = course.getSport();
 		if(sport.equals(SportType.SAILING)){
-			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(), Messages.getMessage("colorGrading.message.unsupportedSport"),
+			JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(), 
+										  Messages.getMessage("colorGrading.message.unsupportedSport"),
 					Messages.getMessage("applicationPanel.title.warning"),
 			        JOptionPane.WARNING_MESSAGE);
 
@@ -2888,7 +2901,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 			public void done(Object result) {
 				Course finalCourse = (Course) result;
 				finalCourse.setParent(masterDocument);
-				finalCourse.setUnsavedTrue();
+//				finalCourse.setUnsavedTrue();
+				finalCourse.setTrackStatusTo( true);
 				masterDocument.remove(course);
 				masterDocument.add(finalCourse);
 				masterDocument.publishUpdateEvent(null);
@@ -2965,7 +2979,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Course> courses = (List<Course>) result;
 				for (Course course : courses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();			// 12335 : 2016-10-03
+					course.setTrackStatusTo( true);
 				}
 
 				// undo
@@ -3053,7 +3068,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 				List<Course> courses = (List<Course>) result;
 				for (Course course : courses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();
+					course.setTrackStatusTo( true);
 				}
 				// undo
 				if (addToUndoManager) {
@@ -3813,7 +3829,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				for (Course course : newCourses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();
+					course.setTrackStatusTo( true);
 				}
 
 				masterDocument.remove(course);
@@ -4024,7 +4041,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 				for (Course course : newCourses) {
 					course.setParent(masterDocument);
-					course.setUnsavedTrue();
+//					course.setUnsavedTrue();			// 12335 : 2016-10-03
+					course.setTrackStatusTo( true);
 				}
 
 				masterDocument.remove(course);

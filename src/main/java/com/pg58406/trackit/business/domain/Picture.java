@@ -20,6 +20,8 @@ package com.pg58406.trackit.business.domain;
 
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -36,8 +38,8 @@ import com.henriquemalheiro.trackit.presentation.event.EventManager;
 import com.henriquemalheiro.trackit.presentation.event.EventPublisher;
 import com.henriquemalheiro.trackit.presentation.view.folder.FolderTreeItem;
 import com.pg58406.trackit.business.db.Database;
-import com.pg58406.trackit.business.utility.MetadataReader;
-import com.pg58406.trackit.business.utility.MetadataWriter;
+import com.jb12335.trackit.business.utilities.MetadataReader;
+import com.jb12335.trackit.business.utilities.MetadataWriter;
 
 public class Picture extends MultimediaItem implements DocumentItem, FolderTreeItem{
 
@@ -51,14 +53,16 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 	private PhotoContainer container;
 	private String containerFilePath;
 	private ImageIcon icon;
-	private boolean geotagged;	
+	private boolean geotagged;
+	//12335: 2016-09-29
+	private int orientation;
 
 	public Picture(File file, double mpLatitude, double mpLongitude, double mpAltitude, PhotoContainer container){
 		super();
 		try {
 			this.geotagged = true;
 			this.image = ImageIO.read(file);
-			this.icon = getIcon(16, 16);
+//			this.icon = getIcon(16, 16);
 			MetadataReader reader = new MetadataReader(file.getAbsolutePath());
 			this.latitude = reader.getLatitude();
 			this.longitude = reader.getLongitude();
@@ -69,12 +73,20 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 			}
 			this.altitude = reader.getAltitude();
 			this.altitude = mpAltitude;
-			this.timestamp = reader.getDate();
+//			this.timestamp = reader.getDate(); 		//2016-09-19: 12335
+			this.timestamp = getTimestamp( reader);
 			this.name = file.getName();
 			this.filePath = file.getCanonicalPath();
 			this.container = container;
 			this.containerFilePath = container.getFilepath();
+			//12335: 2016-09-29
+			this.orientation = reader.getOrientation();
+			if ( orientation != 1 )
+				image = applyExifOrientation( image, orientation);
+			this.icon = getIcon(36, 36);
+			
 			Database.getInstance().updatePicture(this);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -127,9 +139,23 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 	public void setAltitude(Double altitude) {
 		this.altitude = altitude;
 	}
-
+	
 	public Date getTimestamp() {
 		return timestamp;
+	}
+
+	//12335: 2016-09-25: looks for the picture's timestamp in the following order
+	/* 	  i) GPS date and time
+	 *	 ii) original datetime
+	 *  iii) modified datetime
+	 */
+	private Date getTimestamp( MetadataReader reader) {
+		Date date = reader.getGPSDateTimestamp();
+		if ( date == null )
+			date = reader.getOriginalTimestamp();
+		if ( date == null )
+			date = reader.getLastUpdatedTimestamp();
+		return date;
 	}
 
 	public void setTimestamp(Date timestamp) {
@@ -148,6 +174,11 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 		return container;
 	}
 	
+	//12335: 2016-09-29
+	public ImageIcon getIcon() {
+		return icon;
+	}
+		
 	@Override
 	public void publishSelectionEvent(EventPublisher publisher) {
 		EventManager.getInstance().publish(publisher, Event.PICTURE_SELECTED, this);
@@ -187,26 +218,87 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 	@Override
 	public ImageIcon getLeafIcon() {
 		return icon;
-	}	
+	}
 	
-	public ImageIcon getIcon(double boundWidth, double boundHeight) {
+	//12335: 2016-09-29: Apply Exif orientation to image so that it display upright
+	static BufferedImage applyExifOrientation( BufferedImage original, int exifOrientation) {
+		if ( exifOrientation != 1 ) {
+			AffineTransform transform = new AffineTransform();
+			switch ( exifOrientation ) {
+			case 2:  	// flip x
+				transform.scale( -1., 1.);
+				transform.translate( -original.getWidth(), 0.);
+				break;
+			case 3:		// rotate PI
+				transform.translate( original.getWidth(), original.getHeight());
+				transform.rotate( Math.PI);
+				break;
+			case 4:		// flip y
+				transform.scale( 1., -1.);
+				transform.translate( 0., original.getHeight());
+				break;
+			case 5:		// rotate -PI/2, flip y
+				transform.rotate( -Math.PI / 2.);
+				transform.scale( -1, 1.);
+				break;
+			case 6:		// rotate -PI/2, -width
+				transform.translate( original.getHeight(), 0);
+				transform.rotate( Math.PI/2);
+				break;
+			case 7:		//rotate PI/2, flip
+				transform.scale( -1., 1.);
+				transform.translate( -original.getHeight(), 0.);
+				transform.translate( 0., original.getWidth());
+				transform.rotate( 3 * Math.PI / 2);
+				break;
+			case 8:		// rotate PI/2
+				transform.translate( 0, original.getWidth());
+				transform.rotate( 3 * Math.PI / 2);
+				break;
+			default:
+				break;
+			}
+			AffineTransformOp transformOp = new AffineTransformOp( transform,
+					                                               AffineTransformOp.TYPE_BILINEAR);
+			BufferedImage destination = new BufferedImage( original.getHeight(), original.getWidth(),
+					                                       original.getType());
+			destination = transformOp.filter( original, destination);
+			return destination;
+		}
+		return original;
+	}
+	
+//	public ImageIcon getIcon(double boundWidth, double boundHeight) {
+	private ImageIcon getIcon(double boundWidth, double boundHeight) {
+		
+		//12335: 2016-09-29: icons keep picture's aspect ratio
+		//                   icons' smaller dimension is always 36 pixels
 		double width= image.getWidth();
-		double origPicWidth = image.getWidth();
+//		double origPicWidth = image.getWidth();
 		double height = image.getHeight();
-		double origPicHeight = image.getHeight();
-		if (width >= boundWidth) {
-			// scale width to fit
-			width = boundWidth;
-			// scale height to maintain aspect ratio
-			height = (width * height) / origPicWidth;
-		}
-
-		if (origPicHeight >= boundHeight) {
-			// scale height to fit instead
+//		double origPicHeight = image.getHeight();
+		if ( width >= height ) {
+			width  = boundHeight * width / height;
 			height = boundHeight;
-			// scale width to maintain aspect ratio
-			width = (height * origPicWidth) / origPicHeight;
 		}
+		else {
+			height = boundWidth * height / width;
+			width  = boundWidth;
+		}
+//		if (width >= boundWidth) {
+//			// scale width to fit
+//			width = boundWidth;
+//			// scale height to maintain aspect ratio
+//			height = (width * height) / origPicWidth;
+//		}
+//		System.out.println( "width, oWidth, height, oHeight: " + width + "  " + origPicWidth + "  " + height + "  " + origPicHeight);
+//
+//		if (origPicHeight >= boundHeight) {
+//			// scale height to fit instead
+//			height = boundHeight;
+//			// scale width to maintain aspect ratio
+//			width = (height * origPicWidth) / origPicHeight;
+//		}
 
 		BufferedImage resized = new BufferedImage((int)width, (int)height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = resized.createGraphics();

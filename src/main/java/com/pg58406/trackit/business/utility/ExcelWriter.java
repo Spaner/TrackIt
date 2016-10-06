@@ -1,6 +1,7 @@
 /*
  * This file is part of Track It!.
  * Copyright (C) 2015 Pedro Gomes
+ * Copyright (C) 2016 J M Brisson Lopes
  * 
  * TrackIt! is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +22,13 @@ package com.pg58406.trackit.business.utility;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+
 import jxl.Workbook;
 import jxl.write.DateFormat;
 import jxl.write.DateTime;
+import jxl.write.Label;
+import jxl.write.Number;
+import jxl.write.NumberFormat;
 import jxl.write.WritableCellFormat;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
@@ -35,14 +40,16 @@ public class ExcelWriter {
 	private WritableSheet sheet;
 	private DateFormat customDateFormat;
 	WritableCellFormat dateFormat;
+	private static WritableCellFormat coordinatesFormat =		//12335: 2016-09-29
+										new WritableCellFormat( new NumberFormat( "#0.00000000"));
 	
 	public ExcelWriter(String inputFile){
-		customDateFormat = new DateFormat ("hh:mm:ss");
+//		customDateFormat = new DateFormat ("hh:mm:ss");			//12335: 2016-09-29
+		customDateFormat = new DateFormat ("HH:mm:ss");
 		dateFormat = new WritableCellFormat (customDateFormat);
 		try {
 			workbook = Workbook.createWorkbook(new File(inputFile));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		sheet = workbook.createSheet("Times", 0); 
@@ -53,7 +60,36 @@ public class ExcelWriter {
 		try {
 			sheet.addCell(label);
 		} catch (WriteException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	//12335: 2016-09-29
+	public void writeString( int column, int row, String string) {
+		try {
+			Label txt = new Label( column, row, string);
+			sheet.addCell( txt);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	//12335: 2016-09-29
+	public void writeDouble( int column, int row, double value) {
+		try {
+			Number val = new Number( column, row, value);
+			sheet.addCell( val);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	//12335: 2016-09-29
+	public void writeCoordinate( int column, int row, double value) {
+		try {
+			Number val = new Number( column, row, value, coordinatesFormat);
+			sheet.addCell( val);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -63,7 +99,6 @@ public class ExcelWriter {
 			workbook.write();
 			workbook.close();
 		} catch (WriteException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

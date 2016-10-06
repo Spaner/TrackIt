@@ -50,8 +50,11 @@ import javax.swing.OverlayLayout;
 
 import org.apache.log4j.Logger;
 
+import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.DocumentManager;
+import com.henriquemalheiro.trackit.business.common.Constants;
 import com.henriquemalheiro.trackit.business.common.Location;
+import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.common.Pair;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.DocumentItem;
@@ -66,8 +69,10 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayerType;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProvider;
 import com.henriquemalheiro.trackit.presentation.view.map.provider.MapProviderType;
 import com.pg58406.trackit.presentation.view.map.layer.PhotoLayer;
+import com.jb12335.trackit.business.domain.CoordinatesFormatter;
 
 public class Map extends JPanel {
+											// 12335: 2017-07-18: implements EventListener
 	private static final long serialVersionUID = 3892478944440491076L;
 	
 	public static enum CursorType {DRAGGABLE, DRAGGING, TARGET}; 
@@ -88,6 +93,9 @@ public class Map extends JPanel {
 	private List<DocumentItem> items;
 	
 	private static Logger logger = Logger.getLogger(Map.class.getName());
+	
+	//12335: 2016-07-21
+	private static CoordinatesFormatter coordinatesFormatter = CoordinatesFormatter.getInstance();
 	
 	public Map(MapProvider mapProvider) {
 		this.mapProvider = mapProvider;
@@ -136,7 +144,7 @@ public class Map extends JPanel {
 		
 		refresh();
 	}
-	
+		
 	public MapProvider getMapProvider() {
 		return mapProvider;
 	}
@@ -486,47 +494,59 @@ public class Map extends JPanel {
 	
 	private class InfoPanel extends JPanel {
 		private static final long serialVersionUID = 1L;
-		JLabel latitude;
-		JLabel longitude;
+		//12335: 2016-07-21
+//		JLabel latitude;
+//		JLabel longitude;
+		JLabel pointerLocation;
 		JLabel zoom;
 		JLabel x;
 		JLabel y;
-		JLabel centerLatitude;
-		JLabel centerLongitude;
+		//12335: 2016-07-21
+//		JLabel centerLatitude;
+//		JLabel centerLongitude;
+		JLabel centerLocation;
 
 		public InfoPanel() {
 			setOpaque(false);
 			setLayout(new FlowLayout(FlowLayout.LEFT));
 
-			JLabel latitudeLabel = createLabel("Latitude: ");
-			latitude = createLabel("---");
-			JLabel longitudeLabel = createLabel("Longitude: ");
-			longitude = createLabel("---");
+			//12335: 2016-07-21
+//			JLabel latitudeLabel = createLabel("Latitude: ");
+//			latitude = createLabel("---");
+//			JLabel longitudeLabel = createLabel("Longitude: ");
+//			longitude = createLabel("---");
+			pointerLocation = createLabel( "---");
 			JLabel zoomLabel = createLabel("Zoom: ");
 			zoom = createLabel("---");
 			JLabel xLabel = createLabel("X: ");
 			x = createLabel("---");
 			JLabel yLabel = createLabel("Y: ");
 			y = createLabel("---");
-			JLabel centerLatitudeLabel = createLabel("Center Latitude: ");
-			centerLatitude = createLabel("---");
-			JLabel centerLongitudeLabel = createLabel("Center Longitude: ");
-			centerLongitude = createLabel("---");
+			//12335: 2016-07-21
+//			JLabel centerLatitudeLabel = createLabel("Center Latitude: ");
+//			centerLatitude = createLabel("---");
+//			JLabel centerLongitudeLabel = createLabel("Center Longitude: ");
+//			centerLongitude = createLabel("---");
+			centerLocation = createLabel( "---");
 			
-			add(latitudeLabel);
-			add(latitude);
-			add(longitudeLabel);
-			add(longitude);
+			//12335: 2016-07-21
+//			add(latitudeLabel);
+//			add(latitude);
+//			add(longitudeLabel);
+//			add(longitude);
+			add( pointerLocation);
 			add(zoomLabel);
 			add(zoom);
 			add(xLabel);
 			add(x);
 			add(yLabel);
 			add(y);
-			add(centerLatitudeLabel);
-			add(centerLatitude);
-			add(centerLongitudeLabel);
-			add(centerLongitude);
+			//12335: 2016-07-21
+//			add(centerLatitudeLabel);
+//			add(centerLatitude);
+//			add(centerLongitudeLabel);
+//			add(centerLongitude);
+			add( centerLocation);
 		}
 		
 		private JLabel createLabel(String text) {
@@ -536,15 +556,22 @@ public class Map extends JPanel {
 			return label;
 		}
 		
+		//12335: 2016-07-21
 		public void update(MapInfo mapInfo) {
-			NumberFormat nb = new DecimalFormat("0.000000");
-			this.longitude.setText(mapInfo.getPointerLongitude() != null ? nb.format(mapInfo.getPointerLongitude()) : "---");
-			this.latitude.setText(mapInfo.getPointerLatitude() != null ? nb.format(mapInfo.getPointerLatitude()) : "---");
+//			NumberFormat nb = new DecimalFormat("0.000000");
+//			this.longitude.setText(mapInfo.getPointerLongitude() != null ? nb.format(mapInfo.getPointerLongitude()) : "---");
+//			this.latitude.setText(mapInfo.getPointerLatitude() != null ? nb.format(mapInfo.getPointerLatitude()) : "---");
+			pointerLocation.setText( coordinatesFormatter.toString( 
+					mapInfo.getPointerLatitude(),
+					mapInfo.getPointerLongitude(), ""));
 			this.zoom.setText(mapInfo.getZoom() != null ? mapInfo.getZoom().toString() : "---");
 			this.x.setText(mapInfo.getPointerX() != null ? mapInfo.getPointerX().toString() : "---");
 			this.y.setText(mapInfo.getPointerY() != null ? mapInfo.getPointerY().toString() : "---");
-			this.centerLongitude.setText(mapInfo.getCenterLongitude() != null ? nb.format(mapInfo.getCenterLongitude()) : "---");
-			this.centerLatitude.setText(mapInfo.getCenterLatitude() != null ? nb.format(mapInfo.getCenterLatitude()) : "---");
+//			this.centerLongitude.setText(mapInfo.getCenterLongitude() != null ? nb.format(mapInfo.getCenterLongitude()) : "---");
+//			this.centerLatitude.setText(mapInfo.getCenterLatitude() != null ? nb.format(mapInfo.getCenterLatitude()) : "---");
+			centerLocation.setText( coordinatesFormatter.toString( 
+					mapInfo.getCenterLatitude(), 
+					mapInfo.getCenterLongitude(), "Center"));
 		}
 	}
 	
@@ -572,5 +599,10 @@ public class Map extends JPanel {
 	
 	public void clearItems(){
 		items.clear();
+	}
+	
+	//12335: 2016-07-19
+	public String toString() {
+		return Messages.getMessage( "view.map.name");
 	}
 }

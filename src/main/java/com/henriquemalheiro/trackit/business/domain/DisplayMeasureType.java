@@ -23,7 +23,8 @@ import com.henriquemalheiro.trackit.business.common.Messages;
 
 public enum DisplayMeasureType {
 	METRIC((short) 0),
-	STATUTE((short) 1);
+	STATUTE((short) 1),
+	NAUTICAL((short) 2);  //12335: 2016-07-24
 	
 	private short value;
 	
@@ -35,7 +36,9 @@ public enum DisplayMeasureType {
 		return value;
 	}
 	
-	private static final String[] messageCodes = {"displayMeasureType.metric", "displayMeasureType.statute"};
+	private static final String[] messageCodes = {"displayMeasureType.metric",
+												  "displayMeasureType.statute",
+												  "displayMeasureType.nautical"}; //12335:2016-07-24
 	
 	public static DisplayMeasureType lookup(short value) {
 		for (DisplayMeasureType displayMeasure : values()) {

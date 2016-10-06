@@ -53,7 +53,8 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayer;
 import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayerType;
 import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainter;
 import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainterFactory;
-import com.jb12335.trackit.business.utilities.ChangesSemaphore;
+//import com.jb12335.trackit.business.utilities.ChangesSemaphore;		//12335: 2016-10-03
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.pg58406.trackit.business.common.ColorSchemeV2;
 import com.pg58406.trackit.business.common.ColorSchemeV2Container;
 import com.pg58406.trackit.business.db.Database;
@@ -125,6 +126,7 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	private Double southwestLongitude;
 	private GPSDocument parent;
 	private boolean unsavedChanges;					// 58406
+	private TrackStatus trackStatus;				// 12335: 2016-10-03
 	private boolean synchronizeWithDB;				// 12335: 2016-06-16
 	private String filepath;						// 58406
 	private List<Pause> pauses;						// 58406
@@ -183,19 +185,20 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	
 	private void initialize() {
 
-		laps = new ArrayList<Lap>();
-		tracks = new ArrayList<Track>();
-		trackpoints = new EventList<Trackpoint>(new ArrayList<Trackpoint>());
-		coursePoints = new EventList<CoursePoint>(new ArrayList<CoursePoint>());
-		segments = new ArrayList<TrackSegment>();
-		events = new ArrayList<Event>();
-		unsavedChanges = false;// 58406
-		synchronizeWithDB = false;			// 12335: 2016-06-16
-		filepath = null;// 58406
-		pauses = new ArrayList<Pause>();// 58406
-		pictures = new ArrayList<Picture>();// 58406
-		colorScheme = TrackIt.getDefaultColorScheme();// 58406
-		noSpeedInFile = true;//58406
+		laps              = new ArrayList<Lap>();
+		tracks            = new ArrayList<Track>();
+		trackpoints       = new EventList<Trackpoint>(new ArrayList<Trackpoint>());
+		coursePoints      = new EventList<CoursePoint>(new ArrayList<CoursePoint>());
+		segments          = new ArrayList<TrackSegment>();
+		events            = new ArrayList<Event>();
+//		unsavedChanges    = false;								// 58406
+		trackStatus       = new TrackStatus();					// 12335: 2016-10-03
+		synchronizeWithDB = false;								// 12335: 2016-06-16
+		filepath          = null;// 58406
+		pauses            = new ArrayList<Pause>();				// 58406
+		pictures          = new ArrayList<Picture>();			// 58406
+		colorScheme       = TrackIt.getDefaultColorScheme();	// 58406
+		noSpeedInFile     = true;//58406
 		
 		filename = null;
 	}
@@ -206,27 +209,23 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		return synchronizeWithDB;
 	}
 	
+	// 12335 : 2016-10-03 : support changes inquiry through TrackStatus
+	
+	public TrackStatus getStatus() {
+		return trackStatus;
+	}
+	
+	public void setStatus( TrackStatus status) {
+		trackStatus.setStatus( status);
+	}
+	
+	public void setTrackStatusTo( boolean status) {
+		if ( status )
+			trackStatus.setTrackAsChanged();
+	}
+	
 
 	// 58406###################################################################################
-
-	public boolean getUnsavedChanges() {
-		return unsavedChanges;
-	}
-
-	public boolean setUnsavedChanges(boolean changes) {
-		if ( ChangesSemaphore.IsEnabled() )
-			unsavedChanges = changes;
-		System.out.println("\nsetUnsavedChanges " + unsavedChanges + " for " + this.name);
-		return unsavedChanges;
-	}
-
-	public void setUnsavedTrue() {
-		setUnsavedChanges(true);
-	}
-
-	public void setUnsavedFalse() {
-		setUnsavedChanges(false);
-	}
 
 	public void setFilepath(String fullFilepath) {
 		this.filepath = fullFilepath;
@@ -742,12 +741,14 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void add(Lap lap) {
 		getLaps().add(lap);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void remove(Lap lap) {
 		getLaps().remove(lap);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public List<Track> getTracks() {
@@ -804,13 +805,15 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	public void add(Track track) {
 		getTracks().add(track);
 		((EventList<Trackpoint>) getTrackpoints()).addListener(track);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void remove(Track track) {
 		getTracks().remove(track);
 		((EventList<Trackpoint>) getTrackpoints()).removeListener(track);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	@Override
@@ -838,12 +841,14 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void add(TrackSegment segment) {
 		getSegments().add(segment);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void remove(TrackSegment segment) {
 		getSegments().remove(segment);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public List<Event> getEvents() {
@@ -992,17 +997,20 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void add(Trackpoint trackpoint) {
 		getTrackpoints().add(trackpoint);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void addTrackpoints(List<Trackpoint> trackpoints) {
 		getTrackpoints().addAll(trackpoints);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void remove(Trackpoint trackpoint) {
 		getTrackpoints().remove(trackpoint);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public List<CoursePoint> getCoursePoints() {
@@ -1041,17 +1049,20 @@ public class Course extends TrackItBaseType implements DocumentItem,
 
 	public void add(CoursePoint coursePoint) {
 		getCoursePoints().add(coursePoint);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void addCoursePoints(List<CoursePoint> coursePoints) {
 		getCoursePoints().addAll(coursePoints);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 
 	public void remove(CoursePoint coursePoint) {
 		getCoursePoints().remove(coursePoint);
-		setUnsavedTrue();// 58406
+//		setUnsavedTrue();// 58406	// 12335 : 2016-10-03 : using TrackStatus instead
+		trackStatus.setTrackAsChanged();
 	}
 	
 	//57421
@@ -1619,10 +1630,12 @@ public class Course extends TrackItBaseType implements DocumentItem,
 				Picture pic = new Picture(file, middle.getLatitude(), middle.getLongitude(), middle.getAltitude(), this);
 				pictures.add(pic);
 			}
+		System.out.println("LOADED ALL PICTURES");
 		refreshMap();
 		Collections.sort(pictures, new PictureComparator());
 		publishUpdateEvent(null);
-		setUnsavedTrue();
+//		setUnsavedTrue();					// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 	// 12335: 2015-10-02 end
 
@@ -1632,6 +1645,8 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		pictures.remove(pic);
 		refreshMap();
 		publishUpdateEvent(null);
+//		setUnsavedTrue();					// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 
 	// 12335: 2015-9-17 - Batch removal makes operation faster
@@ -1641,7 +1656,8 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		pictures.clear();
 		refreshMap();
 		publishUpdateEvent(null);
-		setUnsavedTrue();
+//		setUnsavedTrue();					// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 	// 12335: 2015-9-17 end
 	
@@ -1953,8 +1969,9 @@ public class Course extends TrackItBaseType implements DocumentItem,
 			course.setSouthwestLatitude(this.southwestLatitude);
 			course.setSouthwestLongitude(this.southwestLongitude);
 			course.setParent(this.parent);
-			course.setUnsavedChanges(this.unsavedChanges);
-			course.synchronizeWithDB = this.synchronizeWithDB;		//12335: 2016-06-16
+//			course.setUnsavedChanges(this.unsavedChanges);			// 12335 : 2016-10-03
+			course.setStatus( this.trackStatus);
+			course.synchronizeWithDB = this.synchronizeWithDB;		// 12335 : 2016-06-16
 			course.setFilepath(this.filepath);
 			course.setPauses(this.pauses);
 			course.setPictures(this.pictures);

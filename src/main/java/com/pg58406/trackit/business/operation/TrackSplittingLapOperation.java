@@ -61,7 +61,8 @@ public class TrackSplittingLapOperation extends OperationBase implements Operati
 		splitCourseAtSelectedTrackpoint(document);
 		
 		consolidate(course);
-		course.setUnsavedTrue();
+//		course.setUnsavedTrue();		// 12335 : 2016-10-03
+		course.getStatus().setTrackAsChanged();
 	}
 
 	@Override

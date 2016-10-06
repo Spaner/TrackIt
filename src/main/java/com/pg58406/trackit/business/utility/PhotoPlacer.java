@@ -21,13 +21,20 @@ package com.pg58406.trackit.business.utility;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
+
 import javax.swing.JOptionPane;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
 
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.common.Messages;
 import com.henriquemalheiro.trackit.business.domain.Trackpoint;
 import com.pg58406.trackit.business.domain.Pause;
 import com.pg58406.trackit.business.domain.Picture;
+
+import jxl.write.DateFormat;
 
 public abstract class PhotoPlacer {
 
@@ -93,6 +100,25 @@ public abstract class PhotoPlacer {
 		
 		if (n == 0) updatePicMetadata();
 		
+		//2016-09-17: 12335: temporary
+		File dir = new File( "XLS");
+		if ( !dir.exists() )
+			dir.mkdir();
+		String separator = java.nio.file.FileSystems.getDefault().getSeparator();
+		ExcelWriter eWriter = new ExcelWriter( "XLS" + separator + "Photos.xls");
+		int row = 0;
+		SimpleDateFormat utc = new SimpleDateFormat( "HH:mm:ss");
+		utc.setTimeZone( TimeZone.getTimeZone("UTC"));
+		for( Picture p: pictureList ) {
+			System.out.println( p.getName() + " " + p.getTimestamp() + "  " + p.getLatitude() + "  " + p.getLongitude());
+			eWriter.writeString( 0, row, p.getName());
+			eWriter.writeString( 1, row, utc.format( p.getTimestamp()));
+			eWriter.writeCoordinate( 2, row, p.getLatitude());
+			eWriter.writeCoordinate( 3, row, p.getLongitude());
+			eWriter.writeDouble( 4, row, p.getAltitude());
+			row++;
+		}
+		eWriter.close();
 	}
 	
 	protected void updatePicMetadata(){

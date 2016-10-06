@@ -25,10 +25,14 @@ public interface PhotoContainer {
 	
 	public List<Picture> getPictures();
 	
-	public void addPicture(File file);
+	public void addPictures(File[] files);			// 12335: 2015-10-03
+//	public void addPicture(File file);
 	
 	public void removePicture(Picture pic);
 	
+	// 12335: 2015-09-17 - to speed up operation and solve a bug
+	public void removePictures();
+
 	public String getFilepath();
 	
 	public String getName();

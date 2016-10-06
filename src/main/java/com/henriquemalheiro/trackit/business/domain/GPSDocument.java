@@ -35,7 +35,8 @@ import com.henriquemalheiro.trackit.presentation.task.ActionType;
 import com.henriquemalheiro.trackit.presentation.utilities.ImageUtilities;
 import com.henriquemalheiro.trackit.presentation.view.data.DataType;
 import com.henriquemalheiro.trackit.presentation.view.folder.FolderTreeItem;
-import com.jb12335.trackit.business.utilities.ChangesSemaphore;
+//import com.jb12335.trackit.business.utilities.ChangesSemaphore;		//12335: 2016-10-03
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.pg58406.trackit.business.db.Database;
 
 public class GPSDocument extends TrackItBaseType implements DocumentItem, FolderTreeItem {
@@ -81,7 +82,7 @@ public class GPSDocument extends TrackItBaseType implements DocumentItem, Folder
 	}
 
 	private boolean setChanged( boolean changed) {
-		if ( ChangesSemaphore.IsEnabled() )
+		if ( TrackStatus.changesAreEnabled() )
 			this.changed = changed;
 		System.out.println("\nSet document to " + this.changed + "  doc is " + this.getFileName());
 		return this.changed;
@@ -96,15 +97,17 @@ public class GPSDocument extends TrackItBaseType implements DocumentItem, Folder
 		System.out.println("Document has no changes\nChecking courses");
 		for( Course c: courses )
 		{
-			System.out.println("Checking course " + c.getName() + " - changed=" + c.getUnsavedChanges() + "  renamed=" +c.wasRenamed());
-			if ( c.getUnsavedChanges() || c.wasRenamed() )
+			System.out.println("Checking course " + c.getName() + " - changed=" + c.getStatus().trackWasChanged() + "  renamed=" +c.wasRenamed());
+//			if ( c.getUnsavedChanges() || c.wasRenamed() )
+			if ( c.getStatus().trackWasChanged() || c.wasRenamed() )
 				return true;
 		}
 		System.out.println("No courses were changed\nChecking activities");
 		for( Activity a: activities )
 		{
-			System.out.println("Checking activity " + a.getName() + " - changed=" + a.getUnsavedChanges() + "  renamed=" +a.wasRenamed());
-			if ( a.getUnsavedChanges() || a.wasRenamed() )
+			System.out.println("Checking activity " + a.getName() + " - changed=" + a.getStatus().trackWasChanged() + "  renamed=" +a.wasRenamed());
+//			if ( a.getUnsavedChanges() || a.wasRenamed() )
+			if ( a.getStatus().trackWasChanged() || a.wasRenamed() )
 				return true;
 		}
 		System.out.println("No activities were changed\nDocument needs no saves");

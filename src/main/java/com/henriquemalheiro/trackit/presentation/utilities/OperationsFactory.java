@@ -60,6 +60,7 @@ import com.miguelpernas.trackit.presentation.InputTimeDialog;
 import com.miguelpernas.trackit.presentation.SportDialog;
 import com.henriquemalheiro.trackit.presentation.task.Action;
 import com.henriquemalheiro.trackit.presentation.task.Task;
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.jb12335.trackit.presentation.utilities.SportSelectionDialog;
 import com.pg58406.trackit.business.db.Database;
 import com.pg58406.trackit.business.domain.Picture;
@@ -239,22 +240,49 @@ public class OperationsFactory {
 	}
 	
 	// 12335 : 2015-07-16
+	// 12335 : 2016-10-03 updated to support TrackStatus
 	private Operation createShowPropertiesOperation(final GPSDocument document) {
 		String group = getMessage("operation.group.docProperties");
 		String name = getMessage("operation.name.docProperties");
 		String description = getMessage("operation.description.docProperties", document.getName());
 		Runnable action = new Runnable() {
 			public void run() {
-				int na=0; int nc=0;
-				for(Activity a: document.getActivities())
-					if ( a.getUnsavedChanges())
-						na++;
-				for(Course c: document.getCourses())
-					if (c .getUnsavedChanges() )
-						nc++;
+//				int na=0; int nc=0;
+				TrackStatus stat;
+				int aTracks = 0, aPictures=0, aMovies=0, aNotes=0;
+				for(Activity a: document.getActivities()) {
+//					if ( a.getUnsavedChanges())
+//						na++;
+					stat = a.getStatus();
+					if ( stat.trackWasChanged() )
+						aTracks++;
+					if ( stat.picturesWereChanged() )
+						aPictures++;
+					if ( stat.moviesWereChanged() )
+						aMovies++;
+					if ( stat.notesWereChanged() )
+						aNotes++;
+				}
+				int cTracks=0, cPictures=0, cMovies=0, cNotes=0;
+				for(Course c: document.getCourses()) {
+//					if (c .getUnsavedChanges() )
+//						nc++;
+					stat = c.getStatus();
+					if ( stat.trackWasChanged() )
+						cTracks++;
+					if ( stat.picturesWereChanged() )
+						cPictures++;
+					if ( stat.moviesWereChanged() )
+						cMovies++;
+					if ( stat.notesWereChanged() )
+						cNotes++;
+				}
 				String status = "Document is dirty: " + document.getChanged() + " dirty activities " +
-						na + "(" + document.countActivities() + ")    dirty courses " +
-						nc + "(" + document.countCourses() +")";
+						aTracks + " " + aPictures + " " + aMovies+ " " + aNotes +
+						"(" + document.countActivities() + ")    dirty courses " +
+						cTracks + " " + cPictures + " " + cMovies + " " + cNotes +
+						"(" + document.countCourses() +")";
+				System.out.println( status);
 				String message = "";
 				File file = new File(document.getFileName());
 				if ( file.exists() ) {
@@ -935,9 +963,10 @@ public class OperationsFactory {
 						getMessage("operation.removePictures.confirm"),
 						getMessage("warning"), JOptionPane.YES_NO_OPTION);
 				if (result == JOptionPane.YES_OPTION) {
-					for (Picture picture : pictures.getPictures()){
-						picture.getContainer().removePicture(picture);
-					}
+					pictures.getPictures().get(0).getContainer().removePictures();
+//					for (Picture picture : pictures.getPictures()){
+//						picture.getContainer().removePicture(picture);
+//					}
 				}
 			}
 		};

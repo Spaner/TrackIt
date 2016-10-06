@@ -49,6 +49,7 @@ import com.henriquemalheiro.trackit.business.operation.ConsolidationLevel;
 import com.henriquemalheiro.trackit.business.operation.ConsolidationOperation;
 import com.henriquemalheiro.trackit.business.operation.Operation;
 import com.henriquemalheiro.trackit.business.operation.OperationBase;
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.pg58406.trackit.business.domain.Pause;
 
 public class PauseDetectionOperation extends OperationBase implements Operation {
@@ -171,17 +172,15 @@ public class PauseDetectionOperation extends OperationBase implements Operation 
 			if (item instanceof Course) {
 				Course c = (Course) item;
 				c.setPauses(pauses);
-				for(int ii=0;ii<trackLength;ii++)
-					System.out.println(ii + " $ " + trackpoints.get(ii).getTimeFromPrevious());			
 				try {
-					boolean unsaved = c.getUnsavedChanges();               // 12335 : 2015-07-18
+//					boolean unsaved = c.getUnsavedChanges();               // 12335 : 2015-07-18
+					TrackStatus status = new TrackStatus( c.getStatus());
 					new ConsolidationOperation(operationOptions).process(c);
-					c.setUnsavedChanges( unsaved);                         // 12335 : 2015-07-18
+//					c.setUnsavedChanges( unsaved);                         // 12335 : 2015-07-18
+					c.setStatus( status);
 				} catch (TrackItException e) {
 					e.printStackTrace();
 				}
-				for(int ii=0;ii<trackLength;ii++)
-					System.out.println(ii + " - " + trackpoints.get(ii).getTimeFromPrevious());
 
 			}
 			

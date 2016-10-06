@@ -50,7 +50,8 @@ import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayer;
 import com.henriquemalheiro.trackit.presentation.view.map.layer.MapLayerType;
 import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainter;
 import com.henriquemalheiro.trackit.presentation.view.map.painter.MapPainterFactory;
-import com.jb12335.trackit.business.utilities.ChangesSemaphore;
+//import com.jb12335.trackit.business.utilities.ChangesSemaphore;		//12335: 2016-10-03
+import com.jb12335.trackit.business.domain.TrackStatus;
 import com.pg58406.trackit.business.common.ColorSchemeV2;
 import com.pg58406.trackit.business.common.ColorSchemeV2Container;
 import com.pg58406.trackit.business.db.Database;
@@ -95,6 +96,7 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 	private SportType temporarySport;
 	private SubSportType temporarySubSport;
 	private Boolean unsavedChanges;         			// 12335 : 2015-07-24
+	private TrackStatus trackStatus;					// 12335: 2016-10-03
 
 	public Activity() {
 		super();
@@ -125,30 +127,20 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		colorScheme = TrackIt.getDefaultColorScheme();
 		noSpeedInFile = true;
 
-		unsavedChanges = false;      // 12335 : 2015-07-24
+//		unsavedChanges = false;    			 		// 12335 : 2015-07-24
+		trackStatus    = new TrackStatus();			// 12335 : 2016-10-03
 }
-
-	// 12335 : 2015-07-24 : Support for Activity changes: activities may change some properties
-	public boolean getUnsavedChanges() {
-		System.out.println( "Returning ACTIVITY unsavedChanges as: " + unsavedChanges);
-		return unsavedChanges;
+	// 12335 : 2016-10-03 : support for activity changes inquiry through TrackStatus
+	// 					  : activities may change some properties
+	
+	public TrackStatus getStatus() {
+		return trackStatus;
 	}
 
-	public boolean setUnsavedChanges(boolean changes) {
-		System.out.println( "setUnsavedChanges from " + unsavedChanges + " to " + changes);
-		if ( ChangesSemaphore.IsEnabled() )					// 12335: 2015-09-30
-			this.unsavedChanges = changes;
-		return unsavedChanges;
+	public void setTrackStatusTo( boolean status) {
+		if ( status )
+			trackStatus.setTrackAsChanged();
 	}
-
-	public void setUnsavedTrue() {
-		setUnsavedChanges(true);
-	}
-
-	public void setUnsavedFalse() {
-		setUnsavedChanges(false);
-	}
-	// 12335 : 2015-07-24 end
 
 	
 	// 58406###################################################################################
@@ -924,6 +916,8 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		refreshMap();
 		Collections.sort(pictures, new PictureComparator());
 		publishUpdateEvent(null);
+//		setUnsavedTrue();				// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 
 	// 2015-09-17: 12335 : Batch picture adding is faster
@@ -938,7 +932,8 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		refreshMap();
 		Collections.sort(pictures, new PictureComparator());
 		publishUpdateEvent(null);
-		setUnsavedTrue();
+//		setUnsavedTrue();				// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 	// 2015-09-17: 12335 end
 
@@ -948,7 +943,8 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		pictures.clear();
 		refreshMap();
 		publishUpdateEvent(null);
-		setUnsavedTrue();
+//		setUnsavedTrue();				// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 	// 12335: 2015-09-17 end
 
@@ -957,6 +953,8 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		pictures.remove(pic);
 		refreshMap();
 		publishUpdateEvent(null);
+//		setUnsavedTrue();				// 12335 : 2016-10-03
+		trackStatus.setPicturesAsChanged();
 	}
 
 	public void refreshMap() {

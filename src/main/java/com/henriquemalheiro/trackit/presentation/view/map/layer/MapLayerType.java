@@ -21,7 +21,8 @@ package com.henriquemalheiro.trackit.presentation.view.map.layer;
 
 import com.henriquemalheiro.trackit.presentation.view.map.Map;
 import com.miguelpernas.trackit.presentation.view.map.layer.LegendLayer;
-import com.pg58406.trackit.presentation.view.map.layer.AreaLayer;
+//import com.pg58406.trackit.presentation.view.map.layer.AreaLayer;		//12335: 2016-08-11
+import com.jb12335.trackit.presentation.view.map.layer.AreaLayer;		//12335: 2016-08-11
 import com.pg58406.trackit.presentation.view.map.layer.MultiLayer;
 import com.pg58406.trackit.presentation.view.map.layer.PhotoLayer;
 

@@ -21,6 +21,7 @@ package com.pg58406.trackit.business.db;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.StreamCorruptedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -53,10 +54,13 @@ import com.henriquemalheiro.trackit.business.common.Location;
 import com.henriquemalheiro.trackit.business.domain.Activity;
 import com.henriquemalheiro.trackit.business.domain.Course;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
+import com.henriquemalheiro.trackit.business.domain.Session;
 import com.henriquemalheiro.trackit.business.domain.SportType;
 import com.henriquemalheiro.trackit.business.domain.SubSportType;
 import com.pg58406.trackit.business.domain.PhotoContainer;
 import com.pg58406.trackit.business.domain.Picture;
+import com.jb12335.trackit.business.domain.TrackStatus;
+import com.jb12335.trackit.business.domain.TrackType;
 
 public class Database {
 
@@ -95,12 +99,30 @@ public Database() {
 				BufferedReader reader = new BufferedReader( new FileReader( new File( "dbVersion.txt")));
 				String versionToStart = reader.readLine();
 				reader.close();
-				int startVersion = (versionToStart.charAt(0) == '3') ? 3 : 2;
+//				int startVersion = (versionToStart.charAt(0) == '3') ? 3 : 2;
+				int startVersion = Integer.parseInt( versionToStart);
 				System.out.println( "\nDB START VERSION: " + startVersion +"\n");
-				if ( startVersion == 2 )
-					Files.copy( Paths.get( "TrackIt-V2.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
-				else
-					Files.copy( Paths.get( "TrackIt-V3.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
+				switch ( startVersion ) {
+					case 1:
+						Files.copy( Paths.get( "TrackIt-V1.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
+						break;
+					case 2:
+						Files.copy( Paths.get( "TrackIt-V2.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
+						break;
+					case 3:
+						Files.copy( Paths.get( "TrackIt-V3.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
+						break;
+					case -1:
+						break;
+					case 0:
+					default:
+						Files.deleteIfExists( Paths.get( "TrackIt.db"));
+						break;
+				}
+//				if ( startVersion == 2 )
+//					Files.copy( Paths.get( "TrackIt-V2.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
+//				else
+//					Files.copy( Paths.get( "TrackIt-V3.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
 			}
 			// FOR MIGRATION TESTING - End
 			
@@ -133,6 +155,12 @@ public Database() {
 				}
 				// Upgrade DB if DB version is not the current version
 				if ( dbVersion < databaseVersion ) {
+					// Version 1 had no sports and subsports tables
+					if ( dbVersion == 1) {
+						createSportsTable();
+						createSubSportsTable();
+						addSportsAndSubsports();
+					}
 					upgradeGPSFiles( dbVersion);
 					upgradeMediaTable( "Audio", dbVersion);
 					upgradeMediaTable( "Picture", dbVersion);
@@ -150,6 +178,7 @@ public Database() {
 			logger.error("initDB");
 			System.exit(0);
 		}
+		
 	}
 	
 // ########################  OPERATION SUPPORT   ###########################################
@@ -271,6 +300,8 @@ public Database() {
 				+ "Distance DOUBLE DEFAULT 0,"
 				+ "Ascent DOUBLE DEFAULT 0,"
 				+ "Descent DOUBLE DEFAULT 0,"
+				+ "MaxAltitude DOUBLE DEFAULT -100000,"
+				+ "MinAltitude DOUBLE DEFAULT -100000,"
 				+ "MinLongitude DOUBLE NOT NULL,"
 				+ "MaxLongitude DOUBLE NOT NULL,"
 				+ "MinLatitude DOUBLE NOT NULL,"
@@ -371,15 +402,24 @@ public Database() {
 		if ( fromVersion == 2 )
 			list += "Sport,SubSport,";
 		list += "MinLongitude,MaxLongitude,MinLatitude,MaxLatitude";
-		String sql = "INSERT OR REPLACE INTO GPSFiles (" + list + ") SELECT " + list+ " FROM temp";
+		String sql = "INSERT OR REPLACE INTO GPSFiles (" + list + ") SELECT " + list+ " FROM Temp";
 		int code = executeUpdateRequest( sql);
 		executeUpdateRequest( "DROP TABLE Temp");
+		logger.info( "Table GPSFiles upgraded, # rows converted: " + code);
 	}
 	
 	// 2016-06-07: 12335
-	private void upgradeMediaTable( String mmediaTableName, int fromVersion) {
+	private void upgradeMediaTable( String mediaTableName, int fromVersion) {
 		// From version 2 to version 3 we only need to copy
 		// (the difference was the foreign keys definition)
+		executeUpdateRequest( "ALTER TABLE " + mediaTableName + " RENAME To TempMedia");
+		createMediaTable( mediaTableName);
+		String list = "Filepath,Name,Longitude,Latitude,Altitude,Container,ParentName";
+		String sql = "INSERT OR REPLACE INTO " + mediaTableName + "(" + list + ") SELECT "
+				   + list + " FROM TempMedia";
+		int code = executeUpdateRequest( sql);
+		executeUpdateRequest( "DROP TABLE TempMedia");
+		logger.info( "Table " + mediaTableName + " upgraded, # rows converted: " + code);
 	}
 	
 	// 2016-06-07: 12335
@@ -680,7 +720,6 @@ public Database() {
 	public void updateDB( GPSDocument document, boolean startFromScratch) {
 		String sql;
 		String docFilename = document.getFileName();
-		File file = new File(docFilename);
 		List <String> activitiesInDB, coursesInDB;
 		
 		System.out.println("PHASE 1");
@@ -764,13 +803,17 @@ public Database() {
 		// 2) are not in the DB
 		// Note: this also updates any dependent media
 		activitiesInDB = getActivityNames(docFilename);
-		for( Activity a: document.getActivities())
-			if ( a.getUnsavedChanges() || !activitiesInDB.contains(a.getName()))
-				updateDB( a, file);
+		for( Activity a: document.getActivities()) {
+			TrackStatus status = a.getStatus();
+			if (  status.trackWasChanged() || status.mediaWasChanged() || !activitiesInDB.contains(a.getName()))
+				updateDB( a, document);
+		}
 		coursesInDB = getCourseNames(docFilename);
-		for( Course c: document.getCourses() )
-			if ( c.getUnsavedChanges() || !coursesInDB.contains(c.getName()))
-				updateDB( c, file);
+		for( Course c: document.getCourses() ) {
+			TrackStatus status = c.getStatus();
+			if ( status.trackWasChanged() || status.mediaWasChanged() || !coursesInDB.contains(c.getName()))
+				updateDB( c, document);
+		}
 		
 		System.out.println("PHASE 4");
 		// PHASE 4: delete from the DB all activities and courses
@@ -816,15 +859,17 @@ public Database() {
 	}
 
 	// 12335: 2015-10-05 - Correct document tracks for which IsActivity = -1
+	// 12335: 2016-08-26 - Eliminate tracks with IsActivity = -1 not in the document
 	public void correctTracksWithInterimIsActivityValue( GPSDocument document) {
 		List<String> names = getActivityAndOrCourseNames(document.getFileName(),-1);
 		if ( !names.isEmpty() ) {
 			for( Activity activity: document.getActivities() )
 				if ( names.contains(activity.getName()) )
-					updateDB(activity, new File(document.getFileName()));
+					updateDB(activity, document);
+				
 			for( Course course: document.getCourses())
 				if ( names.contains(course.getName()))
-					updateDB(course, new File(document.getFileName()));
+					updateDB(course, document);
 		}
 	}
 
@@ -872,37 +917,71 @@ public Database() {
 		return names;
 	}
 	
-	public void updateDB(Activity activity, File file) {
-		Connection c = null;
-		PreparedStatement stmt = null;
-		BoundingBox2<Location> bb = activity.getBounds();
-		try {
-			Class.forName("org.sqlite.JDBC");
-			c = DriverManager.getConnection("jdbc:sqlite:TrackIt.db");
-			c.setAutoCommit(false);
-			String sql = "INSERT OR REPLACE INTO GPSFiles (Filepath, Name, Sport, SubSport, MinLongitude, "
-					+ "MaxLongitude, MinLatitude, MaxLatitude) VALUES (?,?,?,?,?,?,?,?)";
-			stmt = c.prepareStatement(sql);
-			stmt.setString(1, file.getAbsolutePath());
-			stmt.setString(2, activity.getName());
-			stmt.setShort(3, activity.getSport().getSportID());
-			stmt.setShort(4, activity.getSubSport().getSubSportID());
-			stmt.setDouble(5, bb.getTopLeft().getLongitude());
-			stmt.setDouble(6, bb.getTopRight().getLongitude());
-			stmt.setDouble(7, bb.getBottomLeft().getLatitude());
-			stmt.setDouble(8, bb.getTopLeft().getLatitude());
-			stmt.executeUpdate();
-			stmt.close();
-			c.commit();
-			c.close();
-		} catch (Exception e) {
-			logger.error(e.getClass().getName() + ": " + e.getMessage());
-			logger.error("updateDB activity");
+//	public void updateDB(Activity activity, File file) {	//12335: 2016-08-26
+	public void updateDB( Activity activity, GPSDocument parent) {
+		//12335: 2016-08-19
+		Session session = activity.getFirstSession();
+		if ( session == null ) 
 			return;
-		}
+		updateDBTrack( activity.getName(), parent, true, session.getSport(), session.getSubSport(),
+				session.getStartTime(), session.getEndTime(),
+				session.getTimerTime(), session.getMovingTime(),
+				session.getDistance(), session.getTotalAscent(), session.getTotalDescent(),
+				session.getMaximumAltitude(), session.getMinimumAltitude(),
+				activity.getBounds());
+		updateTrackPictures(activity.getPictures(),
+							parent.getFileName(), activity.getName());
+//		Connection c = null;
+//		PreparedStatement stmt = null;
+//		BoundingBox2<Location> bb = activity.getBounds();
+//		try {
+//			Class.forName("org.sqlite.JDBC");
+//			c = DriverManager.getConnection("jdbc:sqlite:TrackIt.db");
+//			c.setAutoCommit(false);
+//			String sql = "INSERT OR REPLACE INTO GPSFiles (Filepath, Name, Sport, SubSport, MinLongitude, "
+//					+ "MaxLongitude, MinLatitude, MaxLatitude) VALUES (?,?,?,?,?,?,?,?)";
+//			stmt = c.prepareStatement(sql);
+//			stmt.setString(1, file.getAbsolutePath());
+//			stmt.setString(2, activity.getName());
+//			stmt.setShort(3, activity.getSport().getSportID());
+//			stmt.setShort(4, activity.getSubSport().getSubSportID());
+//			stmt.setDouble(5, bb.getTopLeft().getLongitude());
+//			stmt.setDouble(6, bb.getTopRight().getLongitude());
+//			stmt.setDouble(7, bb.getBottomLeft().getLatitude());
+//			stmt.setDouble(8, bb.getTopLeft().getLatitude());
+//			stmt.executeUpdate();
+//			stmt.close();
+//			c.commit();
+//			c.close();
+//		} catch (Exception e) {
+//			logger.error(e.getClass().getName() + ": " + e.getMessage());
+//			logger.error("updateDB activity");
+//			return;
+//		}
 	}
 	
-	public void updateDB(Course course, File file) {
+//	public void updateDB(Course course, File file) {			//12335: 2016-08-26
+	public void updateDB( Course course, GPSDocument parent) {
+		//12335: 2016-08-19
+		if ( course.getTrackpoints().size() != 0 ) {
+			updateDBTrack( course.getName(), parent, false, course.getSport(), course.getSubSport(),
+					course.getStartTime(), course.getEndTime(),
+					course.getTimerTime(), course.getMovingTime(),
+					course.getDistance(), course.getTotalAscent(), course.getTotalDescent(),
+					course.getMaximumAltitude(), course.getMinimumAltitude(),
+					course.getBounds());
+			updateTrackPictures(course.getPictures(),
+								parent.getFileName(), course.getName());
+		}
+		else {
+			Location equator = new Location(0., 0.);
+			BoundingBox2<Location> loc = new BoundingBox2<>(equator, equator, equator, equator);
+			updateDBTrack( course.getName(), parent, false, SportType.GENERIC, SubSportType.GENERIC_SUB,
+					new Date(), new Date(), 0., 0.,
+					0., 0, 0, 0., 0.,
+					loc);
+		}
+		/*
 		Connection c = null;
 		PreparedStatement stmt = null;
 		BoundingBox2<Location> bb = course.getBounds();
@@ -930,30 +1009,47 @@ public Database() {
 			logger.error("updateDB course");
 			return;
 		}
+		*/
 	}
 
-	private void updateDBTrack(File file, String name,
-			int id, SportType sport, SubSportType subSport,
-			Date startTime, Date endTime, double totalTime, double movingTime,
-			double distance, int totalAscent, int totalDescent,
-			BoundingBox2<Location> box) {
+//	private void updateDBTrack( File file, String name, boolean isActivity, //12335: 2016-08-26
+	private void updateDBTrack( String trackName, GPSDocument parent, boolean isActivity,
+								SportType sport, SubSportType subSport,
+								Date startTime,  Date endTime, double totalTime, double movingTime,
+								double distance, int totalAscent, int totalDescent,
+								double maxAltitude, double minAltitude,
+								BoundingBox2<Location> box) {
 		try {
-			String path = file.getAbsolutePath();
+//			String path = file.getAbsolutePath();	//12335: 2016-08-26
+			String path = parent.getFileName();
 			openConnection();
 			// Are we inserting or updating ?
-			String sql = "SELECT * FROM GPSFiles WHERE Filepath='" + path
-					+ "' AND Name ='" + name +"'";
-			boolean exists = !stmt.executeQuery(sql).isAfterLast();
-			System.out.println(exists + " " + file + " " + name);
+			String sql = "SELECT IsActivity FROM GPSFiles WHERE Filepath='" + path
+					   + "' AND Name ='" + trackName + "'";
+//			boolean exists = !stmt.executeQuery(sql).isAfterLast();
+			//12335: 2016-08-19: allow an activity and a course with the same name in a document
+			boolean exists = false;
+			res = stmt.executeQuery( sql);
+			while ( res.next() ) {
+				int id = res.getInt( 1);
+				if ( id == (isActivity? 1 : 0) || id == -1 ) {
+					exists = true;
+					break;
+				}
+			}
+			//12335: 2016-08-19 (end)
+			System.out.println("DB.updateDB exists: " + exists + " " + path + " " + trackName);
+			// 
 			// Insert a new activity/course
 			if ( exists ) {
 				sql = "UPDATE GPSFiles SET IsActivity=?, Sport=?, SubSport=?, "
 				+ "StartTime=?, EndTime=?, TotalTime=?, MovingTime=?,"
 				+ "Distance=?, Ascent=?, Descent=?, "
+				+ "MaxAltitude=?, MinAltitude=?,"
 				+ "MinLongitude=?, MaxLongitude=?, MinLatitude=?, MaxLatitude=? " 
 				+ "WHERE Filepath=? AND Name=?";
 				PreparedStatement stmt = c.prepareStatement(sql);
-				stmt.setShort( 1, (short) id);
+				stmt.setShort( 1, (short) (isActivity? 1: 0));
 //				stmt.setInt(2, sport.getValue());					// 12335: 2016-06-12
 //				stmt.setInt(3, subSport.getValue());				// 12335: 2016-06-12
 				stmt.setInt(2, sport.getSportID());					// 12335: 2016-06-12
@@ -965,12 +1061,14 @@ public Database() {
 				stmt.setDouble(8, distance);
 				stmt.setDouble(9, totalAscent);
 				stmt.setDouble(10, totalDescent);
-				stmt.setDouble(11, box.getTopLeft().getLongitude());
-				stmt.setDouble(12, box.getTopRight().getLongitude());
-				stmt.setDouble(13, box.getBottomLeft().getLatitude());
-				stmt.setDouble(14, box.getTopLeft().getLatitude());
-				stmt.setString(15, path);
-				stmt.setString(16, name);
+				stmt.setDouble(11, maxAltitude);
+				stmt.setDouble(12, minAltitude);
+				stmt.setDouble(13, box.getTopLeft().getLongitude());
+				stmt.setDouble(14, box.getTopRight().getLongitude());
+				stmt.setDouble(15, box.getBottomLeft().getLatitude());
+				stmt.setDouble(16, box.getTopLeft().getLatitude());
+				stmt.setString(17, path);
+				stmt.setString(18, trackName);
 				stmt.executeUpdate();
 				stmt.close();
 			}
@@ -978,12 +1076,13 @@ public Database() {
 				sql = "INSERT OR REPLACE INTO GPSFiles " 
 				+ "(Filepath, Name, IsActivity, Sport, SubSport, "
 				+ "StartTime, EndTime, TotalTime, MovingTime, Distance, Ascent, Descent, "
+				+ "MaxAltitude, MinAltitude, "
 				+ "MinLongitude, MaxLongitude, MinLatitude, MaxLatitude) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 				PreparedStatement stmt = c.prepareStatement(sql);
 				stmt.setString(1, path);
-				stmt.setString(2, name);
-				stmt.setShort(3, (short) id);
+				stmt.setString(2, trackName);
+				stmt.setShort(3, (short) (isActivity? 1: 0));
 //				stmt.setInt(4, sport.getValue());				//12335: 2016-06-12
 //				stmt.setInt(5, subSport.getValue());			//12335: 2016-06-12
 				stmt.setInt(4, sport.getSportID());				//12335: 2016-06-12
@@ -995,10 +1094,12 @@ public Database() {
 				stmt.setDouble(10, distance);
 				stmt.setDouble(11, totalAscent);
 				stmt.setDouble(12, totalDescent);
-				stmt.setDouble(13, box.getTopLeft().getLongitude());
-				stmt.setDouble(14, box.getTopRight().getLongitude());
-				stmt.setDouble(15, box.getBottomLeft().getLatitude());
-				stmt.setDouble(16, box.getTopLeft().getLatitude());
+				stmt.setDouble(13, maxAltitude);
+				stmt.setDouble(14, minAltitude);
+				stmt.setDouble(15, box.getTopLeft().getLongitude());
+				stmt.setDouble(16, box.getTopRight().getLongitude());
+				stmt.setDouble(17, box.getBottomLeft().getLatitude());
+				stmt.setDouble(18, box.getTopLeft().getLatitude());
 				stmt.executeUpdate();
 				stmt.close();
 			}
@@ -1130,6 +1231,16 @@ public Database() {
 			}
 		}
 		System.out.println("Database Update Successful.");
+	}
+	
+	//12335: 2016-08-26
+	private void deleteTrackFromDB( String trackName, String parentFilePath, TrackType trackType) {
+		String sql = "DELETE FROM Picture WHERE Container = '" + parentFilePath
+				   + "' AND ParentName='" + trackName + "'";
+		executeUpdateRequest( sql);
+		sql = "DELETE FROM GPSFiles WHERE Filepath ='" + parentFilePath
+		    + "' AND Name ='" + trackName + "'";
+		executeUpdateRequest( sql);
 	}
 
 //########################    COURSES AND ACTIVITIES  - End  #############################
@@ -1286,23 +1397,22 @@ public Database() {
 	}
 
 	public void updatePicture(final Picture pic, String parentFilepath){
-		PreparedStatement stmt = null;
 		openConnection();
 		if ( connected() )
 			try{
-				System.out.println("UPDATING PIC " + pic.getFilePath());
-				System.out.println("\t" + parentFilepath + "  "+ pic.getContainer().getName());			System.out.println("\t"+ pic.getContainer().getFilepath());
 				String sql = "INSERT OR REPLACE INTO Picture (Filepath, Name, Longitude, "
 						+ "Latitude, Altitude, Container, ParentName) VALUES (?,?,?,?,?,?,?)";
-				stmt = c.prepareStatement(sql);
-				stmt.setString(1, pic.getFilePath());
-				stmt.setString(2, pic.getName());
-				stmt.setDouble(3, pic.getLongitude());
-				stmt.setDouble(4, pic.getLatitude());
-				stmt.setDouble(5, pic.getAltitude());			
-				stmt.setString(6, parentFilepath);
-				stmt.setString(7, pic.getContainer().getName());
-				stmt.executeUpdate();
+				PreparedStatement pstmt = null;
+				pstmt = c.prepareStatement(sql);
+				pstmt.setString(1, pic.getFilePath());
+				pstmt.setString(2, pic.getName());
+				pstmt.setDouble(3, pic.getLongitude());
+				pstmt.setDouble(4, pic.getLatitude());
+				pstmt.setDouble(5, pic.getAltitude());			
+				pstmt.setString(6, parentFilepath);
+				pstmt.setString(7, pic.getContainer().getName());
+				System.out.println( sql);
+				pstmt.executeUpdate();
 				closeConnection();
 			} catch (Exception e) {
 				logger.error(e.getClass().getName() + ": " + e.getMessage());
@@ -1433,6 +1543,39 @@ public Database() {
 
 //##############################        SEARCH       #####################################
 
+	// 12335: 2016-08-11
+	public HashMap<String, List<String>> getDocumentsFromArea( 
+											double minLongitude, double maxLongitude,
+											double minLatitude,  double maxLatitude) {
+		HashMap<String, List<String>> names = new HashMap<>();
+		openConnection();
+		if ( connected() )
+			try {
+				String sql = "SELECT Filepath, Name FROM GPSFiles"
+						  + " WHERE MinLongitude >= ? AND" + " MaxLongitude <= ? AND"
+						  + " MinLatitude >= ? AND" + " MaxLatitude <= ?";
+				PreparedStatement stmt = null;
+				stmt = c.prepareStatement(sql);
+				stmt.setDouble(1, minLongitude);
+				stmt.setDouble(2, maxLongitude);
+				stmt.setDouble(3, minLatitude);
+				stmt.setDouble(4, maxLatitude);
+				res = stmt.executeQuery();
+				while ( res.next() ) {
+					String filepath = new String(res.getString(1));
+					if ( !names.containsKey( filepath))
+						names.put( filepath, new ArrayList<String>());
+					names.get( filepath).add( res.getString(2));
+				}
+				stmt.close();
+			} catch (Exception e) {
+				logger.error(e.getClass().getName() + ": " + e.getMessage());
+			} finally {
+				closeConnection();
+			}
+		return names;
+	}
+	
 	public HashSet<String> getDatafromArea(double minLongitude,
 			double maxLongitude, double minLatitude, double maxLatitude) {
 		Connection c = null;
