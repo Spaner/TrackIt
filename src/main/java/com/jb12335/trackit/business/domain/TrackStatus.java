@@ -3,9 +3,11 @@ package com.jb12335.trackit.business.domain;
 public class TrackStatus {
 	
 	private boolean picturesChanged;
+	private boolean audioChanged;
 	private boolean moviesChanged;
 	private boolean notesChanged;
 	private boolean trackChanged;
+	private boolean renamed;
 	
 	static private boolean changesEnabled = true;
 	
@@ -31,13 +33,16 @@ public class TrackStatus {
 	
 	public void setStatus( TrackStatus status) {
 		this.trackChanged    = status.trackChanged;
+		this.audioChanged    = status.audioChanged;
 		this.picturesChanged = status.picturesChanged;
 		this.moviesChanged   = status.moviesChanged;
 		this.notesChanged    = status.notesChanged;
+		this.renamed         = status.renamed;
 	}
 
 	public void resetChanges() {
-		picturesChanged = moviesChanged = notesChanged = trackChanged = false;
+		picturesChanged = audioChanged = moviesChanged = notesChanged
+				        = trackChanged = renamed = false;
 	}
 	
 	public void setTrackAsChanged() {
@@ -48,13 +53,36 @@ public class TrackStatus {
 	public boolean trackWasChanged() {
 		return trackChanged;
 	}
+	
+	public void setTrackAsRenamed() {
+		if ( changesEnabled )
+			renamed = true;
+	}
 
+	public void setTrackAsUnrenamed() {
+		if ( changesEnabled )
+			renamed = false;
+	}
+	
+	public boolean wasRenamed() {
+		return renamed;
+	}
+	
 	public void setPicturesAsChanged() {
 		if ( changesEnabled )
 			picturesChanged = true;
 	}
 	
 	public boolean picturesWereChanged() {
+		return picturesChanged;
+	}
+
+	public void setAudioAsChanged() {
+		if ( changesEnabled )
+			picturesChanged = true;
+	}
+	
+	public boolean audioWasChanged() {
 		return picturesChanged;
 	}
 

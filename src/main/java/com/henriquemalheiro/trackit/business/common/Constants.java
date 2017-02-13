@@ -25,7 +25,7 @@ public class Constants {
 	public static final String APP_NAME = "Track It!";
 	public static final String APP_NAME_NORMALIZED = "TrackIt";
 	public static final String APP_LINK = "trackit.henriquemalheiro.com";
-	public static final String APP_VERSION = "1.2.1";
+	public static final String APP_VERSION = "1.2.2 alpha";
 
 	
 	public static final double PAUSE_SPEED_THRESHOLD = 0.75 * 1000.0 / 3600.0;

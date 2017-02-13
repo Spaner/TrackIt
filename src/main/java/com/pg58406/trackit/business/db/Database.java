@@ -53,6 +53,7 @@ import com.henriquemalheiro.trackit.business.common.BoundingBox2;
 import com.henriquemalheiro.trackit.business.common.Location;
 import com.henriquemalheiro.trackit.business.domain.Activity;
 import com.henriquemalheiro.trackit.business.domain.Course;
+import com.henriquemalheiro.trackit.business.domain.Folder;
 import com.henriquemalheiro.trackit.business.domain.GPSDocument;
 import com.henriquemalheiro.trackit.business.domain.Session;
 import com.henriquemalheiro.trackit.business.domain.SportType;
@@ -73,9 +74,13 @@ public class Database {
 	private Statement  stmt            = null;
 	private ResultSet  res             = null;
 	private boolean    isConnected     = false;
-
+	
 	private Path      workingDirectory = Paths.get(System.getProperty("user.dir"));
 																		// 12335: 2015-09-11
+	private static String TABLE_AUDIO   = "Audio";
+	private static String TABLE_PICTURE = "Picture";
+	private static String TABLE_VIDEO   = "Video";
+	private static String TABLE_NOTE    = "Note";
 	
 public Database() {
 		initDb();
@@ -99,7 +104,6 @@ public Database() {
 				BufferedReader reader = new BufferedReader( new FileReader( new File( "dbVersion.txt")));
 				String versionToStart = reader.readLine();
 				reader.close();
-//				int startVersion = (versionToStart.charAt(0) == '3') ? 3 : 2;
 				int startVersion = Integer.parseInt( versionToStart);
 				System.out.println( "\nDB START VERSION: " + startVersion +"\n");
 				switch ( startVersion ) {
@@ -112,17 +116,13 @@ public Database() {
 					case 3:
 						Files.copy( Paths.get( "TrackIt-V3.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
 						break;
-					case -1:
-						break;
 					case 0:
-					default:
 						Files.deleteIfExists( Paths.get( "TrackIt.db"));
 						break;
+					case -1:
+					default:
+						break;
 				}
-//				if ( startVersion == 2 )
-//					Files.copy( Paths.get( "TrackIt-V2.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
-//				else
-//					Files.copy( Paths.get( "TrackIt-V3.db"), Paths.get( "TrackIt.db"), StandardCopyOption.REPLACE_EXISTING);
 			}
 			// FOR MIGRATION TESTING - End
 			
@@ -162,9 +162,10 @@ public Database() {
 						addSportsAndSubsports();
 					}
 					upgradeGPSFiles( dbVersion);
-					upgradeMediaTable( "Audio", dbVersion);
-					upgradeMediaTable( "Picture", dbVersion);
-					upgradeMediaTable( "Video", dbVersion);
+					upgradeMediaTable( TABLE_AUDIO, dbVersion);
+					upgradeMediaTable( TABLE_PICTURE, dbVersion);
+					upgradeMediaTable( TABLE_VIDEO, dbVersion);
+					createMediaTable(  TABLE_NOTE);
 					upgradeVersionTable( dbVersion);
 					upgradeDesktopTable( dbVersion);
 				}
@@ -275,9 +276,10 @@ public Database() {
 	
 	private void createDatabaseCurrentTables() throws SQLException {
 		createGPSFilesTable();
-		createMediaTable( "Audio");
-		createMediaTable( "Picture");
-		createMediaTable( "Video");
+		createMediaTable( TABLE_AUDIO);
+		createMediaTable( TABLE_PICTURE);
+		createMediaTable( TABLE_VIDEO);
+		createMediaTable( TABLE_NOTE);				// 2016-10-13: 12335
 		createVersionTable();						// 2016-06-07: 12335
 		createDesktopTable();						// 2016-06-07: 12335
 		createSportsTable();
@@ -318,6 +320,7 @@ public Database() {
 				+ "Longitude DOUBLE,"
 				+ "Latitude DOUBLE,"
 				+ "Altitude DOUBLE,"
+				+ "Timestamp INTEGER DEFAULT 0,"
 				+ "Container TEXT NOT NULL, "
 				+ "ParentName TEXT NOT NULL,"
 				+ "PRIMARY KEY (Filepath, Container, ParentName) "
@@ -343,7 +346,8 @@ public Database() {
 				+ " IsActivity SMALLINT DEFAULT -1,"
 				+ " Sport SMALLINT DEFAULT -1,"
 				+ " SubSport SMALLINT DEFAULT -1,"
-				+ " Folder SMALLINT DEFAULT 1,"
+//				+ " Folder SMALLINT DEFAULT 1,"				// 12335: 2016-10-12
+				+ " InWorkspace BOOLEAN NOT NULL DEFAULT 1,"
 				+ " Loaded SMALLINT DEFAULT 0,"
 				+ " PRIMARY KEY(TrackName,Filepath,IsActivity)" 
 				+ ")");
@@ -451,7 +455,9 @@ public Database() {
 			openConnection();
 			try {
 				res = stmt.executeQuery( "SELECT Filepath,Name,Sport,SubSport FROM GPSFiles");
-				String sql ="INSERT INTO Desktop (DocumentName,TrackName,Filepath,Sport,SubSport,Folder) "
+//				String sql ="INSERT INTO Desktop (DocumentName,TrackName,Filepath,Sport,SubSport,Folder) "
+//						+   "VALUES (?,?,?,?,?,1)";
+				String sql ="INSERT INTO Desktop (DocumentName,TrackName,Filepath,Sport,SubSport,InWorkspace) "
 						+   "VALUES (?,?,?,?,?,1)";
 				PreparedStatement pst = c.prepareStatement( sql);
 				while( res.next() ) {
@@ -627,14 +633,17 @@ public Database() {
 
 //########################### START AND STOP ######################################
 	
-	// 12335: 2015-09-17 - 
-	public ArrayList<String> initFromDb( int folderID) {
+	// 12335: 2015-09-17 
+	// 12335: 2016-10-12: argument folderID substituted by folder to do away with folderID
+//	public ArrayList<String> initFromDb( int folderID) {
+	public ArrayList<String> initFromDb( Folder folder) {
 		ArrayList<String> filepathList = new ArrayList<String>();
 		openConnection();
 		if ( connected() ) {
+			int inWorkspace = DocumentManager.getInstance().isWorspaceFolder( folder) ? 1 : 0;
 			try {
-				res = stmt.executeQuery("SELECT Filepath FROM Desktop WHERE Folder='"
-						+ folderID + "'");
+				res = stmt.executeQuery("SELECT Filepath FROM Desktop WHERE InWorkspace='"
+						+ inWorkspace + "'");
 				while ( res.next() ) {
 					String filename = res.getString(1);
 					if ( (new File( filename)).exists() ) {
@@ -650,7 +659,7 @@ public Database() {
 			}
 			for( String filename : filepathList)
 				executeUpdateRequest("UPDATE Desktop SET Loaded=1 WHERE Filepath='"
-						+ filename +"' AND Folder='" + folderID + "'");				
+						+ filename +"' AND InWorkspace='" + inWorkspace + "'");				
 		}
 		return filepathList;
 	}
@@ -660,33 +669,39 @@ public Database() {
 	// 12335: 2016-06-08 - All tracks (activities and courses) are now registered
 	//                     instead of document names and filepaths only
 	// 12335: 2016-06-09 - Provision to store library documents besides workspace documents
-	public void closeDatabase( List<GPSDocument> documents) {
+	// 12335: 2016-10-12 - Done away with Folder.getFolderID() calls
+	// 12335: 2016-12-13 - Renamed to saveWorkspaceAndLibraryStatus
+//	public void closeDatabase( List<GPSDocument> documents) {
+	public void saveWorkspaceAndLibraryStatus( List<GPSDocument> documents) {
 		executeUpdateRequest("DELETE FROM Desktop WHERE Loaded=1");
 		DocumentManager manager = DocumentManager.getInstance();
+		Folder workspaceFolder  = manager.getWorspaceFolder();
 		for( GPSDocument doc: documents) {
+			System.out.println( "Closing " + doc.getName());
 			if ( (new File(doc.getFileName())).exists() ) {
-				int folderID = manager.getFolder( doc).getFolderID();
+//				int folderID = manager.getFolder( doc).getFolderID();
+				int inWorkspace = manager.getFolder( doc).equals( workspaceFolder) ? 1 : 0;
 				for( Activity activity : doc.getActivities())
 					executeUpdateRequest(
-						"INSERT INTO Desktop (DocumentName,Filepath,TrackName,Sport,SubSport,IsActivity,Folder) "
+						"INSERT OR REPLACE INTO Desktop (DocumentName,Filepath,TrackName,Sport,SubSport,IsActivity,InWorkspace) "
 					  + " Values ('" + doc.getName() 
 					  + "','" + doc.getFileName()
 					  + "','" + activity.getName()
 					  + "','" + activity.getSport().getSportID()
 					  + "','" + activity.getSubSport().getSubSportID()
 					  + "','1"
-					  + "','" + folderID
+					  + "','" + inWorkspace
 					  + "')");
 				for( Course course : doc.getCourses() )
 					executeUpdateRequest(
-						"INSERT INTO Desktop (DocumentName,Filepath,TrackName,Sport,SubSport,IsActivity,Folder) "
+						"INSERT OR REPLACE INTO Desktop (DocumentName,Filepath,TrackName,Sport,SubSport,IsActivity,InWorkspace) "
 					  + " Values ('" + doc.getName() 
 					  + "','" + doc.getFileName()
 					  + "','" + course.getName()
 					  + "','" + course.getSport().getSportID()
 					  + "','" + course.getSubSport().getSubSportID()
 					  + "','0"
-					  + "','" + folderID
+					  + "','" + inWorkspace
 					  + "')");
 			}
 		}
@@ -706,14 +721,63 @@ public Database() {
 	}
 	
 	private int setDocumentLoadState( GPSDocument document, boolean state) {
-		return executeUpdateRequest("UPDATE TrackItDesktop SET Loaded=" +
+		return executeUpdateRequest("UPDATE Desktop SET Loaded=" +
 				(state?"1":"0") + " WHERE Filepath='" + document.getFileName() + "'");
 	}
 	
 	// 12335: 2015-10-03 - Removes document from the Desktop table
 	public int deleteFromDocumentsList( GPSDocument document, boolean isLoaded) {
-		return executeUpdateRequest("DELETE FROM TrackItDesktop Where Filepath='" + 
+		return executeUpdateRequest("DELETE FROM Desktop Where Filepath='" + 
 				document.getFileName() + "' AND Loaded=" + (isLoaded?"1":"0"));
+	}
+	
+	// 12335: 2016-10-13 - check whether DB update (of any kind) is necessary
+	public boolean documentNeedsDBUpdate( GPSDocument document) {
+		
+		// Check document
+		// Was it renamed?
+		if ( document.wasRenamed() )
+			return true;
+		// Were there any new activities and/or courses or any Activities/course were deleted?
+		if ( document.hasUnsavedChanges() )
+			return true;
+		
+		TrackStatus status;
+		
+		// Now check courses, one at a time
+		for( Course c : document.getCourses() ) {
+			// Were Sport and/or SubSport modified?
+			if ( c.getSport().getSportID()       != getSport( c)   || 
+				 c.getSubSport().getSubSportID() != getSubSport( c) )
+				return true;
+			status = c.getStatus();
+			// Was course renamed or course data changed?
+			if ( status.wasRenamed() || status.trackWasChanged() )
+				return true;
+			// Was any media changed?
+			if ( status.picturesWereChanged() || status.moviesWereChanged() ||
+				 status.audioWasChanged()     || status.notesWereChanged()     )
+				return true;
+		}
+		
+		// Finally check activities, one at a time
+		for( Activity a : document.getActivities() ) {
+			// Were Sport and/or SubSport modified?
+			if ( a.getSport().getSportID()       != getSport( a)   || 
+				 a.getSubSport().getSubSportID() != getSubSport( a) )
+				return true;
+			status = a.getStatus();
+			// Was activity renamed?
+			if ( status.wasRenamed() )
+				return true;
+			// Was any media changed?
+			if ( status.picturesWereChanged() || status.moviesWereChanged() ||
+				 status.audioWasChanged()     || status.notesWereChanged()     )
+				return true;
+		}
+
+		// All checks complete, there is no need to update the DB
+		return false;
 	}
 
 	// 12335: 2015-09-30 - update whole document
@@ -725,7 +789,7 @@ public Database() {
 		System.out.println("PHASE 1");
 		// PHASE 1: Overwrite cleanup
 		// Remove everything in the DB if 
-		// 1) Export to a file that is overwritten
+		// 1) Export to a file that is to be overwritten
 		// 2) Save to file overwriting a file that was not the original document's file
 		if ( startFromScratch ) {
 			sql = "DELETE FROM Desktop WHERE Filepath='" + docFilename + "'";
@@ -740,34 +804,24 @@ public Database() {
 		// Check if file is referenced in the DB
 		if ( !startFromScratch ){
 			boolean exists = false;
-			try {
-				sql = "SELECT * FROM GPSFiles WHERE Filepath='" + docFilename + "'";
-				System.out.println(sql);
-				openConnection();
-				exists = !stmt.executeQuery(sql).isAfterLast();
-				System.out.println("exists =" + exists);
-				closeConnection();
-				System.out.println("closed connection");
-			} catch (Exception e) { e.printStackTrace();}
-			if ( exists ) {
+			if ( doesDocumentExistInDB( document) ) {
 				System.out.println("moving on");
 				// Handle document renaming
 				if ( document.wasRenamed() ) {
 					System.out.println("updating name");
-					sql = "UPDATE TrackItDesktop SET Name ='" + document.getName()
-					+ "' WHERE Name='" + document.getOldName() + "' AND Filepath='"
-					+ docFilename + "'";
+					sql = "UPDATE Desktop SET DocumentName ='" + document.getName()
+					    + "' WHERE Filepath='" + docFilename + "'";
 					System.out.println("executing " + sql);
 					if ( executeUpdateRequest(sql) == -1 )
 						return;
 					document.setOldNameWhenSaving();
 				}
 				System.out.println("activities and courses rename");
-				// Handle activities and courses renaming
-				// To avoid name collisions in the DB (e.g., when two names were swapped)
+				// Handle activity and course renaming
+				// To avoid name collisions in the DB (e.g., when name swapping)
 				// assign unique provisional names
-				activitiesInDB = getActivityNames(docFilename);
-				coursesInDB = getCourseNames(docFilename);
+				activitiesInDB = getActivityNames( docFilename);
+				coursesInDB    = getCourseNames(   docFilename);
 				String baseName = "_db_kslp_temp_";
 				int index = -1;
 				// set provisional names
@@ -802,16 +856,18 @@ public Database() {
 		// 1) Were changed or
 		// 2) are not in the DB
 		// Note: this also updates any dependent media
-		activitiesInDB = getActivityNames(docFilename);
+		activitiesInDB = getActivityNames( docFilename);
 		for( Activity a: document.getActivities()) {
 			TrackStatus status = a.getStatus();
-			if (  status.trackWasChanged() || status.mediaWasChanged() || !activitiesInDB.contains(a.getName()))
+			if ( status.mediaWasChanged() || a.sportOrSubSportChanged() ||
+				 !activitiesInDB.contains(a.getName())                     )
 				updateDB( a, document);
 		}
-		coursesInDB = getCourseNames(docFilename);
+		coursesInDB = getCourseNames( docFilename);
 		for( Course c: document.getCourses() ) {
 			TrackStatus status = c.getStatus();
-			if ( status.trackWasChanged() || status.mediaWasChanged() || !coursesInDB.contains(c.getName()))
+			if ( status.trackWasChanged()   || status.mediaWasChanged() || 
+				 c.sportOrSubSportChanged() || !coursesInDB.contains(c.getName())  )
 				updateDB( c, document);
 		}
 		
@@ -843,7 +899,6 @@ public Database() {
 		if ( document.countActivitiesAndCourses() != 0 ) {
 			String sql = "SELECT Name FROM GPSFiles WHERE Filepath ='" 
 					+ document.getFileName() + "'";
-			System.out.println( sql);
 			openConnection();
 			if ( connected() )
 				try {
@@ -854,7 +909,30 @@ public Database() {
 					closeConnection();
 				}
 		}
-		System.out.println( "Result is " + result);
+		return result;
+	}
+	
+	// 12335: 2016-10-10
+	public boolean doesMediaExistInDB( String mediaFilepath,   String mediaDocumentFilename,
+			                           String mediaParentName, String mediatTable) {
+		boolean result = false;
+		openConnection();
+		if ( connected() )
+			try {
+				String sql = "SELECT Name FROM " + mediatTable 
+						   + " WHERE Filepath= ? AND Container= ? AND ParentName= ?";
+				PreparedStatement stmt = c.prepareStatement( sql);
+				stmt.setString( 1, mediaFilepath);
+				stmt.setString( 2, mediaDocumentFilename);
+				stmt.setString( 3, mediaParentName);
+				result = !stmt.executeQuery().isAfterLast();
+				stmt.close();
+				c.close();
+			} catch (Exception e) {
+				logger.error(e.getClass().getName() + ": " + e.getMessage());
+			} finally {
+				closeConnection();
+			}
 		return result;
 	}
 
@@ -929,8 +1007,8 @@ public Database() {
 				session.getDistance(), session.getTotalAscent(), session.getTotalDescent(),
 				session.getMaximumAltitude(), session.getMinimumAltitude(),
 				activity.getBounds());
-		updateTrackPictures(activity.getPictures(),
-							parent.getFileName(), activity.getName());
+		if ( activity.getStatus().mediaWasChanged() )
+			updateTrackMedia( activity);
 //		Connection c = null;
 //		PreparedStatement stmt = null;
 //		BoundingBox2<Location> bb = activity.getBounds();
@@ -960,7 +1038,8 @@ public Database() {
 //		}
 	}
 	
-//	public void updateDB(Course course, File file) {			//12335: 2016-08-26
+	// 12335: 2016-08-26
+	// Formerly: public void updateDB(Course course, File file) {
 	public void updateDB( Course course, GPSDocument parent) {
 		//12335: 2016-08-19
 		if ( course.getTrackpoints().size() != 0 ) {
@@ -970,8 +1049,8 @@ public Database() {
 					course.getDistance(), course.getTotalAscent(), course.getTotalDescent(),
 					course.getMaximumAltitude(), course.getMinimumAltitude(),
 					course.getBounds());
-			updateTrackPictures(course.getPictures(),
-								parent.getFileName(), course.getName());
+			if ( course.getStatus().mediaWasChanged() )
+				updateTrackMedia( course);
 		}
 		else {
 			Location equator = new Location(0., 0.);
@@ -981,38 +1060,11 @@ public Database() {
 					0., 0, 0, 0., 0.,
 					loc);
 		}
-		/*
-		Connection c = null;
-		PreparedStatement stmt = null;
-		BoundingBox2<Location> bb = course.getBounds();
-		try {
-			Class.forName("org.sqlite.JDBC");
-			c = DriverManager.getConnection("jdbc:sqlite:TrackIt.db");
-			c.setAutoCommit(false);
-			String sql = "INSERT OR REPLACE INTO GPSFiles (Filepath, Name, Sport, SubSport, MinLongitude, "
-					+ "MaxLongitude, MinLatitude, MaxLatitude) VALUES (?,?,?,?,?,?,?,?)";
-			stmt = c.prepareStatement(sql);
-			stmt.setString(1, file.getAbsolutePath());
-			stmt.setString(2, course.getName());
-			stmt.setShort(3, course.getSport().getSportID());
-			stmt.setShort(4, course.getSubSport().getSubSportID());
-			stmt.setDouble(5, bb.getTopLeft().getLongitude());
-			stmt.setDouble(6, bb.getTopRight().getLongitude());
-			stmt.setDouble(7, bb.getBottomLeft().getLatitude());
-			stmt.setDouble(8, bb.getTopLeft().getLatitude());
-			stmt.executeUpdate();
-			stmt.close();
-			c.commit();
-			c.close();
-		} catch (Exception e) {
-			logger.error(e.getClass().getName() + ": " + e.getMessage());
-			logger.error("updateDB course");
-			return;
-		}
-		*/
 	}
-
-//	private void updateDBTrack( File file, String name, boolean isActivity, //12335: 2016-08-26
+	
+	//12355: 2016-10-15
+	// Updates or inserts track data into GPSFiles
+	// Does not handle dependent media
 	private void updateDBTrack( String trackName, GPSDocument parent, boolean isActivity,
 								SportType sport, SubSportType subSport,
 								Date startTime,  Date endTime, double totalTime, double movingTime,
@@ -1020,15 +1072,12 @@ public Database() {
 								double maxAltitude, double minAltitude,
 								BoundingBox2<Location> box) {
 		try {
-//			String path = file.getAbsolutePath();	//12335: 2016-08-26
-			String path = parent.getFileName();
+			// Are we inserting or updating
+			String  path   = parent.getFileName();
+			boolean exists = false;
 			openConnection();
-			// Are we inserting or updating ?
 			String sql = "SELECT IsActivity FROM GPSFiles WHERE Filepath='" + path
 					   + "' AND Name ='" + trackName + "'";
-//			boolean exists = !stmt.executeQuery(sql).isAfterLast();
-			//12335: 2016-08-19: allow an activity and a course with the same name in a document
-			boolean exists = false;
 			res = stmt.executeQuery( sql);
 			while ( res.next() ) {
 				int id = res.getInt( 1);
@@ -1037,78 +1086,149 @@ public Database() {
 					break;
 				}
 			}
-			//12335: 2016-08-19 (end)
-			System.out.println("DB.updateDB exists: " + exists + " " + path + " " + trackName);
-			// 
-			// Insert a new activity/course
-			if ( exists ) {
-				sql = "UPDATE GPSFiles SET IsActivity=?, Sport=?, SubSport=?, "
-				+ "StartTime=?, EndTime=?, TotalTime=?, MovingTime=?,"
-				+ "Distance=?, Ascent=?, Descent=?, "
-				+ "MaxAltitude=?, MinAltitude=?,"
-				+ "MinLongitude=?, MaxLongitude=?, MinLatitude=?, MaxLatitude=? " 
-				+ "WHERE Filepath=? AND Name=?";
-				PreparedStatement stmt = c.prepareStatement(sql);
-				stmt.setShort( 1, (short) (isActivity? 1: 0));
-//				stmt.setInt(2, sport.getValue());					// 12335: 2016-06-12
-//				stmt.setInt(3, subSport.getValue());				// 12335: 2016-06-12
-				stmt.setInt(2, sport.getSportID());					// 12335: 2016-06-12
-				stmt.setInt(3, subSport.getSubSportID());			// 12335: 2016-06-12
-				stmt.setDate(4, dateToSQL(startTime));
-				stmt.setDate(5, dateToSQL(endTime));
-				stmt.setDouble(6, totalTime);
-				stmt.setDouble(7, movingTime);
-				stmt.setDouble(8, distance);
-				stmt.setDouble(9, totalAscent);
-				stmt.setDouble(10, totalDescent);
-				stmt.setDouble(11, maxAltitude);
-				stmt.setDouble(12, minAltitude);
-				stmt.setDouble(13, box.getTopLeft().getLongitude());
-				stmt.setDouble(14, box.getTopRight().getLongitude());
-				stmt.setDouble(15, box.getBottomLeft().getLatitude());
-				stmt.setDouble(16, box.getTopLeft().getLatitude());
-				stmt.setString(17, path);
-				stmt.setString(18, trackName);
-				stmt.executeUpdate();
-				stmt.close();
-			}
-			else {
+			
+			// change SQL query according to whether the tracks exists or not
+			if ( exists )
+				sql = "UPDATE GPSFiles SET "
+				        + "IsActivity=?, Sport=?, SubSport=?, "
+						+ "StartTime=?, EndTime=?, TotalTime=?, MovingTime=?,"
+						+ "Distance=?, Ascent=?, Descent=?, "
+						+ "MaxAltitude=?, MinAltitude=?,"
+						+ "MinLongitude=?, MaxLongitude=?, MinLatitude=?, MaxLatitude=? " 
+						+ "WHERE Filepath=? AND Name=?";
+			else
 				sql = "INSERT OR REPLACE INTO GPSFiles " 
-				+ "(Filepath, Name, IsActivity, Sport, SubSport, "
-				+ "StartTime, EndTime, TotalTime, MovingTime, Distance, Ascent, Descent, "
-				+ "MaxAltitude, MinAltitude, "
-				+ "MinLongitude, MaxLongitude, MinLatitude, MaxLatitude) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-				PreparedStatement stmt = c.prepareStatement(sql);
-				stmt.setString(1, path);
-				stmt.setString(2, trackName);
-				stmt.setShort(3, (short) (isActivity? 1: 0));
-//				stmt.setInt(4, sport.getValue());				//12335: 2016-06-12
-//				stmt.setInt(5, subSport.getValue());			//12335: 2016-06-12
-				stmt.setInt(4, sport.getSportID());				//12335: 2016-06-12
-				stmt.setInt(5, subSport.getSubSportID());		//12335: 2016-06-12
-				stmt.setDate(6, dateToSQL(startTime));
-				stmt.setDate(7, dateToSQL(endTime));
-				stmt.setDouble(8, totalTime);
-				stmt.setDouble(9, movingTime);
-				stmt.setDouble(10, distance);
-				stmt.setDouble(11, totalAscent);
-				stmt.setDouble(12, totalDescent);
-				stmt.setDouble(13, maxAltitude);
-				stmt.setDouble(14, minAltitude);
-				stmt.setDouble(15, box.getTopLeft().getLongitude());
-				stmt.setDouble(16, box.getTopRight().getLongitude());
-				stmt.setDouble(17, box.getBottomLeft().getLatitude());
-				stmt.setDouble(18, box.getTopLeft().getLatitude());
-				stmt.executeUpdate();
-				stmt.close();
-			}
+						+ "(IsActivity, Sport, SubSport, "
+						+ "StartTime, EndTime, TotalTime, MovingTime, Distance, Ascent, Descent, "
+						+ "MaxAltitude, MinAltitude, "
+						+ "MinLongitude, MaxLongitude, MinLatitude, MaxLatitude, "
+						+ "Filepath, Name) "
+						+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+			PreparedStatement stmt = c.prepareStatement(sql);
+			stmt.setShort( 1, (short) (isActivity? 1: 0));
+			stmt.setInt(   2, sport.getSportID());					// 12335: 2016-06-12
+			stmt.setInt(   3, subSport.getSubSportID());			// 12335: 2016-06-12
+			stmt.setDate(  4, dateToSQL(startTime));
+			stmt.setDate(  5, dateToSQL(endTime));
+			stmt.setDouble(6, totalTime);
+			stmt.setDouble(7, movingTime);
+			stmt.setDouble(8, distance);
+			stmt.setDouble(9, totalAscent);
+			stmt.setDouble(10, totalDescent);
+			stmt.setDouble(11, maxAltitude);
+			stmt.setDouble(12, minAltitude);
+			stmt.setDouble(13, box.getTopLeft().getLongitude());
+			stmt.setDouble(14, box.getTopRight().getLongitude());
+			stmt.setDouble(15, box.getBottomLeft().getLatitude());
+			stmt.setDouble(16, box.getTopLeft().getLatitude());
+			stmt.setString(17, path);
+			stmt.setString(18, trackName);
+			stmt.executeUpdate();
+			stmt.close();
 		} catch (Exception e) {
 			logger.error(e.getClass().getName() + ": " + e.getMessage());
-		} finally {
+		}finally {
 			closeConnection();
 		}
 	}
+
+////	private void updateDBTrack( File file, String name, boolean isActivity, //12335: 2016-08-26
+//	private void updateDBTrack( String trackName, GPSDocument parent, boolean isActivity,
+//								SportType sport, SubSportType subSport,
+//								Date startTime,  Date endTime, double totalTime, double movingTime,
+//								double distance, int totalAscent, int totalDescent,
+//								double maxAltitude, double minAltitude,
+//								BoundingBox2<Location> box) {
+//		try {
+////			String path = file.getAbsolutePath();	//12335: 2016-08-26
+//			String path = parent.getFileName();
+//			openConnection();
+//			// Are we inserting or updating ?
+//			String sql = "SELECT IsActivity FROM GPSFiles WHERE Filepath='" + path
+//					   + "' AND Name ='" + trackName + "'";
+////			boolean exists = !stmt.executeQuery(sql).isAfterLast();
+//			//12335: 2016-08-19: allow an activity and a course with the same name in a document
+//			boolean exists = false;
+//			res = stmt.executeQuery( sql);
+//			while ( res.next() ) {
+//				int id = res.getInt( 1);
+//				if ( id == (isActivity? 1 : 0) || id == -1 ) {
+//					exists = true;
+//					break;
+//				}
+//			}
+//			//12335: 2016-08-19 (end)
+//			System.out.println("DB.updateDB exists: " + exists + " " + path + " " + trackName);
+//			// 
+//			// Insert a new activity/course
+//			if ( exists ) {
+//				sql = "UPDATE GPSFiles SET IsActivity=?, Sport=?, SubSport=?, "
+//				+ "StartTime=?, EndTime=?, TotalTime=?, MovingTime=?,"
+//				+ "Distance=?, Ascent=?, Descent=?, "
+//				+ "MaxAltitude=?, MinAltitude=?,"
+//				+ "MinLongitude=?, MaxLongitude=?, MinLatitude=?, MaxLatitude=? " 
+//				+ "WHERE Filepath=? AND Name=?";
+//				PreparedStatement stmt = c.prepareStatement(sql);
+//				stmt.setShort( 1, (short) (isActivity? 1: 0));
+////				stmt.setInt(2, sport.getValue());					// 12335: 2016-06-12
+////				stmt.setInt(3, subSport.getValue());				// 12335: 2016-06-12
+//				stmt.setInt(2, sport.getSportID());					// 12335: 2016-06-12
+//				stmt.setInt(3, subSport.getSubSportID());			// 12335: 2016-06-12
+//				stmt.setDate(4, dateToSQL(startTime));
+//				stmt.setDate(5, dateToSQL(endTime));
+//				stmt.setDouble(6, totalTime);
+//				stmt.setDouble(7, movingTime);
+//				stmt.setDouble(8, distance);
+//				stmt.setDouble(9, totalAscent);
+//				stmt.setDouble(10, totalDescent);
+//				stmt.setDouble(11, maxAltitude);
+//				stmt.setDouble(12, minAltitude);
+//				stmt.setDouble(13, box.getTopLeft().getLongitude());
+//				stmt.setDouble(14, box.getTopRight().getLongitude());
+//				stmt.setDouble(15, box.getBottomLeft().getLatitude());
+//				stmt.setDouble(16, box.getTopLeft().getLatitude());
+//				stmt.setString(17, path);
+//				stmt.setString(18, trackName);
+//				stmt.executeUpdate();
+//				stmt.close();
+//			}
+//			else {
+//				sql = "INSERT OR REPLACE INTO GPSFiles " 
+//				+ "(Filepath, Name, IsActivity, Sport, SubSport, "
+//				+ "StartTime, EndTime, TotalTime, MovingTime, Distance, Ascent, Descent, "
+//				+ "MaxAltitude, MinAltitude, "
+//				+ "MinLongitude, MaxLongitude, MinLatitude, MaxLatitude) "
+//				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+//				PreparedStatement stmt = c.prepareStatement(sql);
+//				stmt.setString(1, path);
+//				stmt.setString(2, trackName);
+//				stmt.setShort(3, (short) (isActivity? 1: 0));
+////				stmt.setInt(4, sport.getValue());				//12335: 2016-06-12
+////				stmt.setInt(5, subSport.getValue());			//12335: 2016-06-12
+//				stmt.setInt(4, sport.getSportID());				//12335: 2016-06-12
+//				stmt.setInt(5, subSport.getSubSportID());		//12335: 2016-06-12
+//				stmt.setDate(6, dateToSQL(startTime));
+//				stmt.setDate(7, dateToSQL(endTime));
+//				stmt.setDouble(8, totalTime);
+//				stmt.setDouble(9, movingTime);
+//				stmt.setDouble(10, distance);
+//				stmt.setDouble(11, totalAscent);
+//				stmt.setDouble(12, totalDescent);
+//				stmt.setDouble(13, maxAltitude);
+//				stmt.setDouble(14, minAltitude);
+//				stmt.setDouble(15, box.getTopLeft().getLongitude());
+//				stmt.setDouble(16, box.getTopRight().getLongitude());
+//				stmt.setDouble(17, box.getBottomLeft().getLatitude());
+//				stmt.setDouble(18, box.getTopLeft().getLatitude());
+//				stmt.executeUpdate();
+//				stmt.close();
+//			}
+//		} catch (Exception e) {
+//			logger.error(e.getClass().getName() + ": " + e.getMessage());
+//		} finally {
+//			closeConnection();
+//		}
+//	}
 
 	// 12335: 2015-09-15 Renaming courses and activities
 	public boolean renameTrack( String name, String newName, String filepath, boolean isActivity) {
@@ -1328,6 +1448,48 @@ public Database() {
 	
 	//########################    SPORTS AND SUBSPORTS    - End  #############################
 	
+	//##############################    MEDIA - Start    #####################################
+	
+	private void updateTrackMedia( Course course) {
+		TrackStatus status      = course.getStatus();
+		String documentFilepath = course.getParent().getFileName();
+		String name             = course.getName();
+		// Pictures
+		if ( status.picturesWereChanged() ) {
+			updateTrackPictures( course.getPictures(), documentFilepath, name);
+		}
+		// Audio files
+		if ( status.audioWasChanged() ) {
+		}
+		// Movie files
+		if ( status.moviesWereChanged() ) {
+		}
+		// Notes
+		if ( status.notesWereChanged() ) {
+		}
+	}
+	
+	private void updateTrackMedia( Activity activity) {
+		TrackStatus status      = activity.getStatus();
+		String documentFilepath = activity.getParent().getFileName();
+		String name             = activity.getName();
+		// Pictures
+		if ( status.picturesWereChanged() ) {
+			updateTrackPictures( activity.getPictures(), documentFilepath, name);
+		}
+		// Audio files
+		if ( status.audioWasChanged() ) {
+		}
+		// Movie files
+		if ( status.moviesWereChanged() ) {
+		}
+		// Notes
+		if ( status.notesWereChanged() ) {
+		}
+	}
+
+	//##############################     MEDIA - End     #####################################
+	
 	//##############################       PICTURES      #####################################
 	
 	public ArrayList<String> getPicturesFromDB(String container, String parentName) {
@@ -1348,32 +1510,24 @@ public Database() {
 		return picturesList;
 	}
 	
-	// Get all pictures associated with a document
+	// Get all pictures associated with a document (container)
 	public HashMap<String, ArrayList<String>> getPicturesFromDB( String container) {
-		HashMap<String, ArrayList<String>> picturesInDB = new HashMap<>();
-		openConnection();
-		if ( connected() )
-			try {
-				String sql = "SELECT ParentName, Filepath FROM Picture WHERE Container='" +
-						container + "'";
-				res = stmt.executeQuery(sql);
-				String parentName;
-				ArrayList<String> array;
-				while( res.next()) {
-					parentName = res.getString(1);
-					array = picturesInDB.get(parentName);
-					if ( array == null ) {
-						array = new ArrayList<>();
-						picturesInDB.put(parentName, array);
-					}
-					array.add(res.getString(2));
-				}
-			} catch (Exception e) {
-				logger.error(e.getClass().getName() + ": " + e.getMessage());
-			} finally {
-				closeConnection();
-			}
-		return picturesInDB;
+		return getMediaInDB( container, "Picture");
+	}
+	
+	// Get all audio files associated with a document (container)
+	public HashMap<String, ArrayList<String>> getAudioFilesFromDB( String container) {
+		return getMediaInDB( container, "Audio");
+	}
+	
+	// Get all video files associated with a document (container)
+	public HashMap<String, ArrayList<String>> getVideoFilesFromDB( String container) {
+		return getMediaInDB( container, "Video");
+	}
+	
+	// Get all notes associated with a document (container)
+	public HashMap<String, ArrayList<String>> getNotesFromDB( String container) {
+		return getMediaInDB( container, "Notes");
 	}
 	
 	public void updatePictures(PhotoContainer container){
@@ -1452,6 +1606,74 @@ public Database() {
 //			e.printStackTrace();
 //			return;
 //		}
+	}
+	
+	// 12335: 2016-10-13 - Get the filenames of all media in the DB
+	//        			   associated with a given document (container)
+	//                     for a given media type (mediaTable)
+	public HashMap<String, ArrayList<String>> getMediaInDB( String container, String mediaTable) {
+		HashMap<String, ArrayList<String>> mediaInDB = new HashMap<>();
+		openConnection();
+		if ( connected() )
+			try {
+				String sql = "SELECT ParentName, Filepath FROM " + mediaTable +
+						     " WHERE Container='" + container + "'";
+				res = stmt.executeQuery(sql);
+				String parentName;
+				ArrayList<String> array;
+				while( res.next()) {
+					parentName = res.getString(1);
+					array = mediaInDB.get(parentName);
+					if ( array == null ) {
+						array = new ArrayList<>();
+						mediaInDB.put(parentName, array);
+					}
+					array.add(res.getString(2));
+				}
+			} catch (Exception e) {
+				logger.error(e.getClass().getName() + ": " + e.getMessage());
+			} finally {
+				closeConnection();
+			}
+		return mediaInDB;
+	}
+	
+	// 12335: 2016-10-10
+	public void updateMedia( String mediaName, String mediaFilepath, 
+							 String mediaDocumentFilename, String mediaParentName,
+							 double latitude,              double longitude,
+							 double altitude,              Date mediaDate,
+							 String mediaTable) {
+		openConnection();
+		if ( connected() )
+			try{
+				PreparedStatement pstmt = null;
+				String sql;
+				if ( doesMediaExistInDB( mediaFilepath, mediaDocumentFilename, mediaParentName, mediaTable) )
+						sql = "UPDATE " + mediaTable + " SET Longitude=? Latitude=? Altitude=? "
+						    + "Timestamp=? "
+							+ "WHERE Name=? AND Filepath=? AND Container=? AND ParentName=?";
+					else
+						sql = "INSERT INTO " + mediaTable
+							+ "(Longitude, Latitude, Altitude, Timestamp, Name, Filepath, Container, ParentName) "
+							+ "VALUES (?,?,?,?,?,?,?,?)";
+				pstmt = c.prepareStatement(sql);
+				pstmt.setDouble( 1, longitude);
+				pstmt.setDouble( 2, latitude);
+				pstmt.setDouble( 3, altitude);
+				pstmt.setLong(   4, mediaDate.getTime());
+				pstmt.setString( 5, mediaName);
+				pstmt.setString( 6, mediaFilepath);
+				pstmt.setString( 7, mediaDocumentFilename);
+				pstmt.setString( 8, mediaParentName);
+				System.out.println( sql);
+				pstmt.executeUpdate();
+			} catch (Exception e) {
+				logger.error(e.getClass().getName() + ": " + e.getMessage());
+				e.printStackTrace();
+			} finally {
+				closeConnection();
+			}
 	}
 	
 	

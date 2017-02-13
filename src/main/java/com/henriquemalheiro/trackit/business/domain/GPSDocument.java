@@ -88,10 +88,10 @@ public class GPSDocument extends TrackItBaseType implements DocumentItem, Folder
 		return this.changed;
 	}
 	
-	// 12335: 2015-09-23  - Support for change checking when saving/discarding/closing	
+	// 12335: 2015-09-23  - Support for track change checking when saving/discarding/closing	
 	public boolean needsToBeSavedToFile() {
 		System.out.println("\n -----> " + name + "(" + oldName +") from " + getFileName());
-		System.out.println("Checking first stpe - changed=" + hasUnsavedChanges() + "  renamed=" +wasRenamed());
+		System.out.println("Checking document - changed=" + hasUnsavedChanges() + "  renamed=" +wasRenamed());
 		if ( hasUnsavedChanges() || wasRenamed() )
 			return true;
 		System.out.println("Document has no changes\nChecking courses");
@@ -105,9 +105,9 @@ public class GPSDocument extends TrackItBaseType implements DocumentItem, Folder
 		System.out.println("No courses were changed\nChecking activities");
 		for( Activity a: activities )
 		{
-			System.out.println("Checking activity " + a.getName() + " - changed=" + a.getStatus().trackWasChanged() + "  renamed=" +a.wasRenamed());
+			System.out.println("Checking activity " + a.getName() + " -  renamed=" +a.wasRenamed());
 //			if ( a.getUnsavedChanges() || a.wasRenamed() )
-			if ( a.getStatus().trackWasChanged() || a.wasRenamed() )
+			if ( a.wasRenamed() )
 				return true;
 		}
 		System.out.println("No activities were changed\nDocument needs no saves");
@@ -115,8 +115,34 @@ public class GPSDocument extends TrackItBaseType implements DocumentItem, Folder
 	}
 	// 12335 ##########################################################################
 	
+	// 12335: 2016-10-16
+	public void resetStatus() {
+		if ( TrackStatus.changesAreEnabled() ) {
+			setChangedFalse();
+			oldName = "";
+			for( Course course: courses)
+				course.resetStatus();
+			for( Activity activity: activities)
+				activity.resetStatus();
+		}
+	}
+	
+	// 12335: 2016-10-07 -Support for media change checking when saving/discarding/closing
+	public boolean hasMediaChanges() {
+		for( Course c: courses ) {
+			if ( c.getStatus().mediaWasChanged() )
+				return true;
+		}
+		for( Activity a: activities ) {
+			if ( a.getStatus().mediaWasChanged() )
+				return true;
+		}
+		return false;
+	}
+	// 12335 #############################################################################
+	
 	// 12335: 2016-06-30  - Support for sport/subsport change detection
-	public boolean changedSportOrSubSport() {
+	public boolean hasChangedSportOrSubSport() {
 		Database database = Database.getInstance();
 		short sport;
 		short subSport;

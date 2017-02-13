@@ -18,9 +18,28 @@
  */
 package com.pg58406.trackit.business.domain;
 
+import javax.swing.ImageIcon;
+import java.util.Date;
+
 import com.henriquemalheiro.trackit.business.domain.TrackItBaseType;
 
 public abstract class MultimediaItem extends TrackItBaseType{
+	
+	// 12335: 2016-10-20: first step into generalization
+	protected String name;
+	protected String    filename;
+	protected double    latitude;
+	protected double    longitude;
+	protected double    altitude;
+	protected Date      timestamp;
+	protected int       width;
+	protected int       height;
+	protected int       locationX;
+	protected int       locationY;
+	protected boolean   landscape;
+	protected ImageIcon icon;
+	protected int       iconWidth;
+	protected int       iconHeight;			// 12335: 2016-10-20 end
 
 	public MultimediaItem(){
 		super();

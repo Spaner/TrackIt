@@ -84,8 +84,9 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 			if ( orientation != 1 )
 				image = applyExifOrientation( image, orientation);
 			this.icon = getIcon(36, 36);
-			
-			Database.getInstance().updatePicture(this);
+
+//          12335 : 2016-10-07 : Do not update any picture registration before document close time
+//			Database.getInstance().updatePicture(this);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -168,6 +169,10 @@ public class Picture extends MultimediaItem implements DocumentItem, FolderTreeI
 	
 	public BufferedImage getImage(){
 		return image;
+	}
+	
+	public int getOrientation() {		// 12335: 2016-10-19
+		return orientation;
 	}
 	
 	public PhotoContainer getContainer() {

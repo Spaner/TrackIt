@@ -459,6 +459,7 @@ public class AreaLayer extends MapLayer implements EventPublisher {
 				drawing = false;
 				Database db = Database.getInstance();
 				// 12335: 2016-08-11: start
+				// 12335: 2016-10-12: openDocumentsForLibrary substituted by openDocumentsForFolder
 //				itemNames = db.getDocumentsInArea(minLongitude, maxLongitude,
 //												  minLatitude, maxLatitude);
 //				List<String> documentFilenames = new ArrayList<String>(itemNames.keySet());
@@ -466,8 +467,10 @@ public class AreaLayer extends MapLayer implements EventPublisher {
 				itemNames = db.getDocumentsFromArea( minLongitude, maxLongitude, 
 						 							 minLatitude, maxLatitude);
 				documentFilepaths = new ArrayList<>( itemNames.keySet());
-				DocumentManager.getInstance().openDocumentsForLibrary( documentFilepaths);
-				//12335: 2016-08-11: end
+//				DocumentManager.getInstance().openDocumentsForLibrary( documentFilepaths);
+				DocumentManager manager = DocumentManager.getInstance();
+				manager.openDocumentsForFolder( documentFilepaths, manager.getLibraryFolder());
+				//12335: 2016-08-11 and 2016-10-12: end
 				placeButtons();
 				validate();
 				repaint();

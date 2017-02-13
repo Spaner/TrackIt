@@ -29,13 +29,11 @@ import com.henriquemalheiro.trackit.presentation.event.EventPublisher;
 
 public class Folder extends TrackItBaseType implements DocumentItem {
 	private String name;
-	private int    folderID; 					// 12335: 2016-06-09
 	private List<GPSDocument> documents;
 	
-	public Folder(String name, int folderID) {
+	public Folder(String name) {
 		super();
 		this.name     = name;
-		this.folderID = folderID; 				// 12335: 2016-06-09
 		documents     = new ArrayList<GPSDocument>();
 	}
 	
@@ -45,10 +43,6 @@ public class Folder extends TrackItBaseType implements DocumentItem {
 	
 	public void setName(String name) {
 		this.name = name;
-	}
-	
-	public int getFolderID() { 				// 12335: 2016-06-09
-		return this.folderID;
 	}
 	
 	public List<GPSDocument> getDocuments() {

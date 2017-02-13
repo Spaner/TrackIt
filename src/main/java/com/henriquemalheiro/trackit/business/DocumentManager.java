@@ -180,8 +180,8 @@ public class DocumentManager implements EventPublisher, EventListener {
 
 	private void init() {
 		folders = new ArrayList<Folder>();
-		folders.add(new Folder(FOLDER_WORKSPACE, 1));
-		folders.add(new Folder(FOLDER_LIBRARY, 2));
+		folders.add( new Folder(FOLDER_WORKSPACE));
+		folders.add( new Folder(FOLDER_LIBRARY));
 		selectedFolder = getFolder(FOLDER_WORKSPACE);
 		mapMode = MapMode.MULTI;
 		updateLegend = false;
@@ -306,6 +306,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 		return getFolder( FOLDER_WORKSPACE);
 	}
 	
+	public boolean isWorspaceFolder( Folder folder) {    	//12335: 2016-10-12
+		return getFolder( FOLDER_WORKSPACE).equals( folder);
+	}
+	
 	public Folder getLibraryFolder() {   			//12335: 2016-06-11
 		return getFolder( FOLDER_LIBRARY);
 	}
@@ -384,25 +388,41 @@ public class DocumentManager implements EventPublisher, EventListener {
 		readControl(new ArrayList<>(Arrays.asList(file)), ReadMode.OPEN);
 	}
 	
+//	public void openDocumentsFromDB() {
+//		openDocumentsForLibrary(   database.initFromDb( getFolder(FOLDER_LIBRARY)));
+//		openDocumentsForWorkspace( database.initFromDb( getFolder(FOLDER_WORKSPACE)));
+//	}
+//	
+//	public void openDocumentsForWorkspace( final List<String> filenames) {
+//		System.out.println( "Workspace docs to open " + filenames.size());
+//		for( String filename : filenames)
+//			read(new ArrayList<File>(Arrays.asList(new File(filename))),
+//					 ReadMode.OPEN, getFolder(FOLDER_WORKSPACE));
+//	}
+//
+//	public void openDocumentsForLibrary( final List<String> filenames) {
+//		System.out.println( "Library docs to open " + filenames.size());
+//		for( String filename: filenames)
+//			read(new ArrayList<File>(Arrays.asList(new File(filename))),
+//					 ReadMode.OPEN, getFolder(FOLDER_LIBRARY));
+//	}
+		
 	public void openDocumentsFromDB() {
-		openDocumentsForLibrary(   database.initFromDb( 
-				                            getFolder(FOLDER_LIBRARY).getFolderID()));
-		openDocumentsForWorkspace( database.initFromDb(
-				                            getFolder(FOLDER_WORKSPACE).getFolderID()));
+		openDocumentsForFolder( getFolder(FOLDER_LIBRARY));
+		openDocumentsForFolder( getFolder(FOLDER_WORKSPACE));
 	}
 	
-	public void openDocumentsForWorkspace( final List<String> filenames) {
-		System.out.println( "Workspace docs to open " + filenames.size());
-		for( String filename : filenames)
-			read(new ArrayList<File>(Arrays.asList(new File(filename))),
-					 ReadMode.OPEN, getFolder(FOLDER_WORKSPACE));
+	private void openDocumentsForFolder( Folder folder) {
+		System.out.println( "Opening docs from " + 
+							(isWorspaceFolder( folder) ? "WORKSPACE" : "LIBRARY"));
+		openDocumentsForFolder( database.initFromDb(folder), folder);
 	}
-
-	public void openDocumentsForLibrary( final List<String> filenames) {
-		System.out.println( "Library docs to open " + filenames.size());
+	
+	public void openDocumentsForFolder( final List<String> filenames, Folder folder) {
+		System.out.println( "# documents to open " + filenames.size());
 		for( String filename: filenames)
-			read(new ArrayList<File>(Arrays.asList(new File(filename))),
-					 ReadMode.OPEN, getFolder(FOLDER_LIBRARY));
+			read( new ArrayList<File>(Arrays.asList(new File(filename))),
+				  ReadMode.OPEN, folder);
 	}
 		
 	private void readControl( final List<File> files, final ReadMode mode) {
@@ -444,9 +464,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 		Map<String, Object> options = new HashMap<>();
 		List<Course> voidCourses = new ArrayList<>();
 		options.put(Constants.ConsolidationOperation.LEVEL, ConsolidationLevel.BASIC);
-		GPSDocument selectedDocument = ( mode.equals(ReadMode.IMPORT) ?
-					documents.get(selectedDocumentId).getDocument():
-					new GPSDocument(Messages.getMessage("documentManager.untitledDocument")));
+		GPSDocument selectedDocument = null;
 		GPSDocument document = null;
 		
 		if ( mode == ReadMode.OPEN)
@@ -455,7 +473,30 @@ public class DocumentManager implements EventPublisher, EventListener {
 		
 		for( File file: files ) {
 			String documentFilename = file.getAbsolutePath();
+			// Avoid reopening the same document
+			boolean isOpen = false;
+			if ( mode == ReadMode.OPEN && targetFolder == getWorspaceFolder() ) {
+				for(GPSDocument doc: getWorspaceFolder().getDocuments() )
+					if ( doc.getFileName().equals( documentFilename) ) {
+						isOpen = true;
+						break;
+					}
+			}
+			if ( isOpen ) {
+				JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
+						Messages.getMessage("documentManager.message.reloadAttempt",
+											file.getAbsolutePath()),
+						Messages.getMessage("trackIt.error"), JOptionPane.INFORMATION_MESSAGE);
+				logger.error(Messages.getMessage("documentManager.message.reloadAttempt",
+												file.getAbsolutePath()));
+				selectedDocument = documents.get(selectedDocumentId).getDocument();
+				continue;
+			}
+			// OK, proceed to read document's file
 			if ( file.exists() ) {
+				selectedDocument = ( mode.equals(ReadMode.IMPORT) ?
+						documents.get(selectedDocumentId).getDocument():
+						new GPSDocument(Messages.getMessage("documentManager.untitledDocument")));
 				try {			
 					inputStream = getInputStream(file);
 					reader = ReaderFactory.getInstance().getReader(file, null);
@@ -469,10 +510,10 @@ public class DocumentManager implements EventPublisher, EventListener {
 			}
 			else {
 				JOptionPane.showMessageDialog(TrackIt.getApplicationFrame(),
-						Messages.getMessage("documentManager.error.fileNotFound",
+						Messages.getMessage("documentManager.message.fileNotFound",
 											file.getAbsolutePath()),
 						Messages.getMessage("trackIt.error"), JOptionPane.INFORMATION_MESSAGE);
-				logger.error(Messages.getMessage("documentManager.error.fileNotFound",
+				logger.error(Messages.getMessage("documentManager.message.fileNotFound",
 												file.getAbsolutePath()));
 				continue;
 			}
@@ -1498,6 +1539,7 @@ public class DocumentManager implements EventPublisher, EventListener {
 				// if(course.getFilepath() != null){
 				course.setFilepath(filepath);
 				// }
+				course.setTrackStatusTo( true);			//12335: 2016-10-16
 
 				/* Undo */
 				if (addToUndoManager) {

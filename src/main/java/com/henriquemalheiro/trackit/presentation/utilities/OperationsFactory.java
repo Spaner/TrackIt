@@ -95,7 +95,7 @@ public class OperationsFactory {
 		operations.add(createRemoveFromDatabaseOperation(document));	// 58406
 		operations.add( getMenuItemsSeparatorFakeOperation(0));       	// 12335: 2015-07-31
 		
-		operations.add(createSaveDocumentOperation(document));         	// 12335: 2015-08-08
+		operations.add(createSaveDocumentOperation(document,false));   	// 12335: 2015-10-16
 		List<Operation> ops = createFileExportOperations( document);
 		for( Operation op : ops)
 			operations.add(op);
@@ -570,49 +570,59 @@ public class OperationsFactory {
 		return true;
 	}
 
-	public <T extends DocumentItem> Operation createSaveDocumentOperation( final GPSDocument item) {
+	public <T extends DocumentItem> Operation createSaveDocumentOperation( 
+										final GPSDocument item, final boolean saveToFileOnly) {
 		String group = getMessage("operation.group.save");
 		String name  = getMessage("operation.name.save");
 		String description = getMessage("operation.description.save", item.getDocumentItemName());
 
 		Runnable action = new Runnable() {
 			public void run() {
-				// Create document copy to work
-				GPSDocument document = new GPSDocument(null);
-				DocumentManager.getInstance().fullyMergeDocuments(item, document);
-				// Variable used when the document to save has no file name to
-				// 1) Set the filename to the original document if write is successful
-				// 2) Update the export directory if write is successful
-				boolean fileWasSelected = false;    // to know if to update the export directory 
-				// Check if document has yet to be assigned a file (prompt for it if yes)
-				File selectedFile = new File(document.getFileName()); 
-				if ( !selectedFile.exists() || !selectedFile.isFile() ) {
-					selectedFile = chooseFile(item, FileType.ALL, true);
-					// exit if still unsuccessful
-					if ( selectedFile == null )
+				boolean fileWasSelected = false;
+				
+				// Save to file only when document really needs it
+				if ( item.needsToBeSavedToFile() ) {
+					// Create document copy to work
+					GPSDocument document = new GPSDocument(null);
+					DocumentManager.getInstance().fullyMergeDocuments(item, document);
+					// Variable used when the document to save has no file name to
+					// 1) Set the filename to the original document if write is successful
+					// 2) Update the export directory if write is successful
+					    // to know if to update the export directory 
+					// Check if document has yet to be assigned a file (prompt for it if yes)
+					File selectedFile = new File(document.getFileName()); 
+					if ( !selectedFile.exists() || !selectedFile.isFile() ) {
+						selectedFile = chooseFile(item, FileType.ALL, true);
+						// exit if still unsuccessful
+						if ( selectedFile == null )
+							return;
+						fileWasSelected = true;
+						document.setFileName(selectedFile.getAbsolutePath());
+						// set the new filename to the document only after successful file write
+					}
+					
+					// Attempt to write the document to file, quit if unsuccessful
+					boolean success = writeDocument(document, selectedFile, item.getDocumentItemName(),
+							"operation.name.save",
+//							"operation.success.save",
+							"operation.failure.save",
+							fileWasSelected);
+					if ( !success )
 						return;
-					fileWasSelected = true;
-					document.setFileName(selectedFile.getAbsolutePath());
-					// set the new filename to the document only after successful file write
+					
+					// Update 1) export directory; 2) document filename, if file had to be selected
+					if ( fileWasSelected ) {
+						TrackIt.getApplicationPanel().updateInitialExportDirectory(selectedFile);
+						item.setFileName(selectedFile.getAbsolutePath());
+					}
 				}
-				
-				// Attempt to write the document to file, quit if unsuccessful
-				boolean success = writeDocument(document, selectedFile, item.getDocumentItemName(),
-						"operation.name.save",
-//						"operation.success.save",
-						"operation.failure.save",
-						fileWasSelected);
-				if ( !success )
-					return;
 
-				// Update 1) export directory; 2) document filename, if file had to be selected
-				if ( fileWasSelected ) {
-					TrackIt.getApplicationPanel().updateInitialExportDirectory(selectedFile);
-					item.setFileName(selectedFile.getAbsolutePath());
-				}
+				// Update DB if not save to file only
+				if ( !saveToFileOnly )
+					Database.getInstance().updateDB(item, fileWasSelected);
 				
-				System.out.println("Before db " + item.wasRenamed() + " " + document.wasRenamed());
-				Database.getInstance().updateDB(item, fileWasSelected);
+				// Reset status
+				item.resetStatus();
 				
 				// Successful, make it known
 				JOptionPane.showMessageDialog( TrackIt.getApplicationFrame(),

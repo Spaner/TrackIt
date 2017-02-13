@@ -127,7 +127,6 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	private GPSDocument parent;
 	private boolean unsavedChanges;					// 58406
 	private TrackStatus trackStatus;				// 12335: 2016-10-03
-	private boolean synchronizeWithDB;				// 12335: 2016-06-16
 	private String filepath;						// 58406
 	private List<Pause> pauses;						// 58406
 	private List<Picture> pictures;					// 58406
@@ -193,7 +192,6 @@ public class Course extends TrackItBaseType implements DocumentItem,
 		events            = new ArrayList<Event>();
 //		unsavedChanges    = false;								// 58406
 		trackStatus       = new TrackStatus();					// 12335: 2016-10-03
-		synchronizeWithDB = false;								// 12335: 2016-06-16
 		filepath          = null;// 58406
 		pauses            = new ArrayList<Pause>();				// 58406
 		pictures          = new ArrayList<Picture>();			// 58406
@@ -204,12 +202,7 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	}
 	// 12335: 2015-08-10 end
 	
-	//12335: 2016-06-16
-	public boolean needsSynchronizationWithDB() {
-		return synchronizeWithDB;
-	}
-	
-	// 12335 : 2016-10-03 : support changes inquiry through TrackStatus
+	// 12335 : 2016-10-03 : support of changes inquiry through TrackStatus
 	
 	public TrackStatus getStatus() {
 		return trackStatus;
@@ -222,6 +215,11 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	public void setTrackStatusTo( boolean status) {
 		if ( status )
 			trackStatus.setTrackAsChanged();
+	}
+	
+	public void resetStatus() {
+		if ( TrackStatus.changesAreEnabled() )
+			trackStatus.resetChanges();
 	}
 	
 
@@ -279,9 +277,16 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	}
 	
 	//12335: 2015-09-21 - support for renaming operation
+	//12335: 2016-10-13 - support for trackStatus
 	public void rename(String name) {
-		if ( oldName.isEmpty() )
+		if ( oldName.isEmpty() ) {
 			oldName = this.name;
+			trackStatus.setTrackAsRenamed();
+		}
+		else if ( oldName.equals( name) ) {
+			oldName = "";
+			trackStatus.setTrackAsUnrenamed();
+		}
 		setName(name);
 		System.out.println("Renaming Course from " + oldName + " to " + name);
 	}
@@ -295,9 +300,10 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	}
 	
 	public boolean wasRenamed() {
-		if ( !oldName.isEmpty() && oldName != name )
-			return true;
-		return false;
+//		if ( !oldName.isEmpty() && oldName != name ) // 12355: 2016-10-13 - use TrackStatus instead
+//			return true;
+//		return false;
+		return trackStatus.wasRenamed();
 	}
 	
 	public void seTProvisionalOdNameWhenSaving( String provName) {
@@ -1613,32 +1619,45 @@ public class Course extends TrackItBaseType implements DocumentItem,
 	// 58406###################################################################################
 
 	public void addPicture(File file) {
-		Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
-		Picture pic = new Picture(file, middle.getLatitude(),
-				middle.getLongitude(), middle.getAltitude(), this);
-		pictures.add(pic);
-		refreshMap();
-		Collections.sort(pictures, new PictureComparator());
-		publishUpdateEvent(null);
+		if ( file.exists() && !pictureAlreadyLoaded( file.getAbsolutePath()) ) {
+			Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
+			Picture pic = new Picture(file, middle.getLatitude(),
+					middle.getLongitude(), middle.getAltitude(), this);
+			pictures.add(pic);
+			refreshMap();
+			Collections.sort(pictures, new PictureComparator());
+			publishUpdateEvent(null);
+		}
 	}
 	
 	// 12335: 2015-10-02: batch picture adding works faster
 	public void addPictures( File[] files) {
 		Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
+		int noPicturesLoaded = 0;
 		for( File file: files)
-			if ( file.exists() ) {
+			if ( file.exists() && !pictureAlreadyLoaded( file.getAbsolutePath()) ) {
 				Picture pic = new Picture(file, middle.getLatitude(), middle.getLongitude(), middle.getAltitude(), this);
 				pictures.add(pic);
+				noPicturesLoaded++;
 			}
 		System.out.println("LOADED ALL PICTURES");
-		refreshMap();
-		Collections.sort(pictures, new PictureComparator());
-		publishUpdateEvent(null);
-//		setUnsavedTrue();					// 12335 : 2016-10-03
-		trackStatus.setPicturesAsChanged();
+		if ( noPicturesLoaded > 0 ) {
+			refreshMap();
+			Collections.sort(pictures, new PictureComparator());
+			publishUpdateEvent(null);
+//			setUnsavedTrue();					// 12335 : 2016-10-03
+			trackStatus.setPicturesAsChanged();
+		}
 	}
 	// 12335: 2015-10-02 end
 
+	// 12335: 2016-10-19: check to avoid loading twice the same picture
+	private boolean pictureAlreadyLoaded( String pictureFilename) {
+		for( Picture picture: pictures)
+			if ( picture.getFilePath().equals( pictureFilename) )
+				return true;
+		return false;
+	}
 
 	public void removePicture(Picture pic) {
 //		Database.getInstance().removePicture(pic);
@@ -1835,12 +1854,16 @@ public class Course extends TrackItBaseType implements DocumentItem,
 			}
 			
 			if ( isChange ) {
-				synchronizeWithDB = true;
 				this.publishUpdateEvent(null);
 			}
 		}
 	}
 	
+	public boolean sportOrSubSportChanged() {
+		Database database = Database.getInstance();
+		return database.getSport( this) != sport.getSportID() ||
+			   database.getSubSport( this) != subSport.getSubSportID();
+	}
 	
 	public long getParentCourseId(){
 		return parentCourseId;
@@ -1971,7 +1994,6 @@ public class Course extends TrackItBaseType implements DocumentItem,
 			course.setParent(this.parent);
 //			course.setUnsavedChanges(this.unsavedChanges);			// 12335 : 2016-10-03
 			course.setStatus( this.trackStatus);
-			course.synchronizeWithDB = this.synchronizeWithDB;		// 12335 : 2016-06-16
 			course.setFilepath(this.filepath);
 			course.setPauses(this.pauses);
 			course.setPictures(this.pictures);

@@ -95,7 +95,7 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 	private SubSportType subSport;						// 57421
 	private SportType temporarySport;
 	private SubSportType temporarySubSport;
-	private Boolean unsavedChanges;         			// 12335 : 2015-07-24
+//	private Boolean unsavedChanges;         			// 12335: 2015-07-24
 	private TrackStatus trackStatus;					// 12335: 2016-10-03
 
 	public Activity() {
@@ -140,6 +140,11 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 	public void setTrackStatusTo( boolean status) {
 		if ( status )
 			trackStatus.setTrackAsChanged();
+	}
+	
+	public void resetStatus() {
+		if ( TrackStatus.changesAreEnabled() )
+			trackStatus.resetChanges();
 	}
 
 	
@@ -201,9 +206,16 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 	}
 
 	//12335: 2015-09-21 - support for renaming operation
+	//12335: 2016-10-13 - support for trackStatus
 	public void rename(String name) {
-		if ( oldName.isEmpty() )
+		if ( oldName.isEmpty() ) {
 			oldName = this.name;
+			trackStatus.setTrackAsRenamed();
+		}
+		else  if ( oldName.equals( name) ) {
+			oldName = "";
+			trackStatus.setTrackAsUnrenamed();
+		}
 		setName(name);
 		System.out.println("Renaming Activity from " + oldName + " to " + name);
 	}
@@ -217,9 +229,10 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 	}
 	
 	public boolean wasRenamed() {
-		if ( !oldName.isEmpty() && oldName != name )
-			return true;
-		return false;
+//		if ( !oldName.isEmpty() && oldName != name )	// 12335: 2016-10-13 - use TrackStatus instead
+//			return true;
+//		return false;
+		return trackStatus.wasRenamed();
 	}
 	
 	public void seTProvisionalOdNameWhenSaving( String provName) {
@@ -284,6 +297,13 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 		
 		if ( isChange )
 			this.publishUpdateEvent(null);
+	}
+	
+	// 12335: 2016-10-14
+	public boolean sportOrSubSportChanged() {
+		Database database = Database.getInstance();
+		return database.getSport( this)    != sport.getSportID()       ||
+			   database.getSubSport( this) != subSport.getSubSportID();
 	}
 	
 	public SportType getTemporarySport(){
@@ -909,33 +929,47 @@ public class Activity extends TrackItBaseType implements DocumentItem,
 
 	// TO BE REMOVED 2016-06-05
 	public void addPicture(File file) {
-		Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
-		Picture pic = new Picture(file, middle.getLatitude(),
-				middle.getLongitude(), middle.getAltitude(), this);
-		pictures.add(pic);
-		refreshMap();
-		Collections.sort(pictures, new PictureComparator());
-		publishUpdateEvent(null);
-//		setUnsavedTrue();				// 12335 : 2016-10-03
-		trackStatus.setPicturesAsChanged();
+		if ( file.exists() && !pictureAlreadyLoaded( file.getAbsolutePath()) ) {
+			Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
+			Picture pic = new Picture(file, middle.getLatitude(),
+					middle.getLongitude(), middle.getAltitude(), this);
+			pictures.add(pic);
+			refreshMap();
+			Collections.sort(pictures, new PictureComparator());
+			publishUpdateEvent(null);
+//			setUnsavedTrue();				// 12335 : 2016-10-03
+			trackStatus.setPicturesAsChanged();
+		}
 	}
 
 	// 2015-09-17: 12335 : Batch picture adding is faster
 	public void addPictures( File[] files) {
 		Trackpoint middle = trackpoints.get(Math.abs(trackpoints.size() / 2));
+		int noPicturesLoaded = 0;
 		for ( File file: files)
-			if ( file.exists() ) {
+			if ( file.exists() && !pictureAlreadyLoaded( file.getAbsolutePath()) ) {
 				Picture pic = new Picture(file, middle.getLatitude(),
 						middle.getLongitude(), middle.getAltitude(), this);
 				pictures.add(pic);
+				noPicturesLoaded++;
 			}
-		refreshMap();
-		Collections.sort(pictures, new PictureComparator());
-		publishUpdateEvent(null);
-//		setUnsavedTrue();				// 12335 : 2016-10-03
-		trackStatus.setPicturesAsChanged();
+		if ( noPicturesLoaded > 0 ) {
+			refreshMap();
+			Collections.sort(pictures, new PictureComparator());
+			publishUpdateEvent(null);
+//			setUnsavedTrue();				// 12335 : 2016-10-03
+			trackStatus.setPicturesAsChanged();
+		}
 	}
 	// 2015-09-17: 12335 end
+	
+	// 12335: 2016-10-19: check to avoid loading twice the same picture
+	private boolean pictureAlreadyLoaded( String pictureFilename) {
+		for( Picture picture: pictures)
+			if ( picture.getFilePath().equals( pictureFilename) )
+				return true;
+		return false;
+	}
 
 	// 12335: 2015-09-17 - Batch removal makes operation faster
 	public void removePictures() {

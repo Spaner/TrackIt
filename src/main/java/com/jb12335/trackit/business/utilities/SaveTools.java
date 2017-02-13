@@ -32,6 +32,8 @@ import javax.swing.JOptionPane;
 import javax.swing.text.ChangedCharSetException;
 import javax.swing.text.Document;
 
+import org.apache.derby.tools.sysinfo;
+
 import com.drew.metadata.exif.GpsDescriptor;
 import com.henriquemalheiro.trackit.TrackIt;
 import com.henriquemalheiro.trackit.business.DocumentManager;
@@ -58,20 +60,29 @@ public class SaveTools {
 		return saveTools;
 	}
 	
-	// #####################    12335: 2015-09-22 Start  ############################## 
-
-	public void saveAndExit( boolean fromMenu, boolean runningOnMac) {// 58406
-		// 12335: 2016-06-09: Added fromMenu argument to separate window closing from
-		//                    application closing from the menu
-		
-		System.out.println( "\nTHIS IS NEW SAVE TOOLS with fromMenu " + fromMenu 
-				+ " running on a Mac " + runningOnMac + "\n");
-		
+	// 12335: 2016-10-13 - new process + okToClose  ----- Start -----
+	
+	public void saveAndExit( boolean fromMenu, boolean runningOnMac) {
+		if ( okToClose( fromMenu, runningOnMac) ) {
+			// Process documents, updating any changed documents and the DB
+			processDocumentsAtCloseTime();
+			// Save Workspace and Library open items reference to the DB to reopen at start time
+			Database.getInstance().saveWorkspaceAndLibraryStatus( 
+									DocumentManager.getInstance().getDocuments());
+			// Finally exit
+			System.exit( 0);
+		}
+	}
+	
+	public boolean okToClose( boolean fromMenu, boolean runningOnMac) {
+		// On Mac OS there is no way to stop from closing once the window destroy button is pressed
 		String warn = (fromMenu? "MENU" :"DESTRUCTION") + "  " + 
-		(runningOnMac? "MAC" : "WINDOWS");
-		
-		// 12335: 2016-06-09: Confirm that we really want to exit before doing anything else
-		//                    (Mac OSX: window destruction cannot be reversed)		
+					  (runningOnMac? "MAC" : "WINDOWS");
+		System.out.println( "\nTHIS IS REALLY NEW SAVE TOOLS with fromMenu " + fromMenu 
+				+ " running on a Mac " + runningOnMac + "\n");
+				
+		// Confirm that we really want to exit 
+		// (Mac OSX: window destruction cannot be reversed)		
 		if ( fromMenu || !runningOnMac ) {
 			int option = JOptionPane.showOptionDialog(
 					TrackIt.getApplicationFrame(),
@@ -81,228 +92,139 @@ public class SaveTools {
 					null, null);
 			// Go back if not
 			if ( option != JOptionPane.YES_OPTION )
-				return;
+				return false;
 		}
+		System.out.println( "CLOSING");
+		return true;
+	}
+	// 12335: 2016-10-13 - new process + okToClose  -----  End  -----
+	
+	// 12335: 2016-10-12 - processDocumentsAtCloseTime ------- Start --------
+
+	public void processDocumentsAtCloseTime() {
+		DocumentManager        docManager  = DocumentManager.getInstance();
+		Database               database    = Database.getInstance();
+		List<GPSDocument>      documents   = docManager.getWorspaceFolder().getDocuments();
 		
-		List<GPSDocument> documents = DocumentManager.getInstance()
-															.getWorspaceFolder().getDocuments();
-		Database database = Database.getInstance();
+		ArrayList<GPSDocument> notRegistered = new ArrayList<>();
+		ArrayList<GPSDocument> registered    = new ArrayList<>();
+		ArrayList<GPSDocument> notToRegister = new ArrayList<>();
+		Iterator<GPSDocument>  docIterator;
 		
-		//12335: 2016-06-11: Process all documents with changes
-		//                   Note: a changed document may not be registered
-		// Get documents with changes
-		ArrayList<GPSDocument> needSave     = new ArrayList<>();
-		ArrayList<GPSDocument> needNoSave   = new ArrayList<>();
-		ArrayList<GPSDocument> toRegister   = new ArrayList<>();
-		ArrayList<GPSDocument> needRegister = new ArrayList<>();
-		for( GPSDocument doc : documents) {
-			if ( doc.needsToBeSavedToFile() )
-				needSave.add( doc);
+		// Check which documents are registered and which are not
+		for( GPSDocument document: documents) {
+			if ( database.doesDocumentExistInDB( document) )
+				registered.add( document);
 			else
-				needNoSave.add( doc);
+				notRegistered.add( document);
 		}
-		// Ask whether to save
-		if ( needSave.size() > 0 ) {
-			Iterator<GPSDocument> docIterator = needSave.iterator();
-			int noRemainingToCheck = needSave.size();
-			while ( docIterator.hasNext() ) {
-				GPSDocument document = docIterator.next();
-				int result = CheckSaveDialog.showSaveConfirmDialog(
-						     	document.getName(),
-						     	((Path)Paths.get(document.getFileName())).getFileName().toString(),
-						     	(noRemainingToCheck>1));
-				if ( result == CheckSaveDialog.NO ) {
-					docIterator.remove();
-					if ( CheckSaveDialog.getIsForall() )
-						while ( docIterator.hasNext() ) {
-							docIterator.next();
-							docIterator.remove();
-						}
-				}
-				else {
-					if ( CheckSaveDialog.getIsForall() )
-						break;
-				}
-					
-			}
-		}
-		// Save those remaining on the list
-		for( GPSDocument doc : needSave ) {
-			System.out.println( "Would have saved: " + doc.getFileName());
-//			Operation op = OperationsFactory.getInstance().createSaveDocumentOperation( doc);
-//			op.actionPerformed(null);
-		}
-		// Changed documents that were saved must ask whether to add/modify register
-		needRegister.addAll( needSave);
 		
-		//12335: 2016-06-11: Process unregistered documents
-		//Get unregistered documents
-		for( GPSDocument doc: needNoSave ) {
-			if ( ! database.doesDocumentExistInDB( doc) ) 
-				needRegister.add( doc);	
-			else { // document is registered but sport/subsport may have changed
-				if ( doc.changedSportOrSubSport() )
-					toRegister.add( doc);
+		// Filter unregistered documents to get:
+		// a) Documents that are to be registered (and saved)           -> notRegistered
+		// b) Documents that are not to be registered but were modified -> notToRegister
+		
+		// Ask whether to register unregistered documents
+		if ( !notRegistered.isEmpty() ) {
+			notToRegister = queryUser( notRegistered, true);
+			for( GPSDocument doc: notToRegister)
+				System.out.println( "\tnotToRegister: " + doc.getName());
+			// After this, notRegistered holds documents to register (and save to file if modified)
+			//             notToRegister holds documents that are not to be registered
+			// Check which of the later have been modified
+			docIterator = notToRegister.iterator();
+			while( docIterator.hasNext() ) {
+				if ( !(docIterator.next().needsToBeSavedToFile()) )
+					docIterator.remove();
 			}
+			// Now notToRegister holds all unregistered documents that were modified
+			// and may need save to file (upon user selection)
+			
+			// Ask now whether to save them
+			if ( !notToRegister.isEmpty() )
+				queryUser( notToRegister, false);
 		}
-		// Ask whether to register
-		if ( needRegister.size() > 0 ) {
-			// Check whether to register
-			Iterator<GPSDocument> docIterator = needRegister.iterator();
-			while (docIterator.hasNext()) {
-				GPSDocument gpsDocument = (GPSDocument) docIterator.next();
-				int answer = CheckSaveDialog.showRegisterConfirmDialog(
-						gpsDocument.getName(), 
-						((Path)Paths.get(gpsDocument.getFileName())).getName(0).toString(),
-						docIterator.hasNext());
-				if ( answer == CheckSaveDialog.YES) {
+		// Result: notRegistered holds all unregistered documents that will be saved and registered
+		//         notToRegister holds all unregistered modified documents that will only be saved
+		
+		// Filter registered documents keeping only those that need saving
+		
+		if ( !registered.isEmpty() ) {
+			docIterator = registered.iterator();
+			while ( docIterator.hasNext()) {
+				GPSDocument document = (GPSDocument)  docIterator.next();
+				if ( !document.needsToBeSavedToFile() && !document.hasMediaChanges() &&
+					 !document.hasChangedSportOrSubSport() )
+					docIterator.remove();
+			}
+			// 'registered' holds now all registered documents that were modified
+
+			// Ask whether to save
+			if ( !registered.isEmpty() )
+				queryUser( registered, false);
+		}
+		// Result: 'registered' holds all modified registered documents to be saved
+		
+		System.out.println( "# registered documents to save:                " + registered.size());
+		for (GPSDocument document : registered)
+			System.out.println( "\t" + document.getName());	
+		System.out.println( "# unregistered documents to register and save: " + notRegistered.size());
+		for (GPSDocument document : notRegistered)
+			System.out.println( "\t" + document.getName());	
+		System.out.println( "# unregistered documents to save only:         " + notToRegister.size());
+		for (GPSDocument document : notToRegister)
+			System.out.println( "\t" + document.getName());
+		
+		OperationsFactory factory = OperationsFactory.getInstance();
+		// Registered modified documents - update file and registration
+		for( GPSDocument document: registered) {
+			System.out.println( "Updating document: " + document.getName());
+			factory.createSaveDocumentOperation( document, false).actionPerformed( null);;
+		}
+		// Unregistered documents - register and file update
+		for( GPSDocument document: notRegistered) {
+			System.out.println( "Registering and updating file: " + document.getName());
+			factory.createSaveDocumentOperation( document, false).actionPerformed( null);;
+		}
+		// Unregistered not to register documents: update file only
+		for( GPSDocument document: notToRegister) {
+			System.out.println( "Updating only file: " + document.getName());
+			factory.createSaveDocumentOperation( document, true).actionPerformed( null);;
+		}
+	}
+	// 12335: 2016-10-12 - processDocumentsAtCloseTime -------  End  --------
+	
+	private ArrayList<GPSDocument> queryUser( ArrayList<GPSDocument> candidates, boolean registration) {
+		ArrayList<GPSDocument> rejected = new ArrayList<>();
+		Iterator<GPSDocument> docIterator = candidates.iterator();
+		while( docIterator.hasNext() ) {
+			GPSDocument document = docIterator.next();
+			System.out.print( "\t\t" + document.getName() + " ");
+			int answer;
+			if ( registration )
+				answer = CheckSaveDialog.showRegisterConfirmDialog( 
+							document.getName(),
+							((Path)Paths.get( document.getFileName())).getName(0).toString(), 
+							docIterator.hasNext());
+			else
+				answer = CheckSaveDialog.showSaveConfirmDialog(
+							document.getName(), 
+							((Path)Paths.get(document.getFileName())).getFileName().toString(),
+							docIterator.hasNext());
+			if ( answer == CheckSaveDialog.YES ) {
 					if ( CheckSaveDialog.getIsForall() )
 						break;
 				}
 				else {
 					docIterator.remove();
+					rejected.add( document);
 					if ( CheckSaveDialog.getIsForall() )
 						while( docIterator.hasNext() ) {
-							docIterator.next();
+							rejected.add( docIterator.next());
 							docIterator.remove();
 						}
 				}
-			}
-			// Add those with mandatory register update/add
-			needRegister.addAll( toRegister);
-			// Register (if any remaining)
-			for( GPSDocument document : needRegister ) {
-				System.out.println( "Would register: " + document.getFileName());
-				database.updateDB( document, true);
-			}
 		}
-		
-//		Operation op = null;
-//		for (GPSDocument doc : DocumentManager.getInstance().getDocuments()) {
-//			for (Course course : doc.getCourses()) {
-//				if (course.getUnsavedChanges() || doc.getChanged()) {
-//					Object[] options = { "New File", "Yes", "No" };
-//					int n = JOptionPane
-//							.showOptionDialog(
-//									TrackIt.getApplicationFrame(),
-//									"The course "
-//											+ course.getName()
-//											+ " has unsaved changes. "
-//											+ "Would you like to save before exiting TrackIt?",
-//									"Save course" + course.getName() + "?" + warn,
-//									JOptionPane.YES_NO_CANCEL_OPTION,
-//									JOptionPane.WARNING_MESSAGE, null, options,
-//									options[2]);
-//					/*System.err.println("Course " + course.getName()
-//							+ " has unsaved changes");*/
-//					String filepath = course.getFilepath();
-//					if ((n == 1 && filepath == null)
-//							|| (n == 1 && doc.getActivities().size()
-//									+ doc.getCourses().size() > 1))
-//						n = 0;
-//					switch (n) {
-//					case 0:// new file
-//						if ((course.getParent().getCourses().size()
-//								+ course.getParent().getActivities().size() > 1)) {
-//							op = OperationsFactory.getInstance()
-//									.createFileExportOperation(doc);
-//						} else {
-//							op = OperationsFactory.getInstance()
-//									.createFileExportOperation(course);
-//						}
-//						op.actionPerformed(null);
-//						break;
-//					case 1:// yes
-//						File file = new File(filepath);
-//						if (file.exists() && !file.isDirectory()) {
-//							String[] split = filepath.split("\\.");
-//							String type = split[split.length - 1];
-//							switch (type) {
-//							case "csv":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.CSV);
-//								break;
-//							case "fit":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.FIT);
-//								break;
-//							case "fitlog":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.FITLOG);
-//								break;
-//							case "gpx":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.GPX);
-//								break;
-//							case "kml":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.KML);
-//								break;
-//							case "tcx":
-//								op = OperationsFactory.getInstance()
-//										.createSaveOperation(course,
-//												FileType.TCX);
-//								break;
-//							}
-//						} else {
-//							op = OperationsFactory.getInstance()
-//									.createFileExportOperation(course);
-//						}
-//						Database.getInstance().updateDB(course, file);
-//						op.actionPerformed(null);
-//						break;
-//					case 2:// no
-//						System.out.println("Exiting without saving "
-//								+ course.getName() + ".");
-//						break;
-//					}
-//					// op.actionPerformed(null);
-//					break;// Assim não repete várias vezes para o mesmo
-//							// documento
-//				}
-//			}
-//		}
-		
-		// Check out all documents in the workspace for changes
-		checkoutDocuments( DocumentManager.getInstance().
-				                              getFolder("Workspace").getDocuments());
-//		DocumentManager.getInstance().getFolder( "Workspace");
-
-		// Save the list of open documents to the DB
-		Database.getInstance().closeDatabase( DocumentManager.getInstance().getDocuments());
-		
-		// We can finally exit
-		System.exit( 0);
-	}
-	
-	private void checkoutDocuments( List<GPSDocument> documents) {
-		for( GPSDocument document : documents ) {
-			System.out.println( "Checking out " + document.getFileName());
-		}
-		
-//		int n;
-//		GPSDocument doc = documents.get(0);
-//		List<Activity> acts = doc.getActivities();
-//		if (acts.size() > 0 )
-//			n = SportSelectionDialog.showSportSelectionDialog( acts.get(0), true);
-//		else {
-//			List<Course> crs = doc.getCourses();
-//			n = SportSelectionDialog.showSportSelectionDialog( crs.get(0), true);
-//		}
-////		int n;
-//		n = CheckSaveDialog.showSaveConfirmDialog( "TESTE", true);
-//		System.out.println( "Resultado: " + n + "   para todos: " +  CheckSaveDialog.getIsForall());
-//		n = CheckSaveDialog.showSaveConfirmDialog( "NOT FOR ALL OF THEM", false);
-//		System.out.println( "Resultado: " + n + "   para todos: " +  CheckSaveDialog.getIsForall());
-//		n = CheckSaveDialog.showRegisterConfirmDialog( "TO REGISTER", false);
-//		System.out.println( "Resultado: " + n + "   para todos: " +  CheckSaveDialog.getIsForall());
-//		n = CheckSaveDialog.showRegisterConfirmDialog( "UNREGISTERED", true);
-//		System.out.println( "Resultado: " + n + "   para todos: " +  CheckSaveDialog.getIsForall());
-	}
+		return rejected;
+	}	
 
 }

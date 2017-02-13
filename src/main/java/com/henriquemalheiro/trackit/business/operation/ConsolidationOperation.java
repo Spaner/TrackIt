@@ -364,7 +364,7 @@ public class ConsolidationOperation extends OperationBase implements Operation {
 				Course course = ((Course) item);
 				if ( course == null )
 					System.out.println( "Course com endereço nulo!");
-				System.out.println( "O nome é " + course.getSubSport().name());
+				System.out.println( "O nome do course é " + course.getName());
 				limit = course.getSubSport().getPauseThresholdSpeed();
 			}
 			limit = limit / 3.6;

@@ -46,7 +46,7 @@ public class Task extends SwingWorker<Object, Void> {
 	public Task(Action action, Boolean showProgress) {
 		this.action = action;
 		this.showProgress = showProgress;
-		
+
 		if (showProgress) {
 			progress = new ProgressDialog(TrackIt.getApplicationFrame(), "");
 			progress.setLocationRelativeTo(TrackIt.getApplicationFrame());
@@ -84,6 +84,7 @@ public class Task extends SwingWorker<Object, Void> {
             action.done(result);
         } catch (InterruptedException ignore) {
         } catch (ExecutionException e) {
+        	e.printStackTrace();
             String why = null;
             Throwable cause = e.getCause();
             if (cause != null) {

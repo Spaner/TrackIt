@@ -225,13 +225,33 @@ public class PhotoLayer extends MapLayer implements EventPublisher,
 	}
 
 	private Point comparePosition(Point position) {
+		int deltax = 24, deltay = 18;
 		for (JButton button : buttons) {
-			if (position.x == button.getLocation().x
-					&& position.y == button.getLocation().y) {
-				position.x += 10;
-				position.y -= 5;
+			int dx = position.x - button.getLocation().x;
+			int dy = position.y - button.getLocation().y;
+			int adx = Math.abs( dx);
+			int ady = Math.abs( dy);
+			System.out.print( position.x + " " + position.y);
+			if ( adx <= deltax && ady <= deltay ) {
+				System.out.print( " changing ");
+				if ( adx == 0 )
+					adx = dx = 1;
+				if ( ady == 0 )
+					ady = dy = 1;
+				System.out.print( dx * deltax / adx + " " + dy * deltay / ady);
+				position.x = button.getLocation().x + dx * deltax / adx;
+				position.y = button.getLocation().y - dy * deltay / ady;
 			}
+			System.out.println( " - " + position.x + " " + position.y);
 		}
+//		for (JButton button : buttons) {
+//			if (position.x == button.getLocation().x
+//					&& position.y == button.getLocation().y) {
+//				position.x += 10;
+//				position.y -= 5;
+//			}
+//			System.out.println( " - " + position.x+ "  " + position.y );
+//		}
 		return position;
 	}
 
@@ -263,10 +283,13 @@ public class PhotoLayer extends MapLayer implements EventPublisher,
 		waypoint.setIcon(icon, hotSpot);
 
 		final float scale = 1.2f;
+		System.out.println( icon.getIconWidth() + " x " + icon.getIconHeight());
 		ImageIcon selectedIcon = getScaledIcon(icon, scale);
+		System.out.println( selectedIcon.getIconWidth() + " x " + selectedIcon.getIconHeight());
 		int x = (int) (selectedIcon.getIconWidth() / 2.0f);
 		int y = (int) (selectedIcon.getIconHeight());
 		Point selectedIconHotSpot = new Point(x, y);
+		System.out.println( selectedIconHotSpot.getX() + " x " + selectedIconHotSpot.getY());
 		waypoint.setSelectedIcon(selectedIcon, selectedIconHotSpot);
 
 		return waypoint;
