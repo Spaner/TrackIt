@@ -1,0 +1,134 @@
+                                  Release Notes 1.3.2
+                                  
+Changes introduced by version 1.3.2
+
+- KML export of single activities or courses is now available
+- New course creation is now available from the floating menu
+
+
+Changes introduced by version 1.3.1
+
+- Automatic picture location estimation recomputes speed profile and does pause detection
+	before location estimation to avoid pause detection based on out-dated speed profiles
+	that originate when pause threshold speed limit is changed.
+- A confirmation dialog now guards clearing the Collection against unwanted selection
+- Removes the bug that prevented the closing dialogue from executing under Windows
+- Removes the bug that prevented the presentation of the floating  menu of a course
+	resulting from a split course operation
+- Removes the bug that persisted in showing pictures attached to discarded documents, 
+	activities or courses after they were discarded or unregistered from the database
+- All sports related data is now loaded at start time and no longer on demand when
+	documents were loaded.
+	Consolidation no longer may compute incorrect speed values and pauses from unsynchronized
+	current values. 
+- Progress dialogue shows messages in the title instead of in the body of the dialogue
+- Progress dialogue messages extended
+
+
+
+
+What's new in version 1.3.0
+
+- Database registered courses and activities can now be searched by
+  	A general search dialogue in three flavours: simples, advanced and by sport (Tools > Search)
+  	A calendar (by date) search dialogue (Tools > Calendar Search)
+  	
+- Access to map providers has been updated, redesigned and extended
+ 	Tile requests have been updated to conform to map providers API introduced changes
+ 	New map providers supported: Mapbox, OpenMapSurfer and Transas 	
+ 	Some map providers map types (e.g., OpenStreetMaps) were extended
+ 	New map types supported: topographic, hiking, cycling, hike & bike and sea charts
+ 	
+ 	NOTE: see note below on untrusted self-signed certificates
+ 	
+- New NMEA documents read and write support
+ 	
+- Floating menus now exhibit all options with unavailable options greyed
+ 
+- New algorithm to classify paths as open or closed paths 	
+ 
+- Solves bug that caused reading and writing of documents to fail with Locales other than English  
+ 
+- TCX file format now fully supported
+ 
+- Clarifies the difference between Timer Time and Elapsed Time on Summary View
+   	(Timer Time is recorded time that may be different from elapsed time)
+ 
+ 
+ Known bugs and limitations in version 1.3.0
+ 
+ - KML documents read and write is still restricted to files without timing information
+ 
+ - Fit documents: no write support, read support still unstable
+ 
+ - Activities and courses export to Fit and Fitlog formats still not supported
+ 
+ - Occasional unavailability of the Copy, Duplicate, Move and Undo/Redo operations on specific items
+ 
+ 
+ New on version 1.2.2:
+ 
+ - Main menu and floating menus reorganization
+ 
+ - Move, Copy and Duplicate operations are now available that allow mxed selection of documents, activities
+ 	and courses
+ 
+ - CSV documents full support
+ 
+ - Increases number of sports and subsports (modalities)
+ 
+ - Geographic, UTM and MGRS grid lines display on Map View
+ 
+ - Cursor and map center locations below Map View show location coordinates in accordance to 
+ 	the coordinate system (geographic, UTM or MGRS) selected  
+ 
+ - Chart View Info Mode now display timing, distance, elevation and speed at the current cursor position
+ 
+ - Selected language now reflected on more dialogues and on numerical values 
+ 
+
+
+							PLEASE NOTE
+							===========
+ 					Untrusted self-signed certificates
+ 					
+Some map providers issue self-signed certificates that are untrusted by the Java Virtual Machine (JVM)
+although they may be accepted by browsers.
+This generates a connection to SSL Services failure and shows the following phrase on TrackIt's log
+ 
+								"PKIX Path Building Failed"
+								
+This should usually happen with map providers
+		korona.geog.uni-heidelberg.de
+		opentopomap.org
+			
+The cure is to install the certificate on the JVM. For this
+
+First, make sure that your JVM certificate store needs updating. Try the following
+
+1. Download Java class SSLPOKE from 
+  https://confluence.atlassian.com/kb/files/779355358/779355357/1/1441897666313/SSLPoke.class
+2. Run it from the command line
+  			java SSLPOKE <server> 443
+  where <server> is the suspected server (eg: opentopomap.org)
+3. It the certificate is installed you get the message
+  			Successfully connected
+  and need no further steps.
+  However, expect it to fail because it is almost certain that a proper certificate is not installed.
+  
+Follow the steps below to install the certificate 
+
+1. Obtain the certificate. Issue the following command from the command line
+			openssl s_client -connect <server>:443
+  where <server> is the server name (eg: opentopomap.org)
+2. A section of the output from the command should show lines beginning at 
+			-----BEGIN CERTIFICATE-----
+  and ending at 
+			-----END CERTIFICATE-----
+3. Open a text file and save to it all lines between the two lines above, INCLUDING the two lines.
+   Save the file as certificate.crt (or any other name, if you like)
+4. From the command line run
+			<JAVA_HOME>/bin/keytool -import -alias <server> -keystore <JAVA_HOME>/jre/lib/security/cacerts -file certificate.crt
+  (where <JAVA_HOME> is your Java installation home directory)
+  and you are done installing the missing certificate.
+ 

@@ -30,7 +30,6 @@ mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/orange-extension
 
 mvn install:install-file -Dfile=<project_base_dir>/src/main/lib/ch.hsr.geohash-1.0.6.jar -DgroupId=ch.hsr -DartifactId=geohash-java -Dversion=1.0.6 -Dpackaging=jar
     
-    D:\Miguel\Workspace\TrackIt\src\main\lib\
 Needed Keys / Tokens
 ====================
 
@@ -61,3 +60,44 @@ mvn clean install
 To package the application:
 
 mvn package
+
+Changing version no
+====================
+
+a) In Eclipse, edit pom.xml, change the Version field
+b) Edit henriquemalheiro/trackit/business/common/Constants.java and change the value of APP_VERSION
+
+
+Failed connection to SSL Services due to "PKIX Path Building Failed"
+=====================================================================
+(Most likely an untrusted self-signed certificate!)
+
+First, make sure that your JVM certificate store needs updating.
+
+Try this
+1. Download Java class SSLPOKE from 
+  https://confluence.atlassian.com/kb/files/779355358/779355357/1/1441897666313/SSLPoke.class
+2. Run it from the command line
+  			java SSLPOKE <server> 443
+  where <server> is the suspected server (eg: opentopomap.org)
+3. It the certificate is installed you get the message
+  			Successfully connected
+  and need no further steps.
+  However, expect it to fail because  it is almost certain that a porper certificate is not installed.
+  
+Most likely, the certificate must be installed. Follow the steps below.
+
+1. Obtain the certificate. Issue the following command from the command line
+			openssl s_client -connect <server>:443
+  where <server> is the server name (eg: opentopomap.org)
+2. A section of the output from the command should show lines begin at 
+			-----BEGIN CERTIFICATE-----
+  and ending at 
+			-----END CERTIFICATE-----
+3. Open a text file and save to it all lines between the two lines above, INCLUDING the two lines.
+   Save the file as certificate.crt (or any other name, if you like)
+4. From the command line run
+			<JAVA_HOME>/bin/keytool -import -alias <server> -keystore <JAVA_HOME>/jre/lib/security/cacerts -file certificate.crt
+  (where <JAVA_HOME> is your Java installation home directory)
+  and you are done installing the missing certificate.
+
