@@ -1,0 +1,76 @@
+[ARC_GIS_MAPS]
+Map,       ARC_GIS_MAPS, 256, 256, 0, 23,, http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_map/MapServer/tile/%d/%d/%d.png 
+Satellite, ARC_GIS_MAPS, 256, 256, 0, 23,, http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d.png
+!Hybrid: adds hybrid OpenMapSurfer overlay to ArcGIS Satellite
+Hybrid,    ARC_GIS_MAPS, 256, 256,,18,, http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d.png
+Hybrid,    OPEN_MAP_SURFER_MAPS, 256, 256, , , , https://%s/tiles/hybrid/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+Terrain,   ARC_GIS_MAPS, 256, 256, 0, 23,, http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/%d/%d/%d.png,   
+Seamap,    ARC_GIS_MAPS,     256, 256, 11, 19, 11, http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_map/MapServer/tile/%d/%d/%d.png 
+Seamap,	   TRANSAS_MAPS, 256, 256, 11, 19, , http://%s/TMS/1.0.0/TX97-transp/%d/%d/%d.png?token=%s, wms.transas.com
+Seamap,    ARC_GIS_MAPS,     256, 256,  0, 10,  4, http://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/%d/%d/%d.png,   
+Seamap,    ARC_GIS_MAPS,     256, 256,  0, 10,  4, http://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%d/%d/%d.png,   
+
+[BING_MAPS]
+Key = AsfVC6zyPQClDxxmeqA5gEO7KebdCYkXnk7Au7G5C4lpNsRDv-Jo0aVx8VohgEcD
+Map,       BING_MAPS, 256, 256, 0, 21,, https://%s/REST/v1/Imagery/Map/Road/%s/%d?mapSize=%s&key=%s,             dev.virtualearth.net
+Satellite, BING_MAPS, 256, 256, 0, 21,, https://%s/REST/v1/Imagery/Map/Aerial/%s/%d?mapSize=%s&key=%s,           dev.virtualearth.net
+Hybrid,    BING_MAPS, 256, 256, 0, 21,, https://%s/REST/v1/Imagery/Map/AerialWithLabels/%s/%d?mapSize=%s&key=%s, dev.virtualearth.net
+
+[GOOGLE_MAPS]
+Key = AIzaSyBRc0iY3fHJ6PVNFsZVaEEsM-7xD_zaZ7c
+Key = AIzaSyCvugjs7kdaSCgOUfWasM8M2jO-MOhQIR4
+Map,       GOOGLE_MAPS, 256, 256, 0, 20, 4, https://maps.googleapis.com/maps/api/staticmap?center=%s&zoom=%s&size=%sx%s&maptype=roadmap&key=%s
+Satellite, GOOGLE_MAPS,256, 256, 0, 20, 4, https://maps.googleapis.com/maps/api/staticmap?center=%s&zoom=%s&size=%sx%s&maptype=satellite&key=%s
+Hybrid,    GOOGLE_MAPS, 256, 256, 0, 20, 4, https://maps.googleapis.com/maps/api/staticmap?center=%s&zoom=%s&size=%sx%s&maptype=hybrid&key=%s
+Terrain,   GOOGLE_MAPS, 256, 256, 0, 20, 4, https://maps.googleapis.com/maps/api/staticmap?center=%s&zoom=%s&size=%sx%s&maptype=terrain&key=%s
+
+[HERE_MAPS]
+!Keys updated 2018-08-02 Fremium profile
+Key = Q-m-mZaHYYiZf6QRI6BIMg
+Key = ZbhSsv93eFyISnPlWcF0
+Map,       HERE_MAPS, 256, 256, , 20, , https://%s/maptile/2.1/maptile/newest/normal.day/%d/%d/%d/%d/png8?app_id=%s&app_code=%s,    %s.base.maps.cit.api.here.com, 1-4
+Satellite, HERE_MAPS, 256, 256, , 20, , https://%s/maptile/2.1/maptile/newest/satellite.day/%d/%d/%d/%d/png8?app_id=%s&app_code=%s, %s.aerial.maps.cit.api.here.com, 1-4
+Hybrid,    HERE_MAPS, 256, 256, , 20, , https://%s/maptile/2.1/maptile/newest/hybrid.day/%d/%d/%d/%d/png8?app_id=%s&app_code=%s,    %s.aerial.maps.cit.api.here.com, 1-4
+Terrain,   HERE_MAPS, 256, 256, , 20, , https://%s/maptile/2.1/maptile/newest/terrain.day/%d/%d/%d/%d/png8?app_id=%s&app_code=%s,   %s.aerial.maps.cit.api.here.com, 1-4
+
+[MAP_BOX_MAPS]
+Key = pk.eyJ1Ijoiam9hb2JyaXNzb24iLCJhIjoiY2ppcmNhZnZuMWc0eDNxbXB0eXl4dGJ5MiJ9.g7vFjjHCWWb8U_GW-sk-Cw
+Map,         MAP_BOX_MAPS, 256, 256, 0, 20, 4, https://%s/v4/mapbox.streets/%d/%d/%d.png?access_token=%s, api.tiles.mapbox.com
+Satellite,   MAP_BOX_MAPS, 256, 256, 0, 20, 4, https://%s/v4/mapbox.satellite/%d/%d/%d.png?access_token=%s, api.tiles.mapbox.com
+Hybrid,      MAP_BOX_MAPS, 256, 256, 0, 20, 4, https://%s/v4/mapbox.streets-satellite/%d/%d/%d.png?access_token=%s, api.tiles.mapbox.com
+Terrain,     MAP_BOX_MAPS, 256, 256, 0, 20, 4, https://%s/v4/mapbox.emerald/%d/%d/%d.png?access_token=%s, api.tiles.mapbox.com
+Topographic, MAP_BOX_MAPS, 256, 256, 0, 20, 4, https://%s/v4/mapbox.outdoors/%d/%d/%d.png?access_token=%s, api.tiles.mapbox.com
+
+[MAP_QUEST_MAPS]
+Key = FnlxtGvCcvqYeo3gkFtbItc51MleWzBR
+Map,       MAP_QUEST_MAPS, 256,256, 0, 20, 12, https://open.mapquestapi.com/staticmap/v5/map?key=%s&center=%s&zoom=%d&type=map&size=%s
+Satellite, MAP_QUEST_MAPS, 256,256, 0, 20, 12, https://open.mapquestapi.com/staticmap/v5/map?key=%s&center=%s&zoom=%d&type=sat&size=%s
+Hybrid,    MAP_QUEST_MAPS, 256,256, 0, 20, 12, https://open.mapquestapi.com/staticmap/v5/map?key=%s&center=%s&zoom=%d&type=hyb&size=%s
+
+[OPEN_MAP_SURFER_MAPS]
+Map,         OPEN_MAP_SURFER_MAPS, 256, 256, , , ,   https://%s/tiles/roads/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+Terrain,     OPEN_MAP_SURFER_MAPS, 256, 256, , , ,   https://%s/tiles/roads/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+Terrain,     OPEN_MAP_SURFER_MAPS, 256, 256, , , ,   https://%s/tiles/asterh/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+Topographic, OPEN_MAP_SURFER_MAPS, 256, 256, , , ,   https://%s/tiles/roads/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+Topographic, OPEN_MAP_SURFER_MAPS, 256, 256, 13, , , https://%s/tiles/asterc/x=%d&y=%d&z=%d, korona.geog.uni-heidelberg.de
+
+[OPEN_STREET_MAPS]
+Map,         OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Seamap,      OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Seamap,      OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, t1.openseamap.org/seamark
+HikeBike,    OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tiles.wmflabs.org/hikebike, a-c
+Terrain,     OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Terrain,  	 OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tiles.wmflabs.org/hillshading, a-c
+Topographic, OPEN_STREET_MAPS, 256, 256, 0, 17, , https://%s/%d/%d/%d.png, %s.tile.opentopomap.org, a-c
+Hiking,      OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Hiking,      OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/hiking/%d/%d/%d.png, tile.waymarkedtrails.org, a-c
+Cycling,     OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Cycling,     OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/cycling/%d/%d/%d.png, tile.waymarkedtrails.org, a-c
+
+[TRANSAS_MAPS]
+Key = 9e53bcb2-01d0-46cb-8aff-512e681185a4
+Seamap,    OPEN_STREET_MAPS, 256, 256, 0, 19,, http://%s/%d/%d/%d.png, %s.tile.openstreetmap.org, a-c
+Seamap,	   TRANSAS_MAPS, 256, 256, , , , http://%s/TMS/1.0.0/TX97-transp/%d/%d/%d.png?token=%s, wms.transas.com
+
+[MILITARY_MAPS]
+PTArmySurvey, MILITARY_MAPS, 256, 256, , , , , ,

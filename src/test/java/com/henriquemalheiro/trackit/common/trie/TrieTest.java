@@ -24,8 +24,8 @@ import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.henriquemalheiro.trackit.business.utility.trie.StringTrie;
-import com.henriquemalheiro.trackit.business.utility.trie.Trie;
+import com.trackit.business.utilities.trie.StringTrie;
+import com.trackit.business.utilities.trie.Trie;
 
 public class TrieTest extends TestCase {
     private static Trie<Product> productTrie = new StringTrie<Product>();
